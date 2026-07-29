@@ -36,10 +36,13 @@ export function ChapterMap() {
             <div className="mt-2 flex items-center gap-3 pl-9">
               {hydrated ? (
                 <>
-                  <Stars
-                    earned={Math.round((earned / chapterMaxStars(chapter)) * 3)}
-                    label={`${earned} of ${chapterMaxStars(chapter)} stars`}
-                  />
+                  {/* A real count, not three glyphs scaled to a chapter's total:
+                      squeezing 3 of 24 into three stars rounds to none, which
+                      reads as "you have done nothing" right after clearing a boss. */}
+                  <span className="font-mono text-sm text-accent">
+                    ★ {earned}
+                    <span className="text-muted">/{chapterMaxStars(chapter)}</span>
+                  </span>
                   <span className="text-xs text-muted">
                     {unlocked
                       ? `${chapter.levelCount} levels + boss`

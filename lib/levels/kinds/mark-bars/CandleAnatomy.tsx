@@ -153,7 +153,13 @@ export function CandleAnatomy({
           <legend className="mb-1 text-xs uppercase tracking-wide text-muted">
             Parts
           </legend>
-          {CANDLE_PARTS.filter((p) => asked.has(partMark(p)) || !committed).map(
+          {/* After committing, keep both the answer and whatever the player chose.
+              Showing only the answer would hide their mistake, which is the half
+              of the feedback that teaches. */}
+          {CANDLE_PARTS.filter(
+            (p) =>
+              !committed || asked.has(partMark(p)) || shown.includes(partMark(p)),
+          ).map(
             (part) => {
               const state = stateOf(part);
               return (

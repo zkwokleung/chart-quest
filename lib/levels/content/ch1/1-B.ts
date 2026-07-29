@@ -60,7 +60,7 @@ export const level: Level<"predict-next"> = {
         return graded > 0 && right / graded <= 0.6;
       },
       message:
-        "Around half right, which is what a coin does. That is the point of this level: nothing you have learned so far predicts the next bar, and any method that seems to needs testing against exactly this baseline.",
+        "Around half right, which is what a coin does. That is the point of this level: nothing you have learned so far predicts the next bar, and any method that appears to must be measured against exactly this baseline.",
     },
     {
       id: "hot-streak",
