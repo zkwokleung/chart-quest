@@ -106,8 +106,56 @@ describe.each(LEVELS.map((l) => [l.id, l] as const))("%s", (_id, level) => {
   it("never references out-of-sample data", () => {
     // The runtime half of the holdback guarantee. OosSeriesId already makes this
     // a compile error, but a cast or a future loosening would slip past that.
-    for (const slice of level.data) {
+    const slices =
+      level.kind === "composite"
+        ? [...level.data, ...level.config.steps.flatMap((st) => st.data ?? [])]
+        : level.data;
+    for (const slice of slices) {
       expect(slice.series.endsWith("-oos")).toBe(false);
+    }
+  });
+
+  it("gives every composite step at least two misconceptions", () => {
+    // A boss stage is a level in all but name, so the teaching invariant applies
+    // per stage rather than once for the whole boss.
+    if (level.kind !== "composite") return;
+    for (const step of level.config.steps) {
+      expect(
+        step.misconceptions.length,
+        `step "${step.brief}" has ${step.misconceptions.length}`,
+      ).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("has composite step weights summing to one", () => {
+    if (level.kind !== "composite") return;
+    const total = level.config.steps.reduce((sum, st) => sum + st.weight, 0);
+    expect(total).toBeCloseTo(1, 3);
+  });
+
+  it("keeps every composite step's bar ranges inside its series", () => {
+    if (level.kind !== "composite") return;
+    for (const step of level.config.steps) {
+      for (const slice of step.data ?? []) {
+        const bars = barsById.get(slice.series) ?? 0;
+        expect(bars).toBeGreaterThan(0);
+        expect(slice.from).toBeGreaterThanOrEqual(0);
+        expect(slice.to).toBeGreaterThan(slice.from);
+        expect(slice.to).toBeLessThanOrEqual(bars);
+      }
+    }
+  });
+
+  it("keeps composite steps on the same series as the boss, in the same order", () => {
+    // Step data may narrow a range but not swap the series: the player loads the
+    // boss's series once, and the grader pairs them with step slices by position.
+    if (level.kind !== "composite") return;
+    const bossSeries = level.data.map((d) => d.series);
+    for (const step of level.config.steps) {
+      if (!step.data) continue;
+      expect(step.data.map((d) => d.series)).toEqual(
+        bossSeries.slice(0, step.data.length),
+      );
     }
   });
 
@@ -177,7 +225,11 @@ describe("chapter-level rules", () => {
           .filter((l) => l !== boss)
           .flatMap((l) => l.data.map((s) => s.series)),
       );
-      for (const slice of boss.data) {
+      const bossSlices =
+        boss.kind === "composite"
+          ? [...boss.data, ...boss.config.steps.flatMap((st) => st.data ?? [])]
+          : boss.data;
+      for (const slice of bossSlices) {
         expect(
           taught.has(slice.series),
           `chapter ${chapter} boss uses ${slice.series}, which its levels already taught on`,

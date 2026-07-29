@@ -9,7 +9,15 @@ import type { LevelId, YAxisMode } from "@/lib/store/schema";
  * of these kinds. The union grows one milestone at a time; a new kind needs a
  * level the existing ones genuinely cannot express. See docs/ARCHITECTURE.md.
  */
-export type LevelKind = "classify" | "mark-bars" | "predict-next" | "annotate";
+export type LevelKind =
+  | "classify"
+  | "mark-bars"
+  | "predict-next"
+  | "annotate"
+  | "composite";
+
+/** Every kind a composite step may use. Nesting is excluded by construction. */
+export type StepKind = Exclude<LevelKind, "composite">;
 
 export type ToolId =
   | "crosshair"
@@ -60,7 +68,43 @@ export type Attempt = {
     hintsUsed: number;
   };
   annotate: { kind: "annotate"; drawing: Drawing | null; hintsUsed: number };
+  composite: {
+    kind: "composite";
+    /** One entry per step, in order. `null` until that step is committed. */
+    steps: (StepAttempt | null)[];
+    hintsUsed: number;
+  };
 };
+
+/** A step's attempt, with its own kind still discriminable. */
+export type StepAttempt = Attempt[StepKind];
+
+/**
+ * One stage of a boss: a Level without its identity.
+ *
+ * Shaped this way so `stepAsLevel` can synthesise a real `Level` and hand it to
+ * the existing kind component and grader — a boss reuses the whole engine rather
+ * than adding a parallel path.
+ */
+export type CompositeStep<K extends StepKind = StepKind> = {
+  kind: K;
+  /** Relative contribution to the final score. Weights sum to 1. */
+  weight: number;
+  brief: string;
+  config: KindConfig[K];
+  target: KindTarget[K];
+  tolerance: KindTolerance[K];
+  /** At least two, same as any level. Guard-enforced per step. */
+  misconceptions: Misconception<K>[];
+  /** Defaults to the composite's own data. */
+  data?: LevelSlice[];
+};
+
+export type AnyStep =
+  | CompositeStep<"classify">
+  | CompositeStep<"mark-bars">
+  | CompositeStep<"predict-next">
+  | CompositeStep<"annotate">;
 
 export type Direction = "up" | "down";
 
@@ -105,6 +149,10 @@ export type KindConfig = {
      */
     expectSlope?: "up" | "down" | "flat";
   };
+  composite: {
+    /** Walked in order; each is graded on commit before the next appears. */
+    steps: AnyStep[];
+  };
   "predict-next": {
     prompt: string;
     /**
@@ -126,6 +174,8 @@ export type KindTarget = {
    * most correct answers wrong.
    */
   annotate: { reference: Drawing };
+  /** A composite's answers live on its steps. */
+  composite: Record<string, never>;
   /**
    * `predict-next` has no authored target — the answer is whatever the data did.
    * The grader derives it, which is also why the kind cannot be brute-forced by
@@ -145,6 +195,7 @@ export type KindTolerance = {
     priceFracOfRange: number;
     barSlop: number;
   };
+  composite: Record<string, never>;
   "predict-next": Record<string, never>;
 };
 
@@ -217,7 +268,8 @@ export type AnyLevel =
   | Level<"classify">
   | Level<"mark-bars">
   | Level<"predict-next">
-  | Level<"annotate">;
+  | Level<"annotate">
+  | Level<"composite">;
 
 export function isKind<K extends LevelKind>(
   level: AnyLevel,

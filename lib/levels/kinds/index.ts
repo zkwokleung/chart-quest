@@ -1,9 +1,11 @@
 import type { ComponentType } from "react";
+import type { ErasedKindProps } from "./erased";
 import type { Series } from "@/lib/chart/types";
 import type { Grade } from "../grade";
 import type { KindModule } from "../kind-module";
 import type { AnyLevel, Attempt, LevelKind } from "../schema";
 import { annotateKind } from "./annotate";
+import { compositeKind } from "./composite";
 import { classifyKind } from "./classify";
 import { markBarsKind } from "./mark-bars";
 import { predictNextKind } from "./predict-next";
@@ -17,6 +19,7 @@ import { predictNextKind } from "./predict-next";
  */
 export const KINDS = {
   annotate: annotateKind,
+  composite: compositeKind,
   classify: classifyKind,
   "mark-bars": markBarsKind,
   "predict-next": predictNextKind,
@@ -67,21 +70,7 @@ export function perfectAttemptFor(
   return (KINDS[level.kind].perfectAttempt as ErasedPerfect)(level, data);
 }
 
-/**
- * What a kind's component looks like once its kind is erased.
- *
- * Same contravariance as above, so the same treatment: the player renders through
- * this and stays free of any knowledge of specific kinds. Every erasure in the
- * level engine lives in this file and nowhere else.
- */
-export type ErasedKindProps = {
-  level: AnyLevel;
-  data: Series<string>[];
-  hintsUsed: number;
-  grade: Grade | null;
-  attempt: Attempt[LevelKind] | null;
-  onCommit: (attempt: Attempt[LevelKind]) => void;
-};
+export type { ErasedKindProps } from "./erased";
 
 export function componentFor(level: AnyLevel): ComponentType<ErasedKindProps> {
   return KINDS[level.kind].Component as ComponentType<ErasedKindProps>;
