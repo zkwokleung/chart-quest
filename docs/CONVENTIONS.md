@@ -1,8 +1,8 @@
-# Chart Quest — agent notes
+# Conventions
 
-An interactive game teaching technical analysis. Client-side only, no backend, no auth. Progress in `localStorage`.
+Orientation for anyone working in this repo. An interactive game teaching technical analysis — client-side only, no backend, no auth, progress in `localStorage`.
 
-**Read first:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) before touching `lib/`, [`docs/AUTHORING.md`](docs/AUTHORING.md) before adding a level, [`docs/DATA.md`](docs/DATA.md) before touching `public/data/`. [`docs/PLAN.md`](docs/PLAN.md) is the scope source of truth.
+**Read first:** [`ARCHITECTURE.md`](ARCHITECTURE.md) before touching `lib/`, [`AUTHORING.md`](AUTHORING.md) before adding a level, [`DATA.md`](DATA.md) before touching `public/data/`. [`PLAN.md`](PLAN.md) is the scope source of truth.
 
 ## The two rules most easily eroded
 
@@ -24,28 +24,29 @@ An interactive game teaching technical analysis. Client-side only, no backend, n
 
 ## Verification
 
-Never report work complete without running:
+Work is not complete until these pass:
 
 ```bash
 npm run typecheck     # tsc --noEmit
 npm run lint          # eslint . --quiet
 npm test              # vitest run
+npm run build         # production build
 ```
 
-If one isn't configured yet, say so explicitly rather than implying it passed. A successful file write is not a working change.
+A successful file write is not a working change. If one of these isn't configured yet for the area you touched, say so rather than implying it passed.
 
-## Conventions
+## Code conventions
 
-- TypeScript strict. No `any` — use `unknown` plus narrowing.
-- Pure logic (`lib/ta`, `lib/levels/graders`, `lib/chart/geometry`, `lib/backtest`) must not import React or touch the DOM.
-- Conventional Commits, scopes matching the module layout. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
-- Comment only what code cannot say — a non-obvious *why*, a workaround and its cause, an external constraint, a real gotcha. No line-restating comments, no divider banners, no JSDoc echoing signatures.
+- TypeScript strict, with `noUncheckedIndexedAccess`. No `any` — use `unknown` plus narrowing.
+- Pure logic (`lib/ta`, `lib/levels/graders`, `lib/chart/geometry`, `lib/backtest`) must not import React or touch the DOM. This is what makes it testable.
+- Conventional Commits, scopes matching the module layout. See [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
+- Comment only what the code cannot say — a non-obvious *why*, a workaround and its cause, an external constraint, a real gotcha. No line-restating comments, no divider banners, no JSDoc echoing signatures.
 - Before writing a new indicator or geometry helper, check `lib/ta/` and `lib/chart/` — near-duplicates are the main source of drift here.
 
 ## Tone of the product
 
-This is a teaching tool in a domain full of dishonest content. Never write copy that claims technical analysis predicts prices or guarantees outcomes. Every pattern ships with its measured base rate and sample size. Several levels (1.B, 4.5, 8.3, 9.2, 9.5) exist specifically to teach the player to distrust their own results — treat them as load-bearing, not as polish.
+This is a teaching tool in a domain full of dishonest content. Never write copy claiming technical analysis predicts prices or guarantees outcomes. Every pattern ships with its measured base rate and sample size. Several levels (1.B, 4.5, 8.3, 9.2, 9.5) exist specifically to teach the player to distrust their own results — treat them as load-bearing, not as polish.
 
 ## Work order
 
-Follow the milestones in order; each ends at a verification gate. Later phases assume the earlier engines exist and work.
+Follow the milestones in order; each ends at a verification gate. Later milestones assume the earlier engines exist and work.

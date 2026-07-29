@@ -35,6 +35,9 @@ playwright/.cache/
 # typescript
 *.tsbuildinfo
 
+# local tooling config — contributor guidance lives in docs/CONVENTIONS.md
+CLAUDE.md
+
 # misc
 .DS_Store
 *.pem

@@ -87,6 +87,7 @@ npm run data:rates   # recompute per-asset base rates
 | [`docs/CURRICULUM.md`](docs/CURRICULUM.md) | All 10 chapters and ~73 levels, plus the cross-asset boss rule |
 | [`docs/DATA.md`](docs/DATA.md) | The six-series data spine, sources, format, out-of-sample rules |
 | [`docs/AUTHORING.md`](docs/AUTHORING.md) | How to add a level — the most-repeated task in the project |
+| [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) | Orientation: the invariants, code conventions, verification commands |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Branches, commits, and the verification gates |
 
 ## Contributing

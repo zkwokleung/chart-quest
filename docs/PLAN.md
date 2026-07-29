@@ -321,8 +321,6 @@ The wide CIs are not a flaw to hide — at n=34 they *are* the lesson, and Ch 9.
 - **Tailwind v4 + shadcn/ui**; **`motion`** for reveal animations.
 - **Vitest** for graders/TA/backtester; **Playwright** smoke per level kind.
 
-Before writing chart or UI code, load the **`dataviz`** and **`frontend-design`** skills.
-
 ### Normalization module
 ```ts
 // lib/ta/normalize.ts
@@ -438,9 +436,7 @@ Each phase ends at a verification gate and waits for approval. Flagging honestly
 | 10 | Backtest engine + composer + `build-rules` + Ch 10 + playbook export | Matches a hand-computed fixture; multi-asset objective enforced; OOS verifiably untouched earlier |
 | 11 | Polish: a11y pass, reduced motion, export/import, deploy | Playwright green; Lighthouse a11y ≥ 95; preview deployed |
 
-Content authoring (Phases 7–9) is the one place worth parallelizing across sub-agents, one chapter per agent, since levels are independent data files.
-
-Phase 1 also copies this plan to `docs/PLAN.md` in the repo and writes a `CLAUDE.md` capturing the two rules that are easy to erode over 73 levels: every level authors ≥2 misconceptions, and every chapter boss runs on a different asset than its levels.
+Content authoring (Phases 7–9) is the one place worth parallelizing across contributors, one chapter each, since levels are independent data files.
 
 ---
 
@@ -457,7 +453,7 @@ Phase 1 also copies this plan to `docs/PLAN.md` in the repo and writes a `CLAUDE
   - every pattern in `base-rates.json` has ≥3 assets and a reported `n`;
   - `compute-base-rates` output is reproducible from committed data.
 - `npx playwright test` — one level per kind, a full Ch 1 run, and a reload-mid-chapter persistence test.
-- Manual, via the `run` skill and Chrome MCP: play Ch 1 → Ch 3 boss, clear `localStorage` mid-run to confirm graceful degradation, check one level keyboard-only, and confirm the y-axis toggle changes nothing about grading.
+- Manual, in a browser: play Ch 1 → Ch 3 boss, clear `localStorage` mid-run to confirm graceful degradation, check one level keyboard-only, and confirm the y-axis toggle changes nothing about grading.
 
 ## 9. Open items for Phase 1–2
 
