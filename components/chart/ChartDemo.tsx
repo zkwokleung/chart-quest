@@ -6,6 +6,7 @@ import { xToBarIndex, yToPrice } from "@/lib/chart/coords";
 import { fixtureSeries } from "@/lib/chart/fixture-series";
 import { barAt, type Series, type SeriesId } from "@/lib/chart/types";
 import { loadSeries } from "@/lib/data/load-series";
+import type { RenderableDrawing } from "@/components/chart/DrawingPrimitive";
 
 /**
  * Exercises the chart wrapper against the committed data.
@@ -18,6 +19,7 @@ import { loadSeries } from "@/lib/data/load-series";
 
 const CHOICES: (SeriesId | "FIXTURE-1d")[] = [
   "SPY-1d",
+  "BTCUSDT-1d",
   "AAPL-1d-raw",
   "SPY-15m",
   "LAKE-1d",
@@ -39,6 +41,26 @@ export function ChartDemo() {
   // would mean a setState inside the effect below for no reason.
   const isFixture = seriesId === "FIXTURE-1d";
   const series = isFixture ? fixtureSeries : fetched;
+
+  // Probe drawings: a trendline under the 2020 BTC advance plus a zone, so the
+  // primitive can be checked against price under pan, zoom and a scale toggle.
+  const probeDrawings: RenderableDrawing[] | undefined =
+    seriesId === "BTCUSDT-1d" && series
+      ? [
+          {
+            role: "attempt",
+            drawing: {
+              shape: "trendline",
+              a: { bar: 1012, price: series.l[1012] ?? 0 },
+              b: { bar: 1058, price: series.l[1058] ?? 0 },
+            },
+          },
+          {
+            role: "reference",
+            drawing: { shape: "zone", top: series.h[1080] ?? 0, bottom: series.l[1012] ?? 0 },
+          },
+        ]
+      : undefined;
 
   useEffect(() => {
     if (isFixture) return;
@@ -121,7 +143,12 @@ export function ChartDemo() {
         {series ? (
           // No key: the data effect handles a series swap via setData, so
           // remounting the chart would tear down and rebuild it for nothing.
-          <Chart ref={handleRef} series={series} priceScale={priceScale} />
+          <Chart
+            ref={handleRef}
+            series={series}
+            priceScale={priceScale}
+            drawings={probeDrawings}
+          />
         ) : (
           <div className="grid h-[420px] place-items-center text-sm text-muted">
             Loading {seriesId}…

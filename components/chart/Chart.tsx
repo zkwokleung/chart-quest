@@ -12,8 +12,10 @@ import {
 } from "lightweight-charts";
 import { useEffect, useImperativeHandle, useRef, type Ref } from "react";
 import type { LogicalBounds, ScaleAdapter } from "@/lib/chart/coords";
+import { barIndexToX, priceToY } from "@/lib/chart/coords";
 import { clampRange, toCandlestickData, toVolumeData } from "@/lib/chart/to-lwc";
 import type { BarRange, Series } from "@/lib/chart/types";
+import { DrawingsPrimitive, type RenderableDrawing } from "./DrawingPrimitive";
 
 export type PriceScale = "linear" | "logarithmic";
 
@@ -36,11 +38,37 @@ type ChartProps = {
   showVolume?: boolean;
   height?: number;
   className?: string;
+  /**
+   * Player drawings and reference overlays, in absolute bar indices. Read on every
+   * frame, so mutating the returned array between renders is enough to repaint.
+   */
+  drawings?: RenderableDrawing[];
   ref?: Ref<ChartHandle | null>;
 };
 
 const CANDLE_UP = "#3fb98e";
 const CANDLE_DOWN = "#e2603f";
+
+/**
+ * The library's coordinate conversions, gathered behind one interface.
+ *
+ * Callers go through `lib/chart/coords.ts` rather than using these directly —
+ * `logicalToCoordinate` returns plausible pixels for bars that do not exist, and
+ * the guards there are what reject them.
+ */
+function scaleAdapterFor(
+  chart: IChartApi,
+  series: ISeriesApi<"Candlestick">,
+): ScaleAdapter {
+  return {
+    coordinateToLogical: (x) => chart.timeScale().coordinateToLogical(x),
+    // `Logical` is a nominal brand over number; validation lives in the guards.
+    logicalToCoordinate: (logical) =>
+      chart.timeScale().logicalToCoordinate(logical as Logical),
+    coordinateToPrice: (y) => series.coordinateToPrice(y),
+    priceToCoordinate: (price) => series.priceToCoordinate(price),
+  };
+}
 
 export function Chart({
   series,
@@ -49,6 +77,7 @@ export function Chart({
   showVolume = true,
   height = 420,
   className,
+  drawings,
   ref,
 }: ChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -58,6 +87,11 @@ export function Chart({
 
   const { from, to } = clampRange(series, range);
 
+  const primitiveRef = useRef<DrawingsPrimitive | null>(null);
+  // The primitive is created once with the chart but must know the current window
+  // to convert absolute bar indices. Written in an effect, never during render.
+  const windowRef = useRef({ from, to });
+
   useImperativeHandle(
     ref,
     () => ({
@@ -65,13 +99,8 @@ export function Chart({
         coordinateToLogical: (x) =>
           chartRef.current?.timeScale().coordinateToLogical(x) ?? null,
         logicalToCoordinate: (logical) =>
-          chartRef.current
-            ?.timeScale()
-            // `Logical` is a nominal brand over number; the guards in
-            // lib/chart/coords.ts are what actually validate the value.
-            .logicalToCoordinate(logical as Logical) ?? null,
-        coordinateToPrice: (y) =>
-          candlesRef.current?.coordinateToPrice(y) ?? null,
+          chartRef.current?.timeScale().logicalToCoordinate(logical as Logical) ?? null,
+        coordinateToPrice: (y) => candlesRef.current?.coordinateToPrice(y) ?? null,
         priceToCoordinate: (price) =>
           candlesRef.current?.priceToCoordinate(price) ?? null,
       },
@@ -137,6 +166,27 @@ export function Chart({
       chart.panes()[1]?.setStretchFactor(0.25);
     }
 
+    // Attached here for the same reason as the volume series: the primitive's
+    // lifetime is the chart's. chart.remove() below tears it down, and nothing may
+    // touch it afterwards.
+    const adapter = scaleAdapterFor(chart, candles);
+    const primitive = new DrawingsPrimitive({
+      // Absolute bar index to pixel. The chart was handed data starting at
+      // `from`, so its logical indices are offset by that — the same trap
+      // mark-bars hit in M3.
+      barToX: (bar) => {
+        const { from: start, to: end } = windowRef.current;
+        return barIndexToX(adapter, bar - start, {
+          min: 0,
+          max: Math.max(0, end - start - 1),
+        });
+      },
+      priceToY: (price) => priceToY(adapter, price),
+      range: () => windowRef.current,
+    });
+    candles.attachPrimitive(primitive);
+    primitiveRef.current = primitive;
+
     chartRef.current = chart;
     candlesRef.current = candles;
 
@@ -152,8 +202,17 @@ export function Chart({
       chartRef.current = null;
       candlesRef.current = null;
       volumeRef.current = null;
+      primitiveRef.current = null;
     };
   }, [height, showVolume]);
+
+  // Pushed rather than pulled: setItems calls the library's requestUpdate, which
+  // is how a primitive asks for a repaint. Writing a ref during render would work
+  // but is disallowed under concurrent rendering.
+  useEffect(() => {
+    windowRef.current = { from, to };
+    primitiveRef.current?.setItems(drawings ?? []);
+  }, [drawings, from, to]);
 
   useEffect(() => {
     const chart = chartRef.current;

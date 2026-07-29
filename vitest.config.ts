@@ -26,7 +26,14 @@ export default defineConfig({
         test: {
           name: "components",
           environment: "happy-dom",
-          include: ["components/**/*.test.tsx", "app/**/*.test.tsx"],
+          // Both extensions: a test sitting next to its code should run without
+          // anyone having to remember which project claims which suffix.
+          include: [
+            "components/**/*.test.ts",
+            "components/**/*.test.tsx",
+            "app/**/*.test.ts",
+            "app/**/*.test.tsx",
+          ],
         },
       },
     ],
