@@ -6,7 +6,7 @@ The most-repeated task in this project. ~73 levels exist as data; adding one sho
 
 ## Checklist
 
-1. **Pick the kind.** If none of the ten fit, stop and open a discussion issue — a new kind is an architecture change, not a level.
+1. **Pick the kind.** If none of the existing kinds fit, stop and open a discussion issue — a new kind is an architecture change, not a level.
 2. **Find the data slice.** Bar indices into a committed series. Use the practice/free-play screen to browse and read off indices.
 3. **Write the level file** in `lib/levels/content/ch<N>/<id>.ts`.
 4. **Author ≥2 misconceptions.** Not optional. See below.
@@ -29,17 +29,21 @@ export const level: Level = {
   brief: 'Drag on the chart to place a line the market actually respected.',
   data: [{ series: 'BTCUSDT-1d', from: 812, to: 980 }],
   config: {
-    mode: 'trendline',
-    attempts: 3,
-    snap: 'wick',
+    prompt: 'Draw a rising support line under the lows.',
+    shape: 'trendline',
+    side: 'support',
+    requiredTouches: 3,
+    expectSlope: 'up',
   },
+  // Shown as the correction, never used to score — see "Drawing levels" below.
   target: {
-    anchors: [
-      { bar: 826, price: 'low' },
-      { bar: 851, price: 'low' },
-    ],
+    reference: {
+      shape: 'trendline',
+      a: { bar: 1012, price: 8642.72 },
+      b: { bar: 1058, price: 9125 },
+    },
   },
-  tolerance: { barSlop: 2, priceSlopAtr: 0.4 },
+  tolerance: { priceFracOfRange: 0.02, barSlop: 1 },
   stars: [0.5, 0.72, 0.88],
   misconceptions: [
     {
@@ -122,6 +126,20 @@ Never write a hint that gives the whole answer. If a level needs one, the level 
 
 ---
 
+## Drawing levels (`annotate`)
+
+Four shapes: `trendline`, `level`, `zone`, `channel`. Two anchors become whichever the level asked for.
+
+**Grading is intrinsic.** The player's own line is scored on its touch count, body cuts and anchor placement; the authored `target.reference` is shown as the correction and used by `perfectAttempt`, but never to score. This is measured, not stylistic: BTC-1d holds 182 lines with three or more touches and zero body cuts, so a valid answer usually is not the author's.
+
+Three things to get right:
+
+- **Measure the reference, do not eyeball it.** A reference read off a swing-high listing rather than measured scored one star on 2.4. The content-claims test that catches this asserts the reference earns three stars *through the grader itself*.
+- **Tolerance is a fraction of the level's window**, so one config works on Bitcoin at 60,000 and EURUSD at 1.09. Never derive it from what a player drew.
+- **Every scored penalty needs a matching misconception.** 2.3 briefly docked 15% for anchor placement while saying nothing about it. Use the same helper the grader uses — `anchorQuality` — so the marks and the explanation cannot drift apart.
+
+`expectSlope` is a gate: a support line sloping the wrong way scores zero, because it is a different object rather than a badly drawn one.
+
 ## Composite levels (bosses)
 
 A boss chains several kinds and averages the scores. Express it as a sequence, not a new kind:
@@ -138,7 +156,11 @@ config: {
 },
 ```
 
-Each step carries its own `target`, `tolerance` and `misconceptions`. The ≥2-misconception rule applies **per step**.
+A composite step is a `Level` without its identity, so every existing kind component and grader works inside a boss unchanged. Each step carries its own target, tolerance and **at least two misconceptions** — the teaching invariant applies per stage, and a guard enforces it.
+
+Weight the stages. `predict-next` scores participation rather than accuracy, so an equal share would hand over free marks and lower the bar for the stages actually being tested; 2.B gives it 0.10 against 0.30/0.35/0.25. There is no per-step floor: a boss should test the chapter, not wall a player weak at one thing.
+
+Step data may narrow a range but **must not swap the series** — the player loads the boss's series once and the grader pairs them by position.
 
 For trade bosses, **score R achieved and stop-placement quality separately** (see Ch 3.B in [`CURRICULUM.md`](CURRICULUM.md)). A profitable trade with a stop in a stupid place must not score 3 stars — that would teach outcome-chasing, which is the exact habit the game exists to cure.
 

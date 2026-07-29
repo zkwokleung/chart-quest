@@ -72,25 +72,39 @@ export function Annotate({
     };
 
     switch (event.key) {
+      // Functional updates, not `cursor.bar + step`. Several key events can land in
+      // one React batch — a held-down arrow key does exactly that — and computing
+      // from the closed-over cursor made every press in a batch produce the same
+      // position, so the cursor advanced one bar and stalled.
       case "ArrowRight": {
         event.preventDefault();
-        const bar = Math.min(last, cursor.bar + step);
-        setCursor({ bar, price: priceAt(bar) });
+        setCursor((c) => {
+          const bar = Math.min(last, c.bar + step);
+          return { bar, price: priceAt(bar) };
+        });
         break;
       }
       case "ArrowLeft": {
         event.preventDefault();
-        const bar = Math.max(slice.from, cursor.bar - step);
-        setCursor({ bar, price: priceAt(bar) });
+        setCursor((c) => {
+          const bar = Math.max(slice.from, c.bar - step);
+          return { bar, price: priceAt(bar) };
+        });
         break;
       }
       case "ArrowUp":
       case "ArrowDown": {
-        // Fine price control, for a level whose answer is not on an extreme.
+        // Fine price control, for a level whose answer is not on an extreme. The
+        // step is sized from the cursor's own bar, so it reads that bar inside the
+        // update rather than from a possibly-stale closure.
         event.preventDefault();
-        const span = (barAt(series, cursor.bar)?.h ?? 1) - (barAt(series, cursor.bar)?.l ?? 0);
-        const nudge = (span || cursor.price * 0.01) * 0.15 * (event.key === "ArrowUp" ? 1 : -1);
-        setCursor((c) => ({ ...c, price: c.price + nudge }));
+        const direction = event.key === "ArrowUp" ? 1 : -1;
+        setCursor((c) => {
+          const bar = barAt(series, c.bar);
+          const span = (bar?.h ?? 0) - (bar?.l ?? 0);
+          const nudge = (span || c.price * 0.01) * 0.15 * direction;
+          return { ...c, price: c.price + nudge };
+        });
         break;
       }
       case "Enter":

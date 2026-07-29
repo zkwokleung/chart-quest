@@ -1,3 +1,4 @@
+import { anchorQuality, anchorsOf, priceTolerance } from "@/lib/chart/geometry";
 import type { Level } from "../../schema";
 
 /**
@@ -38,24 +39,26 @@ export const level: Level<"annotate"> = {
   stars: [0.4, 0.7, 0.9],
   misconceptions: [
     {
-      id: "cuts-bodies",
+      id: "not-anchored-to-wicks",
+      // Uses the same helper the score uses, so the explanation and the marks can
+      // never disagree. An earlier version tested only for anchors strictly inside a
+      // body, which left a player docked 15% with nothing said about why.
       test: (attempt, level, data) => {
-        if (!attempt.drawing) return false;
-        const grade = data.length > 0;
-        return grade && attempt.drawing.shape === "trendline"
-          ? // Anchored inside the bodies rather than on the wicks.
-            [attempt.drawing.a, attempt.drawing.b].some((anchor) => {
-              const series = data[0];
-              if (!series) return false;
-              const o = series.o[anchor.bar];
-              const c = series.c[anchor.bar];
-              if (o === undefined || c === undefined) return false;
-              return anchor.price > Math.min(o, c) && anchor.price < Math.max(o, c);
-            })
-          : false;
+        const drawing = attempt.drawing;
+        const series = data[0];
+        const slice = level.data[0];
+        if (!drawing || !series || !slice) return false;
+        const tol = priceTolerance(
+          series,
+          { from: slice.from, to: slice.to },
+          level.tolerance,
+        );
+        return anchorsOf(drawing).some(
+          (anchor) => anchorQuality(anchor, series, tol) !== "wick",
+        );
       },
       message:
-        "Your line is anchored inside candle bodies. Anchor to the wicks — the lows are where sellers actually gave up, and a line through a body means price traded on both sides of it that day.",
+        "Your line is not anchored to the wicks. Put each end on a low — that is where sellers actually gave up. Resting an anchor above the low leaves the line floating in space, or cutting a body price traded on both sides of.",
     },
     {
       id: "sloping-down",

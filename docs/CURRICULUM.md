@@ -51,10 +51,14 @@ Enforced by test, not discipline: `every chapter boss uses a different SeriesId 
 | 2.1 | Click every swing high (fractal ±2 bars) | `mark-bars` |
 | 2.2 | HH/HL vs LH/LL across 4 charts | `classify` |
 | 2.3 | Draw the trendline — graded on touches, wick anchoring, zero body cuts | `annotate:trendline` |
-| 2.4 | Draw the channel | `annotate:channel` |
+| 2.4 | The other side — draw the falling resistance line | `annotate:trendline` |
 | 2.5 | Break of structure vs deviation — click the bar that actually broke it | `mark-bars` |
 | 2.6 | Ranges — bound it, then classify range vs trend | `annotate:zone` |
 | **2.B** | **BOSS (EURUSD):** mark swings → trendline → classify regime → predict 10 bars | composite |
+
+> **2.4 draws a resistance line rather than a channel.** No parallel offset catches a single high in that window — the highs fall while the lows rise, making it a contracting triangle rather than a channel. The two lines together explain the breakout that followed, which is a better lesson than a shape the data does not contain. The `channel` shape stays implemented and unit-tested for a level that needs it.
+>
+> **2.3's window is a range, not an uptrend.** Its swing highs run 9950 → 10380 → 9993 → 9589 → 9292, only 63% rising. The floor lifts while the ceiling does not, which is exactly why the support line is worth drawing — but the brief must not call it a trend, and a content-claims test enforces that.
 
 ## Ch 3 — Zones
 *unlocks: horizontal level, rectangle, measure tool*

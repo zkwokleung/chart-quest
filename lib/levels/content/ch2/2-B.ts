@@ -1,3 +1,4 @@
+import { anchorQuality, anchorsOf, priceTolerance } from "@/lib/chart/geometry";
 import { barMark } from "../../mark";
 import type { Level } from "../../schema";
 
@@ -101,6 +102,25 @@ export const level: Level<"composite"> = {
             },
             message:
               "Too short a span. Any two lows make a line; a trendline has to hold across a stretch of chart before it tells you anything.",
+          },
+          {
+            id: "boss-not-on-wicks",
+            test: (attempt, level, data) => {
+              const drawing = attempt.drawing;
+              const series = data[0];
+              const slice = level.data[0];
+              if (!drawing || !series || !slice) return false;
+              const tol = priceTolerance(
+                series,
+                { from: slice.from, to: slice.to },
+                level.tolerance,
+              );
+              return anchorsOf(drawing).some(
+                (anchor) => anchorQuality(anchor, series, tol) !== "wick",
+              );
+            },
+            message:
+              "Anchor both ends on the lows. The score counts anchor placement, so a line resting above the wicks loses marks even when its slope and touches are right.",
           },
         ],
       },
