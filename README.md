@@ -4,7 +4,9 @@
 
 An interactive game that teaches technical analysis, from "what is a candle" to composing and backtesting your own trading strategy. No account, no signup, no server — progress is saved in your browser's `localStorage`.
 
-**Status:** pre-alpha. Nothing is playable yet. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
+**Live:** <https://chart-quest.vercel.app>
+
+**Status:** pre-alpha. The app shell, persistence and chart engine are in place; no level is playable yet. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
 
 ---
 
@@ -58,7 +60,7 @@ Ten chapters, ~73 levels. Full breakdown in [`docs/CURRICULUM.md`](docs/CURRICUL
 
 ## Quick start
 
-> Not yet scaffolded — this section becomes accurate at the end of Milestone 1.
+Requires Node 24 or newer.
 
 ```bash
 git clone git@github.com:zkwokleung/chart-quest.git
@@ -67,16 +69,28 @@ npm install
 npm run dev          # http://localhost:3000
 ```
 
-Useful scripts:
+`/dev/chart` renders the fixture series and reports the bar index under the pointer — useful for working on anything coordinate-related.
+
+Scripts:
 
 ```bash
 npm run typecheck    # tsc --noEmit
 npm run lint         # eslint . --quiet
 npm test             # vitest run
-npm run test:e2e     # playwright test
-npm run data:fetch   # rebuild public/data from upstream sources
-npm run data:rates   # recompute per-asset base rates
+npm run test:e2e     # playwright test (runs against a production build)
+npm run build        # production build
 ```
+
+The data pipeline (`npm run data:fetch`, `npm run data:rates`) arrives in Milestone 2.
+
+### Version pinning
+
+Every dependency is pinned exactly (`save-exact=true`), because two windows in this stack are narrow:
+
+- **TypeScript is held at 6.0.3**, not 7.x — `eslint-config-next` depends on `typescript-eslint@^8`, which declares `typescript ">=4.8.4 <6.1.0"`.
+- **ESLint is held at 9.x**, not 10.x — `eslint-plugin-react` peers at `^9.7` and calls `context.getFilename()`, removed in ESLint 10.
+
+Both are worth revisiting once the plugin ecosystem catches up. Until then a minor bump silently breaks the lint gate.
 
 ## Documentation
 
