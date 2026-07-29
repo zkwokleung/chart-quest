@@ -30,7 +30,7 @@ export type ChartHandle = {
 };
 
 type ChartProps = {
-  series: Series;
+  series: Series<string>;
   range?: BarRange;
   priceScale?: PriceScale;
   showVolume?: boolean;
@@ -54,6 +54,7 @@ export function Chart({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candlesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const volumeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
 
   const { from, to } = clampRange(series, range);
 
@@ -99,7 +100,14 @@ export function Chart({
       },
       crosshair: { mode: 0 },
       rightPriceScale: { borderColor: "#2a3140" },
-      timeScale: { borderColor: "#2a3140", rightOffset: 2 },
+      timeScale: {
+        borderColor: "#2a3140",
+        rightOffset: 2,
+        // The default floor (0.5px/bar) makes fitContent unable to show a
+        // 4,600-bar series in one screen, which would hide 2008 on SPY entirely.
+        // Chapter 8 compares regimes across decades, so full history has to fit.
+        minBarSpacing: 0.04,
+      },
     });
 
     // v5 takes a series definition rather than the v4 addCandlestickSeries().
@@ -113,6 +121,22 @@ export function Chart({
       borderVisible: true,
     });
 
+    // The volume series is created here, alongside the chart, so its lifetime
+    // matches the chart's. Creating it in the data effect instead meant that on
+    // unmount React ran this effect's cleanup first — destroying the chart — and
+    // then called removeSeries on the destroyed chart, crashing the renderer.
+    if (showVolume) {
+      // Pane 1: v5 has real panes, so volume no longer needs the overlaid
+      // price-scale trick v4 required.
+      const volume = chart.addSeries(
+        HistogramSeries,
+        { priceFormat: { type: "volume" }, color: "#39424f", priceLineVisible: false },
+        1,
+      );
+      volumeRef.current = volume;
+      chart.panes()[1]?.setStretchFactor(0.25);
+    }
+
     chartRef.current = chart;
     candlesRef.current = candles;
 
@@ -123,11 +147,13 @@ export function Chart({
 
     return () => {
       resize.disconnect();
+      // Removes every series it owns; nothing else may touch them afterwards.
       chart.remove();
       chartRef.current = null;
       candlesRef.current = null;
+      volumeRef.current = null;
     };
-  }, [height]);
+  }, [height, showVolume]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -135,26 +161,9 @@ export function Chart({
     if (!chart || !candles) return;
 
     candles.setData(toCandlestickData(series, { from, to }));
-
-    let volume: ISeriesApi<"Histogram"> | null = null;
-    if (showVolume) {
-      // Pane 1: v5 has real panes, so volume no longer needs the overlaid
-      // price-scale trick v4 required.
-      volume = chart.addSeries(
-        HistogramSeries,
-        { priceFormat: { type: "volume" }, color: "#39424f", priceLineVisible: false },
-        1,
-      );
-      volume.setData(toVolumeData(series, { from, to }));
-      chart.panes()[1]?.setStretchFactor(0.25);
-    }
-
+    volumeRef.current?.setData(toVolumeData(series, { from, to }));
     chart.timeScale().fitContent();
-
-    return () => {
-      if (volume) chart.removeSeries(volume);
-    };
-  }, [series, from, to, showVolume]);
+  }, [series, from, to]);
 
   useEffect(() => {
     candlesRef.current?.priceScale().applyOptions({
