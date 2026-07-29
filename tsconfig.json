@@ -9,6 +9,9 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "noEmit": true,
+    // scripts/ runs directly under Node's type stripping, which requires explicit
+    // .ts specifiers. Safe here because we never emit.
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",

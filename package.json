@@ -2,6 +2,7 @@
   "name": "chart-quest",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "An interactive game that teaches technical analysis — learn to read any market, one level at a time.",
   "engines": {
     "node": ">=24"
@@ -16,7 +17,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "data:fetch": "node scripts/fetch-data.ts"
   },
   "dependencies": {
     "lightweight-charts": "5.2.0",
