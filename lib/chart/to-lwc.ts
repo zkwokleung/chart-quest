@@ -13,7 +13,7 @@ import { barAt, seriesLength, type BarRange, type Series } from "./types";
  */
 
 /** Clamps an authored range to what the series actually contains. */
-export function clampRange(series: Series, range?: BarRange): BarRange {
+export function clampRange(series: Series<string>, range?: BarRange): BarRange {
   const length = seriesLength(series);
   if (!range) return { from: 0, to: length };
   const from = Math.max(0, Math.min(Math.trunc(range.from), length));
@@ -26,7 +26,7 @@ function toTimestamp(ms: number): UTCTimestamp {
 }
 
 export function toCandlestickData(
-  series: Series,
+  series: Series<string>,
   range?: BarRange,
 ): CandlestickData<UTCTimestamp>[] {
   const { from, to } = clampRange(series, range);
@@ -46,7 +46,7 @@ export function toCandlestickData(
 }
 
 export function toVolumeData(
-  series: Series,
+  series: Series<string>,
   range?: BarRange,
 ): HistogramData<UTCTimestamp>[] {
   const { from, to } = clampRange(series, range);

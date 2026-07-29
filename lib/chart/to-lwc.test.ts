@@ -3,7 +3,8 @@ import { fixtureSeries } from "./fixture-series";
 import { clampRange, toCandlestickData, toVolumeData } from "./to-lwc";
 import { barAt, seriesLength, type Series } from "./types";
 
-const tiny: Series = {
+// A deliberately fake id: this fixture must never look like real spine data.
+const tiny: Series<string> = {
   id: "TINY-1d",
   tf: "1d",
   t: [1_000, 2_000, 3_000, 4_000],

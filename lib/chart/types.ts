@@ -1,6 +1,41 @@
 export type Timeframe = "1d" | "4h" | "1h" | "15m";
 
-export type SeriesId = string;
+/**
+ * Every series a level may reference.
+ *
+ * A literal union rather than `string`: levels address data by id, and across
+ * ~73 levels a typo should be a compile error rather than a runtime 404. Keep in
+ * step with `public/data/series/manifest.json` — a test asserts the two match.
+ */
+export type SeriesId =
+  | "BTCUSDT-1d"
+  | "BTCUSDT-4h"
+  | "SPY-1d"
+  | "SPY-15m"
+  | "AAPL-1d"
+  | "AAPL-1d-raw"
+  | "EURUSD-1d"
+  | "EURUSD-1h"
+  | "GC-1d"
+  | "LAKE-1d"
+  /** Synthetic, for the chart harness and unit tests. Never referenced by a level. */
+  | "FIXTURE-1d";
+
+/** Series with an out-of-sample counterpart held back for Chapter 10. */
+export type HeldBackSeriesId =
+  | "BTCUSDT-1d"
+  | "SPY-1d"
+  | "AAPL-1d"
+  | "EURUSD-1d"
+  | "GC-1d"
+  | "LAKE-1d";
+
+/**
+ * Out-of-sample ids are a separate type on purpose: a level's `series` field
+ * accepts only `SeriesId`, so no level can name one even by accident. This is the
+ * compile-time half of the holdback guarantee — see docs/DATA.md.
+ */
+export type OosSeriesId = `${HeldBackSeriesId}-oos`;
 
 /**
  * Columnar rather than an array of bar objects: JSON does not repeat the six key
@@ -10,8 +45,8 @@ export type SeriesId = string;
  * All six arrays are parallel and the same length. `t` is epoch milliseconds,
  * ascending, with no duplicates.
  */
-export type Series = {
-  id: SeriesId;
+export type Series<Id extends string = SeriesId> = {
+  id: Id;
   tf: Timeframe;
   t: number[];
   o: number[];
@@ -36,7 +71,7 @@ export type BarRange = {
   to: number;
 };
 
-export function seriesLength(series: Series): number {
+export function seriesLength(series: Series<string>): number {
   return series.t.length;
 }
 
@@ -47,7 +82,7 @@ export function seriesLength(series: Series): number {
  * pointer position, where "off the end of the data" is an ordinary outcome
  * rather than a bug.
  */
-export function barAt(series: Series, index: number): Bar | null {
+export function barAt(series: Series<string>, index: number): Bar | null {
   if (!Number.isInteger(index) || index < 0 || index >= series.t.length) {
     return null;
   }

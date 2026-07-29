@@ -8,7 +8,7 @@ import type { ManifestEntry, SeriesManifest } from "../../lib/data/manifest-type
 /** Per-file ceiling from docs/DATA.md. */
 export const MAX_GZIP_BYTES = 150 * 1024;
 
-export function encodeSeries(series: Series): string {
+export function encodeSeries(series: Series<string>): string {
   return JSON.stringify(series);
 }
 
@@ -18,7 +18,7 @@ export type EntryMeta = Pick<
 >;
 
 export function describe(
-  series: Series,
+  series: Series<string>,
   json: string,
   meta: EntryMeta,
 ): ManifestEntry {
@@ -45,7 +45,7 @@ export function describe(
 
 export async function writeSeriesFile(
   dir: string,
-  series: Series,
+  series: Series<string>,
   json: string,
 ): Promise<void> {
   await mkdir(dir, { recursive: true });

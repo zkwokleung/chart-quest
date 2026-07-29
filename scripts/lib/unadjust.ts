@@ -16,7 +16,10 @@ import type { SplitEvent } from "../sources/yahoo.ts";
  * level 1.7 is about price — inventing a volume series here would add noise the
  * player might mistake for signal.
  */
-export function unadjustSplits(series: Series, splits: SplitEvent[]): Series {
+export function unadjustSplits<Id extends string>(
+  series: Series<Id>,
+  splits: SplitEvent[],
+): Series<Id> {
   if (splits.length === 0) return { ...series };
 
   const factorAt = (t: number): number =>

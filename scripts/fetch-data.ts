@@ -1,4 +1,4 @@
-import type { Series, Timeframe } from "../lib/chart/types.ts";
+import type { OosSeriesId, Series, SeriesId, Timeframe } from "../lib/chart/types.ts";
 import type { ManifestEntry } from "../lib/data/manifest-types.ts";
 import {
   indexAtOrAfter,
@@ -36,7 +36,7 @@ const DAY = 86_400_000;
 
 type YahooSpec = {
   kind: "yahoo";
-  id: string;
+  id: SeriesId;
   symbol: string;
   tf: Timeframe;
   startMs: number;
@@ -49,7 +49,7 @@ type YahooSpec = {
 
 type BinanceSpec = {
   kind: "binance";
-  id: string;
+  id: SeriesId;
   symbol: string;
   tf: Timeframe;
   startMs: number;
@@ -166,7 +166,7 @@ const SPINE: Spec[] = [
 ];
 
 /** Level 1.7 needs only the bars around the 2020-08-31 4:1 split. */
-const RAW_SLICE = {
+const RAW_SLICE: { id: SeriesId; fromMs: number; toMs: number } = {
   id: "AAPL-1d-raw",
   fromMs: Date.UTC(2020, 5, 1),
   toMs: Date.UTC(2020, 9, 1),
@@ -179,7 +179,7 @@ const RAW_SLICE = {
 const MAX_REPAIR_RATIO = 0.1;
 
 type Fetched = {
-  series: Series;
+  series: Series<SeriesId>;
   splits: SplitEvent[];
   repaired: number;
   dropped: number;
@@ -206,11 +206,14 @@ async function fetchSpec(spec: Spec): Promise<Fetched> {
     Math.floor(cutoff / 1000),
     { id: spec.id, precision: spec.precision },
   );
-  const trim = trimAfter(series, cutoff);
+  const trim = trimAfter(withId(series, spec.id), cutoff);
   return { series: trim.series, splits, repaired, dropped: dropped + trim.trimmed };
 }
 
-async function emit(series: Series, meta: EntryMeta): Promise<ManifestEntry> {
+async function emit(
+  series: Series<SeriesId | OosSeriesId>,
+  meta: EntryMeta,
+): Promise<ManifestEntry> {
   const json = encodeSeries(series);
   const entry = describe(series, json, meta);
   if (entry.gzipBytes > MAX_GZIP_BYTES) {

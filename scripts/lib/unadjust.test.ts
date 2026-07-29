@@ -6,7 +6,7 @@ import { unadjustSplits } from "./unadjust.ts";
 const DAY = 86_400_000;
 const SPLIT_MS = Date.UTC(2020, 7, 31);
 
-function series(closes: number[], startMs = Date.UTC(2020, 7, 26)): Series {
+function series(closes: number[], startMs = Date.UTC(2020, 7, 26)): Series<string> {
   return {
     id: "TEST-1d",
     tf: "1d",
@@ -47,7 +47,7 @@ describe("unadjustSplits", () => {
     // The dates are explicit because the split fell after a weekend — Friday
     // 08-28 to Monday 08-31 — and consecutive-day fixtures would put both bars
     // on the same side of it.
-    const input: Series = {
+    const input: Series<string> = {
       id: "AAPL-1d",
       tf: "1d",
       t: [Date.UTC(2020, 7, 28), Date.UTC(2020, 7, 31)],

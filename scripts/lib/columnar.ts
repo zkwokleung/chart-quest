@@ -15,7 +15,7 @@ export type RawBar = {
 export type Precision = 2 | 5;
 
 export type BuildResult = {
-  series: Series;
+  series: Series<string>;
   /** Bars dropped for null/duplicate/non-finite values. */
   dropped: number;
   /** Bars whose high or low was widened to contain their own open and close. */
@@ -133,7 +133,7 @@ export type ValidationOptions = {
  * point at which a problem is cheap to fix.
  */
 export function validateSeries(
-  series: Series,
+  series: Series<string>,
   { minBars, precision }: ValidationOptions,
 ): void {
   const n = series.t.length;
@@ -201,7 +201,10 @@ export function validateSeries(
  * commit a partial candle — wrong to teach from, and it would silently fill in on
  * any later refetch.
  */
-export function trimAfter(series: Series, ms: number): { series: Series; trimmed: number } {
+export function trimAfter<Id extends string>(
+  series: Series<Id>,
+  ms: number,
+): { series: Series<Id>; trimmed: number } {
   let end = series.t.length;
   while (end > 0) {
     const t = series.t[end - 1];
@@ -214,7 +217,11 @@ export function trimAfter(series: Series, ms: number): { series: Series; trimmed
   };
 }
 
-export function sliceSeries(series: Series, from: number, to: number): Series {
+export function sliceSeries<Id extends string>(
+  series: Series<Id>,
+  from: number,
+  to: number,
+): Series<Id> {
   return {
     id: series.id,
     tf: series.tf,
@@ -227,12 +234,12 @@ export function sliceSeries(series: Series, from: number, to: number): Series {
   };
 }
 
-export function withId(series: Series, id: string): Series {
+export function withId<Id extends string>(series: Series<string>, id: Id): Series<Id> {
   return { ...series, id };
 }
 
 /** Index of the first bar at or after `ms`, or `t.length` if there is none. */
-export function indexAtOrAfter(series: Series, ms: number): number {
+export function indexAtOrAfter(series: Series<string>, ms: number): number {
   const i = series.t.findIndex((t) => t >= ms);
   return i === -1 ? series.t.length : i;
 }
