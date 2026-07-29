@@ -1,4 +1,4 @@
-import type { KindModule } from "../../kinds";
+import type { KindModule } from "../../kind-module";
 import { Classify } from "./Classify";
 import { gradeClassify, perfectClassify } from "./grade";
 

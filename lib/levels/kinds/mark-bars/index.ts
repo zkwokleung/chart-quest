@@ -1,4 +1,4 @@
-import type { KindModule } from "../../kinds";
+import type { KindModule } from "../../kind-module";
 import { gradeMarkBars, perfectMarkBars } from "./grade";
 import { MarkBars } from "./MarkBars";
 

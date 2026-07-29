@@ -5,7 +5,7 @@ import type { ChartHandle } from "@/components/chart/Chart";
 import { SliceChart } from "@/components/level/SliceChart";
 import { xToBarIndex } from "@/lib/chart/coords";
 import { barAt, type Series } from "@/lib/chart/types";
-import type { KindProps } from "@/lib/levels/kinds";
+import type { KindProps } from "@/lib/levels/kind-module";
 import { barIndexOf, barMark } from "@/lib/levels/mark";
 import type { Mark } from "@/lib/levels/schema";
 import { CandleAnatomy } from "./CandleAnatomy";

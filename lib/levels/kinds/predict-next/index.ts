@@ -1,4 +1,4 @@
-import type { KindModule } from "../../kinds";
+import type { KindModule } from "../../kind-module";
 import { gradePredictNext, perfectPredictNext } from "./grade";
 import { PredictNext } from "./PredictNext";
 

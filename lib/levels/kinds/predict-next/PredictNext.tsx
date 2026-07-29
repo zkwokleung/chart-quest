@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SliceChart } from "@/components/level/SliceChart";
-import type { KindProps } from "@/lib/levels/kinds";
+import type { KindProps } from "@/lib/levels/kind-module";
 import type { Direction } from "@/lib/levels/schema";
 import { actualDirection } from "./grade";
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SliceChart } from "@/components/level/SliceChart";
-import type { KindProps } from "@/lib/levels/kinds";
+import type { KindProps } from "@/lib/levels/kind-module";
 
 /**
  * A question grounded in a chart, never in prose.

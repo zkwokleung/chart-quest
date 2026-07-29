@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { barAt } from "@/lib/chart/types";
-import type { KindProps } from "@/lib/levels/kinds";
+import type { KindProps } from "@/lib/levels/kind-module";
 import { CANDLE_PARTS, partLabel, partMark } from "@/lib/levels/mark";
 import type { CandlePart, Mark } from "@/lib/levels/schema";
 
