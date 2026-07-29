@@ -3,6 +3,7 @@ import {
   anchorsOf,
   countBodyCuts,
   countTouches,
+  priceTolerance,
   slopeOf,
   type Drawing,
 } from "@/lib/chart/geometry";
@@ -63,16 +64,18 @@ export function measure(
   const slice = level.data[0];
   if (!series || !slice) return null;
 
+  // Tolerance from the level's own window; counting only across the span the
+  // player drew. Two different ranges, deliberately.
+  const window = { from: slice.from, to: slice.to };
+  const tol = priceTolerance(series, window, level.tolerance);
   const range = drawnSpan(drawing, slice);
   const { side, expectSlope } = level.config;
 
-  const touched = countTouches(drawing, series, range, level.tolerance, side);
-  const cuts = countBodyCuts(drawing, series, range, level.tolerance);
+  const touched = countTouches(drawing, series, range, tol, side);
+  const cuts = countBodyCuts(drawing, series, range, tol);
 
   const anchors = anchorsOf(drawing);
-  const onWick = anchors.filter(
-    (a) => anchorQuality(a, series, range, level.tolerance) === "wick",
-  ).length;
+  const onWick = anchors.filter((a) => anchorQuality(a, series, tol) === "wick").length;
 
   const slope = slopeOf(drawing);
   const slopeOk =
@@ -119,8 +122,13 @@ export function gradeAnnotate(
   const drawing = attempt.drawing;
   const stats = measure(drawing, level, data);
   const span = drawnSpan(drawing, slice);
-  const touched = countTouches(drawing, series, span, level.tolerance, level.config.side);
-  const cuts = countBodyCuts(drawing, series, span, level.tolerance);
+  const tol = priceTolerance(
+    series,
+    { from: slice.from, to: slice.to },
+    level.tolerance,
+  );
+  const touched = countTouches(drawing, series, span, tol, level.config.side);
+  const cuts = countBodyCuts(drawing, series, span, tol);
 
   const overlay = {
     kind: "drawing" as const,

@@ -32,13 +32,18 @@ export type Tolerance = {
  * A fraction of the visible range rather than an absolute amount or an ATR
  * multiple: it is scale-free, so the same level config works on Bitcoin at 60,000
  * and EURUSD at 1.09.
+ *
+ * Callers must pass the *level's* window, never the span a player happened to draw.
+ * Deriving it from the drawn span made tolerance shrink as a line got shorter, so
+ * two identical lines scored differently depending on how far apart their anchors
+ * were — and the researched reference for level 2.4 lost touches it visibly had.
  */
 export function priceTolerance(
   series: Series<string>,
-  range: BarRange,
+  window: BarRange,
   tolerance: Tolerance,
 ): number {
-  return rangeSpan(series, range) * tolerance.priceFracOfRange;
+  return rangeSpan(series, window) * tolerance.priceFracOfRange;
 }
 
 export function rangeSpan(series: Series<string>, range: BarRange): number {
@@ -97,10 +102,9 @@ export function countTouches(
   drawing: Drawing,
   series: Series<string>,
   range: BarRange,
-  tolerance: Tolerance,
+  tol: number,
   side: Side,
 ): number[] {
-  const tol = priceTolerance(series, range, tolerance);
   const touched: number[] = [];
 
   for (let i = range.from; i < range.to; i += 1) {
@@ -145,9 +149,8 @@ export function countBodyCuts(
   drawing: Drawing,
   series: Series<string>,
   range: BarRange,
-  tolerance: Tolerance,
+  tol: number,
 ): number[] {
-  const tol = priceTolerance(series, range, tolerance);
   const cuts: number[] = [];
 
   for (let i = range.from; i < range.to; i += 1) {
@@ -185,10 +188,9 @@ export function countClosesBeyond(
   drawing: Drawing,
   series: Series<string>,
   range: BarRange,
-  tolerance: Tolerance,
+  tol: number,
   side: Side,
 ): number[] {
-  const tol = priceTolerance(series, range, tolerance);
   const beyond: number[] = [];
 
   for (let i = range.from; i < range.to; i += 1) {
@@ -215,12 +217,10 @@ export type AnchorQuality = "wick" | "body" | "off";
 export function anchorQuality(
   anchor: Anchor,
   series: Series<string>,
-  range: BarRange,
-  tolerance: Tolerance,
+  tol: number,
 ): AnchorQuality {
   const bar = barAt(series, anchor.bar);
   if (!bar) return "off";
-  const tol = priceTolerance(series, range, tolerance);
 
   if (
     Math.abs(anchor.price - bar.h) <= tol ||

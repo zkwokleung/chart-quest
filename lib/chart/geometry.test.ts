@@ -14,6 +14,8 @@ import {
 import type { BarRange, Series } from "./types";
 
 const TOL: Tolerance = { priceFracOfRange: 0.02, barSlop: 1 };
+/** 2% of the 15-point span of `risingLows`. */
+const PRICE_TOL = 0.3;
 
 /**
  * Ten bars whose lows sit exactly on the line price = 100 + i, so a trendline
@@ -45,7 +47,15 @@ describe("rangeSpan and priceTolerance", () => {
   it("scales tolerance by the visible range, not by absolute price", () => {
     // Scale-free is the point: the same config has to work on BTC at 60,000 and
     // EURUSD at 1.09.
-    expect(priceTolerance(risingLows(), RANGE, TOL)).toBeCloseTo(0.3, 5);
+    expect(priceTolerance(risingLows(), RANGE, TOL)).toBeCloseTo(PRICE_TOL, 5);
+  });
+
+  it("is derived from the level's window, never from a drawn span", () => {
+    // A narrower window yields a smaller tolerance, which is why the caller must
+    // pass the level's window: deriving it from what the player drew made two
+    // identical lines score differently by anchor spacing.
+    const narrow = priceTolerance(risingLows(), { from: 0, to: 3 }, TOL);
+    expect(narrow).toBeLessThan(priceTolerance(risingLows(), RANGE, TOL));
   });
 
   it("is zero for an empty range rather than NaN", () => {
@@ -113,7 +123,7 @@ describe("countTouches", () => {
   };
 
   it("counts every bar whose low sits on a support line", () => {
-    expect(countTouches(onTheLows, series, RANGE, TOL, "support")).toHaveLength(10);
+    expect(countTouches(onTheLows, series, RANGE, PRICE_TOL, "support")).toHaveLength(10);
   });
 
   it("counts nothing when the line is far from price", () => {
@@ -122,13 +132,13 @@ describe("countTouches", () => {
       a: { bar: 0, price: 50 },
       b: { bar: 9, price: 59 },
     };
-    expect(countTouches(adrift, series, RANGE, TOL, "support")).toHaveLength(0);
+    expect(countTouches(adrift, series, RANGE, PRICE_TOL, "support")).toHaveLength(0);
   });
 
   it("ignores lows when asked about resistance", () => {
     // A support line scored by highs would let a line drawn through the middle of
     // the data count every bar.
-    expect(countTouches(onTheLows, series, RANGE, TOL, "resistance")).toHaveLength(0);
+    expect(countTouches(onTheLows, series, RANGE, PRICE_TOL, "resistance")).toHaveLength(0);
   });
 
   it("counts highs for a resistance line", () => {
@@ -137,7 +147,7 @@ describe("countTouches", () => {
       a: { bar: 0, price: 106 },
       b: { bar: 9, price: 115 },
     };
-    expect(countTouches(onTheHighs, series, RANGE, TOL, "resistance")).toHaveLength(10);
+    expect(countTouches(onTheHighs, series, RANGE, PRICE_TOL, "resistance")).toHaveLength(10);
   });
 
   it("counts touches on either rail of a channel", () => {
@@ -147,12 +157,12 @@ describe("countTouches", () => {
       b: { bar: 9, price: 109 },
       offset: 6,
     };
-    expect(countTouches(channel, series, RANGE, TOL, "both")).toHaveLength(10);
+    expect(countTouches(channel, series, RANGE, PRICE_TOL, "both")).toHaveLength(10);
   });
 
   it("counts touches on both bounds of a zone", () => {
     const zone: Drawing = { shape: "zone", top: 115, bottom: 100 };
-    const hits = countTouches(zone, series, RANGE, TOL, "both");
+    const hits = countTouches(zone, series, RANGE, PRICE_TOL, "both");
     // Bar 0's low is 100 and bar 9's high is 115.
     expect(hits).toContain(0);
     expect(hits).toContain(9);
@@ -168,7 +178,7 @@ describe("countBodyCuts", () => {
       a: { bar: 0, price: 100 },
       b: { bar: 9, price: 109 },
     };
-    expect(countBodyCuts(support, series, RANGE, TOL)).toHaveLength(0);
+    expect(countBodyCuts(support, series, RANGE, PRICE_TOL)).toHaveLength(0);
   });
 
   it("finds a cut for every bar a mid-body line passes through", () => {
@@ -178,7 +188,7 @@ describe("countBodyCuts", () => {
       a: { bar: 0, price: 103 },
       b: { bar: 9, price: 112 },
     };
-    expect(countBodyCuts(through, series, RANGE, TOL)).toHaveLength(10);
+    expect(countBodyCuts(through, series, RANGE, PRICE_TOL)).toHaveLength(10);
   });
 
   it("does not count a line grazing a body edge", () => {
@@ -189,12 +199,12 @@ describe("countBodyCuts", () => {
       a: { bar: 0, price: 102 },
       b: { bar: 9, price: 111 },
     };
-    expect(countBodyCuts(onOpens, series, RANGE, TOL)).toHaveLength(0);
+    expect(countBodyCuts(onOpens, series, RANGE, PRICE_TOL)).toHaveLength(0);
   });
 
   it("checks both bounds of a zone", () => {
     const zone: Drawing = { shape: "zone", top: 103, bottom: 50 };
-    expect(countBodyCuts(zone, series, RANGE, TOL).length).toBeGreaterThan(0);
+    expect(countBodyCuts(zone, series, RANGE, PRICE_TOL).length).toBeGreaterThan(0);
   });
 });
 
@@ -207,7 +217,7 @@ describe("countClosesBeyond", () => {
       a: { bar: 0, price: 100 },
       b: { bar: 9, price: 109 },
     };
-    expect(countClosesBeyond(support, series, RANGE, TOL, "support")).toHaveLength(0);
+    expect(countClosesBeyond(support, series, RANGE, PRICE_TOL, "support")).toHaveLength(0);
   });
 
   it("finds an invalidation where a close is under a support line", () => {
@@ -216,7 +226,7 @@ describe("countClosesBeyond", () => {
       a: { bar: 0, price: 110 },
       b: { bar: 9, price: 119 },
     };
-    expect(countClosesBeyond(tooHigh, series, RANGE, TOL, "support")).toHaveLength(10);
+    expect(countClosesBeyond(tooHigh, series, RANGE, PRICE_TOL, "support")).toHaveLength(10);
   });
 
   it("uses the opposite comparison for resistance", () => {
@@ -225,7 +235,7 @@ describe("countClosesBeyond", () => {
       a: { bar: 0, price: 90 },
       b: { bar: 9, price: 99 },
     };
-    expect(countClosesBeyond(tooLow, series, RANGE, TOL, "resistance")).toHaveLength(10);
+    expect(countClosesBeyond(tooLow, series, RANGE, PRICE_TOL, "resistance")).toHaveLength(10);
   });
 });
 
@@ -233,20 +243,20 @@ describe("anchorQuality", () => {
   const series = risingLows();
 
   it("recognises an anchor on a wick", () => {
-    expect(anchorQuality({ bar: 3, price: 103 }, series, RANGE, TOL)).toBe("wick");
-    expect(anchorQuality({ bar: 3, price: 109 }, series, RANGE, TOL)).toBe("wick");
+    expect(anchorQuality({ bar: 3, price: 103 }, series, PRICE_TOL)).toBe("wick");
+    expect(anchorQuality({ bar: 3, price: 109 }, series, PRICE_TOL)).toBe("wick");
   });
 
   it("recognises an anchor inside the body", () => {
     // The commonest beginner error, and the one worth naming.
-    expect(anchorQuality({ bar: 3, price: 106 }, series, RANGE, TOL)).toBe("body");
+    expect(anchorQuality({ bar: 3, price: 106 }, series, PRICE_TOL)).toBe("body");
   });
 
   it("recognises an anchor nowhere near the bar", () => {
-    expect(anchorQuality({ bar: 3, price: 200 }, series, RANGE, TOL)).toBe("off");
+    expect(anchorQuality({ bar: 3, price: 200 }, series, PRICE_TOL)).toBe("off");
   });
 
   it("reports off for a bar outside the series", () => {
-    expect(anchorQuality({ bar: 999, price: 100 }, series, RANGE, TOL)).toBe("off");
+    expect(anchorQuality({ bar: 999, price: 100 }, series, PRICE_TOL)).toBe("off");
   });
 });
