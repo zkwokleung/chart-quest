@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+/* Dark-first: charts are read against dark backgrounds by convention, and the
+   candle/level colours below are tuned for that. Light theme is deferred to the
+   design pass. */
+@theme {
+  --color-bg: oklch(0.16 0.012 260);
+  --color-surface: oklch(0.21 0.014 260);
+  --color-border: oklch(0.32 0.016 260);
+  --color-fg: oklch(0.95 0.006 260);
+  --color-muted: oklch(0.68 0.014 260);
+  --color-accent: oklch(0.74 0.14 195);
+
+  /* Direction is also encoded by candle fill (hollow = down), so these never
+     carry the meaning alone. See docs/CONVENTIONS.md a11y rules. */
+  --color-up: oklch(0.72 0.16 165);
+  --color-down: oklch(0.65 0.19 25);
+
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
