@@ -21,12 +21,22 @@ export type SeriesId =
   /** Synthetic, for the chart harness and unit tests. Never referenced by a level. */
   | "FIXTURE-1d";
 
-/** Series with an out-of-sample counterpart held back for Chapter 10. */
+/**
+ * Series with an out-of-sample counterpart held back for Chapter 10.
+ *
+ * Includes the 4h and 1h series, not only the dailies: Chapter 10 lets the player
+ * choose their timeframe, and leaving one unsplit would let them skip
+ * out-of-sample validation simply by picking it. Only SPY-15m is exempt — a
+ * 60-day snapshot cannot spare a meaningful holdback, and it exists for the
+ * session levels rather than for strategy building.
+ */
 export type HeldBackSeriesId =
   | "BTCUSDT-1d"
+  | "BTCUSDT-4h"
   | "SPY-1d"
   | "AAPL-1d"
   | "EURUSD-1d"
+  | "EURUSD-1h"
   | "GC-1d"
   | "LAKE-1d";
 

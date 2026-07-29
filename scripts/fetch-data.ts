@@ -1,4 +1,10 @@
-import type { OosSeriesId, Series, SeriesId, Timeframe } from "../lib/chart/types.ts";
+import type {
+  HeldBackSeriesId,
+  OosSeriesId,
+  Series,
+  SeriesId,
+  Timeframe,
+} from "../lib/chart/types.ts";
 import type { ManifestEntry } from "../lib/data/manifest-types.ts";
 import {
   indexAtOrAfter,
@@ -19,8 +25,10 @@ import {
 import { fetchBinance } from "./sources/binance.ts";
 import { fetchYahoo, type SplitEvent } from "./sources/yahoo.ts";
 import { unadjustSplits } from "./lib/unadjust.ts";
+import { HELD_BACK, splitOos } from "./lib/split-oos.ts";
 
 const SERIES_DIR = "public/data/series";
+const OOS_DIR = "public/data/oos";
 
 /**
  * Pinned so a re-run produces the same daily bars rather than silently extending
@@ -211,6 +219,7 @@ async function fetchSpec(spec: Spec): Promise<Fetched> {
 }
 
 async function emit(
+  dir: string,
   series: Series<SeriesId | OosSeriesId>,
   meta: EntryMeta,
 ): Promise<ManifestEntry> {
@@ -222,12 +231,25 @@ async function emit(
         `${MAX_GZIP_BYTES / 1024} KB ceiling — narrow its window`,
     );
   }
-  await writeSeriesFile(SERIES_DIR, series, json);
+  await writeSeriesFile(dir, series, json);
   return entry;
+}
+
+function report(entry: ManifestEntry, suffix = ""): void {
+  console.log(
+    `${String(entry.bars).padStart(6)} bars  ` +
+      `${(entry.gzipBytes / 1024).toFixed(1).padStart(6)} KB gz  ` +
+      `${entry.firstBar.slice(0, 10)} → ${entry.lastBar.slice(0, 10)}${suffix}`,
+  );
+}
+
+function isHeldBack(id: SeriesId): id is HeldBackSeriesId {
+  return (HELD_BACK as readonly string[]).includes(id);
 }
 
 async function main(): Promise<void> {
   const entries: ManifestEntry[] = [];
+  const oosEntries: ManifestEntry[] = [];
 
   for (const spec of SPINE) {
     process.stdout.write(`${spec.id.padEnd(14)} `);
@@ -244,22 +266,41 @@ async function main(): Promise<void> {
       );
     }
 
-    const entry = await emit(series, {
+    const meta: EntryMeta = {
       source: spec.kind,
       snapshot: spec.kind === "yahoo" ? spec.snapshot === true : false,
       reconstructed: false,
       repairedBars: repaired,
       droppedBars: dropped,
       note: spec.note,
-    });
-    entries.push(entry);
-    console.log(
-      `${String(entry.bars).padStart(6)} bars  ` +
-        `${(entry.gzipBytes / 1024).toFixed(1).padStart(6)} KB gz  ` +
-        `${entry.firstBar.slice(0, 10)} → ${entry.lastBar.slice(0, 10)}` +
-        (repaired > 0 ? `  repaired ${repaired}` : "") +
-        (dropped > 0 ? `  dropped ${dropped}` : ""),
-    );
+    };
+    const quality =
+      (repaired > 0 ? `  repaired ${repaired}` : "") +
+      (dropped > 0 ? `  dropped ${dropped}` : "");
+
+    // The teaching file is genuinely truncated rather than shipping the full
+    // series alongside a duplicate tail — otherwise chapters 1-9 could reach the
+    // bars Chapter 10 validates against.
+    if (isHeldBack(spec.id)) {
+      const { inSample, outOfSample } = splitOos(withId(series, spec.id));
+      const entry = await emit(SERIES_DIR, inSample, meta);
+      entries.push(entry);
+      report(entry, quality);
+
+      process.stdout.write(`${outOfSample.id.padEnd(14)} `);
+      const oosEntry = await emit(OOS_DIR, outOfSample, {
+        ...meta,
+        repairedBars: 0,
+        droppedBars: 0,
+        note: `Held back for Chapter 10. Not referenced by any level in chapters 1-9.`,
+      });
+      oosEntries.push(oosEntry);
+      report(oosEntry, "  held back");
+    } else {
+      const entry = await emit(SERIES_DIR, series, meta);
+      entries.push(entry);
+      report(entry, quality);
+    }
 
     if (spec.id === "AAPL-1d") {
       process.stdout.write(`${RAW_SLICE.id.padEnd(14)} `);
@@ -270,7 +311,7 @@ async function main(): Promise<void> {
         splits,
       );
       validateSeries(raw, { minBars: 60, precision: 2 });
-      const rawEntry = await emit(raw, {
+      const rawEntry = await emit(SERIES_DIR, raw, {
         source: "derived",
         snapshot: false,
         reconstructed: true,
@@ -281,19 +322,18 @@ async function main(): Promise<void> {
           "adjusted prices, so the phantom drop is rebuilt from its split events.",
       });
       entries.push(rawEntry);
-      console.log(
-        `${String(rawEntry.bars).padStart(6)} bars  ` +
-          `${(rawEntry.gzipBytes / 1024).toFixed(1).padStart(6)} KB gz  ` +
-          `reconstructed from ${splits.length} split(s)`,
-      );
+      report(rawEntry, `  reconstructed from ${splits.length} split(s)`);
     }
   }
 
   await writeManifest(SERIES_DIR, entries);
+  await writeManifest(OOS_DIR, oosEntries);
 
-  const totalGz = entries.reduce((sum, e) => sum + e.gzipBytes, 0);
+  const gz = (list: ManifestEntry[]) =>
+    (list.reduce((sum, e) => sum + e.gzipBytes, 0) / 1024).toFixed(1);
   console.log(
-    `\n${entries.length} series · ${(totalGz / 1024).toFixed(1)} KB gzipped total`,
+    `\n${entries.length} series · ${gz(entries)} KB gzipped` +
+      `\n${oosEntries.length} held back · ${gz(oosEntries)} KB gzipped`,
   );
 }
 
