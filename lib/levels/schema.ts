@@ -27,11 +27,6 @@ export type LevelSlice = {
   to: number;
   /** Short label when a level shows several charts at once (MTF, multi-asset). */
   label?: string;
-  /**
-   * Bars visible before the reveal, counted from `from`. `predict-next` only:
-   * everything at or after this index is hidden until the player commits.
-   */
-  reveal?: number;
 };
 
 /**
@@ -97,9 +92,11 @@ export type KindConfig = {
   };
   "predict-next": {
     prompt: string;
-    /** One slice per round. Each carries its own `reveal`. */
-    rounds: LevelSlice[];
-    /** Bars revealed after each call. */
+    /**
+     * Bars revealed past the end of a slice once the call is committed. Each
+     * entry in `level.data` is one round, so the rounds are not listed twice —
+     * which also means the authoring guards' bar-range checks cover them.
+     */
     horizon: number;
   };
 };
