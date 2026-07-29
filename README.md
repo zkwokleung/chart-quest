@@ -69,7 +69,7 @@ npm install
 npm run dev          # http://localhost:3000
 ```
 
-`/dev/chart` renders the fixture series and reports the bar index under the pointer — useful for working on anything coordinate-related.
+`/dev/chart` renders any committed series and reports the bar index under the pointer — useful for working on anything coordinate-related.
 
 Scripts:
 
@@ -79,9 +79,16 @@ npm run lint         # eslint . --quiet
 npm test             # vitest run
 npm run test:e2e     # playwright test (runs against a production build)
 npm run build        # production build
+npm run data:fetch   # rebuild public/data from upstream sources
 ```
 
-The data pipeline (`npm run data:fetch`, `npm run data:rates`) arrives in Milestone 2.
+### Data
+
+Ten committed series spanning crypto, an index, a single stock, FX, gold and an illiquid small-cap — chosen so they disagree with each other. Daily history starts 2005, reaching four distinct market regimes. The app never calls a market API at runtime.
+
+`npm run data:fetch` regenerates them, but **the committed JSON is the source of truth** — levels address it by bar index, so a series is immutable once committed. Two series are rolling-window snapshots that upstream cannot serve twice identically. Read [`docs/DATA.md`](docs/DATA.md) before touching anything under `public/data/`.
+
+`npm run data:rates` (per-asset base rates) arrives with the indicators milestone.
 
 ### Version pinning
 

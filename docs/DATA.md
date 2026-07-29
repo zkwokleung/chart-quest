@@ -8,25 +8,68 @@ All price data is **bundled and committed** as static JSON. The app never calls 
 
 Chosen so the series **disagree with each other**. Contrast is the pedagogical point — a spine of six crypto pairs would teach nothing that a single pair doesn't.
 
-| Series | Timeframes | Character it exists to teach |
-|---|---|---|
-| `BTCUSDT` | 1d, 4h | Crypto · 24/7 · high vol · trend-persistent |
-| `SPY` | 1d, 15m | Index · sessions · gaps · short-term mean-reverting |
-| `AAPL` | 1d | Single stock · earnings gaps · splits |
-| `EURUSD` | 1d, 1h | FX · 24/5 · low vol · ranging · Sunday gap |
-| `GC` (gold) | 1d | Commodity · different volatility regime |
-| *illiquid small-cap (TBD)* | 1d | Spread and slippage |
+Sizes are actual gzip measurements. The in-sample column is what chapters 1–9 teach on; the rest is held back for Chapter 10 (see below).
 
-Target: **< 150 KB gzipped per series+timeframe**, ~1.5–2 MB committed total. Each file is lazy-loaded only by the levels that reference it, so page-load cost is per-level, not total.
+| Series | Range (in-sample) | Bars | gz | Character it exists to teach |
+|---|---|---|---|---|
+| `BTCUSDT-1d` | 2017-08 → 2025-03 | 2,778 | 57 KB | Crypto · 24/7 · high vol · trend-persistent |
+| `BTCUSDT-4h` | 2021-01 → 2023-07 | 5,586 | 112 KB | Crypto intraday |
+| `SPY-1d` | 2005-01 → 2023-04 | 4,612 | 78 KB | Index · sessions · gaps · short-term mean-reverting |
+| `SPY-15m` | rolling 60 days | 1,041 | 16 KB | Intraday sessions and the opening range |
+| `AAPL-1d` | 2005-01 → 2023-04 | 4,612 | 69 KB | Single stock · earnings gaps · split-adjusted |
+| `AAPL-1d-raw` | 2020-06 → 2020-09 | 86 | 2 KB | Level 1.7 only — see *Reconstruction* |
+| `EURUSD-1d` | 2005-01 → 2023-05 | 4,755 | 64 KB | FX · 24/5 · low vol · ranging · Sunday gap |
+| `EURUSD-1h` | rolling 500 days | 7,163 | 64 KB | FX intraday |
+| `GC-1d` | 2005-01 → 2023-05 | 4,607 | 63 KB | Commodity · different volatility regime |
+| `LAKE-1d` | 2005-01 → 2023-04 | 4,612 | 54 KB | Illiquid small-cap · spread and slippage |
+
+**579 KB gzipped in-sample, plus 102 KB held back.** Ceiling is **150 KB gzipped per file**; the fetch script refuses to write anything larger. Files are lazy-loaded only by the levels that reference them, so page-load cost is per-level, not total.
+
+`LAKE` (Lakeland Industries) is the illiquid series: median volume around 18,500 shares, plus a real 2014 news spike that puts thin-book, gap and slippage risk on one chart.
+
+Daily history starts **2005** so four distinct regimes are reachable — the 2007–09 crisis, 2015–16, COVID, and the 2022 rate-hike grind — and so base-rate samples are large enough for their confidence intervals to mean something.
 
 ## Sources
 
-- **Crypto** — Binance public klines REST endpoint. No API key required.
-- **Equities, FX, gold** — Stooq or Yahoo historical CSV.
+- **Crypto** — Binance public klines. No API key. Paginates at 1,000 bars; BTCUSDT starts 2017-08-17 on every interval, which is the exchange's own launch.
+- **Everything else** — Yahoo `v8/finance/chart`, which needs a browser-like `User-Agent`.
 
-**Equities must be split- and dividend-adjusted**, with one deliberate exception: ship a *raw, unadjusted* AAPL slice around the Aug 2020 4:1 split so level 1.7 has a genuine artifact to expose. An unadjusted chart there shows a −75% single-day crash that never happened — that's the level.
+Rerun with `npm run data:fetch`. Raw responses cache under `.data-cache/` (gitignored) so development runs don't re-hit upstream. The committed JSON is the source of truth for the app.
 
-Rerun with `npm run data:fetch`. The script writes normalized output; the committed JSON is the source of truth for the app.
+> **Stooq is not usable.** It sits behind a JavaScript proof-of-work challenge, so it cannot be fetched from a script. Yahoo is therefore the sole source for eight of the ten series. That is a real single point of failure, and it is acceptable only because the data is fetched once and committed — a later upstream change cannot break the app.
+
+### What Yahoo will and will not give you
+
+| Constraint | Consequence |
+|---|---|
+| `quote.close` is **split-adjusted but not dividend-adjusted**; `adjclose` is both | We keep `quote` so OHLC stays internally consistent. Mixing an adjusted close with an unadjusted high produces bars whose close sits outside their own range. |
+| Daily reaches **2005 via `period1`** (the `range=10y` shorthand is what caps at ten years) | The 2007–09 crisis is reachable. |
+| Intraday is **hard-capped**: 15m and 30m at ~60 days, 1h at ~730. It errors rather than truncating | `SPY-15m` and `EURUSD-1h` are rolling-window **snapshots**. |
+| The **current in-progress bar** is appended regardless of `period2` | Trimmed client-side. Committing a partial candle would teach from an incomplete bar and silently fill in on any refetch. |
+| **Delisted tickers 404** | No real dead-ticker series is obtainable, so boss 9.B's survivorship-bias report is constructed content — which it always was, being a `spot-the-flaw` on a report rather than on data. |
+
+### Snapshots
+
+`SPY-15m` and `EURUSD-1h` are marked `"snapshot": true` in the manifest. Upstream only serves a rolling window for those intervals, so **re-running the fetch produces different bars**. They are pinned by hash and are not expected to match a later refetch. Everything else is reproducible from the pinned end date in `scripts/fetch-data.ts`.
+
+### Reconstruction: the unadjusted AAPL slice
+
+No free source publishes genuinely unadjusted prices. Level 1.7 ("The split trap") needs them, because the lesson is that a chart can show a catastrophic drop that never happened. So `AAPL-1d-raw` is **derived**, not fetched: each bar is multiplied by the product of every split dated after it, inverting the adjustment using the split events Yahoo reports alongside the prices.
+
+The result is the artifact the level wants — the same two sessions read as:
+
+```
+AAPL-1d-raw   2020-08-28  499.24  →  2020-08-31  129.04    −74.2%
+AAPL-1d       2020-08-28  124.81  →  2020-08-31  129.04     +3.4%
+```
+
+Both readings come from the same trades. Volume is deliberately not rescaled: it adjusts in the opposite direction and the level is about price, so a synthetic volume series would add noise a player might mistake for signal.
+
+### Repaired bars
+
+Roughly **5% of gold bars and 2% of EURUSD bars** arrive with a range that excludes their own open or close, because the extremes and the endpoints come from different feeds. Rendering one produces a candle whose wick does not contain its body — actively wrong in Chapter 1, whose subject is candle anatomy.
+
+The fetch script widens the offending extreme to contain the endpoint. That is the minimal correction and invents no price that was not already in the bar. Counts are recorded per series in the manifest as `repairedBars` rather than swallowed, and above **10%** the fetch fails outright on the grounds that the feed is broken rather than quirky.
 
 ---
 
@@ -45,9 +88,13 @@ type Series = {
 };
 ```
 
-Columnar is roughly **4× smaller** than an array of `{t,o,h,l,c,v}` objects because JSON key names aren't repeated per bar. Prices are rounded to sane per-instrument precision before writing — full float precision on a 1500-bar series is wasted bytes.
+Columnar is roughly **4× smaller** than an array of `{t,o,h,l,c,v}` objects because JSON key names aren't repeated per bar. Prices are rounded per instrument before writing — 2 decimals for equities, crypto and gold, 5 for FX. Full float precision across 5,000 bars is wasted bytes.
 
-`public/data/manifest.json` lists every available series, its timeframe, bar count, date range, and byte size.
+Rounding is validated: if it flattened a series so that most bars had a high equal to their low, the fetch fails with a "precision too coarse" error rather than committing a chart with no wicks.
+
+`SeriesId` in `lib/chart/types.ts` is a literal union, not `string` — a typo in a level's `series` field should be a compile error rather than a runtime 404. A test asserts the union and `public/data/series/manifest.json` list exactly the same ids.
+
+`manifest.json` records per series: timeframe, bar count, first and last bar, raw and gzipped size, `sha256`, source, and the `snapshot` / `reconstructed` / `repairedBars` / `droppedBars` flags.
 
 ---
 
@@ -67,15 +114,35 @@ Indices are stable only because series files are **immutable once committed**.
 
 ## Out-of-sample holdback
 
-`public/data/oos/` holds the slices used by Ch 10.6 and 10.7.
+`public/data/oos/` holds the slices used by Ch 10.6 and 10.7 — the most recent **15%** of each series.
 
-**No level in chapters 1–9 may reference a file under `oos/`.** This is what makes the out-of-sample validation genuine rather than theatre — if the player has already practiced on those bars, the final chapter proves nothing.
+**No level in chapters 1–9 may reference a file under `oos/`.** This is what makes the out-of-sample validation genuine rather than theatre — if the player has already practised on those bars, the final chapter proves nothing.
 
-Enforced by test: `no level in Ch 1–9 references a series under public/data/oos/`.
+The in-sample files are **genuinely truncated**, not shipped whole alongside a duplicate tail. Verified disjoint: every holdback starts strictly after its counterpart ends, with zero shared timestamps.
+
+Why 15%: a daily strategy trades roughly monthly, so clearing 10.6's "at least 30 trades" bar wants about three years, and 15% of a 2005–2026 series is ~815 bars. `splitOos` refuses anything under 200 bars rather than shipping a holdback too small to say anything.
+
+**Everything is held back except `SPY-15m`.** That includes `BTCUSDT-4h` and `EURUSD-1h`, because Chapter 10 lets the player choose their timeframe — leaving a series unsplit would let them skip out-of-sample validation simply by picking it. `SPY-15m` is the exception: a 60-day snapshot has no room to spare, and it exists for the session levels rather than for strategy building.
+
+Three layers keep the holdback separate:
+
+1. **Type** — `OosSeriesId` is a distinct type. A level's `series` field accepts only `SeriesId`, so no level can name one even by accident.
+2. **Module** — `lib/data/load-oos.ts` is separate from the ordinary loader and should be imported by nothing outside Chapter 10.
+3. **Manifest** — `oos/manifest.json` is absent from the one the ordinary loader reads, and a test asserts no `-oos` id appears in the main manifest.
+
+The level-content scan (`no level in Ch 1–9 references an oos series`) belongs with the authoring guards, since levels do not exist yet to scan.
+
+## Integrity guard
+
+`lib/data/integrity.test.ts` checks the committed files against the manifest: hashes, bar counts, first and last bar, column alignment, strictly increasing timestamps, every bar's range containing its own open and close, the size ceiling, and the absence of any `-oos` id from the main manifest. Verified by tampering with a single close price — three independent checks caught it.
+
+**What it cannot catch:** a deliberate refetch that shifts history *and* updates the manifest in the same commit. That surfaces as a manifest diff in review, which is why the manifest is committed. Verifying committed data against upstream needs the network and can never pass for the snapshot series, so it stays a manual step rather than a CI job.
 
 ---
 
 ## Base rates
+
+*Not built yet — `compute-base-rates.ts` needs the pattern detectors from `lib/ta/`, so it lands with the indicators milestone.*
 
 `scripts/compute-base-rates.ts` scans the spine for each pattern definition and emits measured forward-return statistics **per asset**:
 
@@ -103,8 +170,11 @@ Three rules for this file:
 
 ## Open data decisions
 
-Tracked as issues, resolved during Milestones 1–2:
+**Resolved:**
 
-- Which illiquid small-cap for the spread/slippage lesson, and whether free adjusted history for it is reliable enough to commit.
-- Exact date ranges per series — drives bundle size and how many distinct regimes Ch 8.5 can show.
-- Whether free ES futures data is obtainable at acceptable quality for level 7.3, or whether the futures case uses a documented synthetic contract spec layered over the SPY series instead.
+- *Illiquid small-cap* → `LAKE`. Full 2005–2026 history, median volume ~18,500 shares, plus a real 2014 news spike.
+- *Date ranges* → daily from 2005, giving four distinct regimes. Intraday is whatever upstream allows (see the caps table).
+
+**Still open:**
+
+- Whether free ES futures data is obtainable at acceptable quality for level 7.3, or whether the futures case uses a documented synthetic contract spec layered over the SPY series instead. Nothing in the data pipeline depends on this — `InstrumentSpec` arrives with the risk milestone.
