@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { LevelPlayer } from "@/components/level/LevelPlayer";
 import { CHAPTERS, levelIds } from "@/lib/levels/chapters";
 import { getLevel } from "@/lib/levels/registry";
@@ -35,29 +34,13 @@ export default async function LevelPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const level = getLevel(id);
-  const chapter = id.split("-")[0] ?? "1";
 
+  // Only the id crosses the boundary. Levels hold misconception test functions,
+  // which React cannot serialize — and need not, since the client imports the
+  // level registry directly.
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">
-      {level ? (
-        <LevelPlayer level={level} />
-      ) : (
-        <>
-          <nav>
-            <Link
-              href={`/chapter/${chapter}`}
-              className="text-sm text-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-accent"
-            >
-              ← Chapter {chapter}
-            </Link>
-          </nav>
-          <h1 className="text-2xl font-semibold tracking-tight">Level {id}</h1>
-          <p className="max-w-prose text-muted">
-            Not authored yet. This chapter arrives in a later milestone.
-          </p>
-        </>
-      )}
+      <LevelPlayer levelId={id} />
     </main>
   );
 }

@@ -1,0 +1,204 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import type { Series } from "@/lib/chart/types";
+import type { SeriesManifest } from "@/lib/data/manifest-types";
+import { allLevels } from "./registry";
+import { gradeAny, perfectAttemptFor } from "./kinds";
+import type { AnyLevel } from "./schema";
+
+/**
+ * Guards that run over every authored level.
+ *
+ * Content authors satisfy these rather than writing them, which is what makes
+ * ~73 levels tractable: an authoring mistake fails here instead of surfacing as
+ * an unwinnable level a player gets stuck on.
+ */
+
+const SERIES_DIR = "public/data/series";
+
+const manifest = JSON.parse(
+  readFileSync(join(SERIES_DIR, "manifest.json"), "utf8"),
+) as SeriesManifest;
+
+const barsById = new Map(manifest.series.map((e) => [e.id, e.bars]));
+
+const seriesCache = new Map<string, Series<string>>();
+function loadCommitted(id: string): Series<string> {
+  const cached = seriesCache.get(id);
+  if (cached) return cached;
+  const series = JSON.parse(
+    readFileSync(join(SERIES_DIR, `${id}.json`), "utf8"),
+  ) as Series<string>;
+  seriesCache.set(id, series);
+  return series;
+}
+
+const LEVELS = allLevels();
+
+/**
+ * Chapter 1 is deliberately exempt from the boss-asset rule.
+ *
+ * docs/CURRICULUM.md specifies its levels as "BTC, SPY, EURUSD, mixed by design"
+ * and its boss as "all three", so Chapter 1 cannot satisfy a difference rule and
+ * the guard would fail on correct content. From Chapter 2 the rule means
+ * something: a boss on a fresh asset is what proves the skill transferred.
+ */
+const BOSS_ASSET_RULE_FROM_CHAPTER = 2;
+
+describe("authored levels", () => {
+  it("there is at least one, or these guards are vacuous", () => {
+    expect(LEVELS.length).toBeGreaterThan(0);
+  });
+});
+
+describe.each(LEVELS.map((l) => [l.id, l] as const))("%s", (_id, level) => {
+  const data = level.data.map((slice) => loadCommitted(slice.series));
+
+  it("scores three stars for a perfect attempt", () => {
+    // Proves the level is *winnable*: the grader can reach three stars, the
+    // thresholds are not set above what a correct answer scores, and the tolerance
+    // admits the target.
+    //
+    // It does NOT prove the target is the right answer. `perfectAttempt` is derived
+    // from the target, so a target naming the wrong bar still passes — the check is
+    // self-consistent by construction. Whether a claim is *true* is checked against
+    // the data in content-claims.test.ts.
+    const grade = gradeAny(level, perfectAttemptFor(level, data), data);
+    expect(grade.stars).toBe(3);
+  });
+
+  it("authors at least two misconceptions", () => {
+    expect(level.misconceptions.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("gives every misconception a unique id and a non-trivial message", () => {
+    const ids = level.misconceptions.map((m) => m.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const m of level.misconceptions) {
+      expect(m.message.length).toBeGreaterThan(20);
+    }
+  });
+
+  it("has ascending star thresholds inside (0, 1]", () => {
+    const [a, b, c] = level.stars;
+    expect(a).toBeGreaterThan(0);
+    expect(a).toBeLessThanOrEqual(b);
+    expect(b).toBeLessThanOrEqual(c);
+    expect(c).toBeLessThanOrEqual(1);
+  });
+
+  it("names only series that are committed", () => {
+    for (const slice of level.data) {
+      expect(barsById.has(slice.series)).toBe(true);
+    }
+  });
+
+  it("keeps every bar range inside the series", () => {
+    for (const slice of level.data) {
+      const bars = barsById.get(slice.series) ?? 0;
+      expect(slice.from).toBeGreaterThanOrEqual(0);
+      expect(slice.to).toBeGreaterThan(slice.from);
+      expect(slice.to).toBeLessThanOrEqual(bars);
+    }
+  });
+
+  it("never references out-of-sample data", () => {
+    // The runtime half of the holdback guarantee. OosSeriesId already makes this
+    // a compile error, but a cast or a future loosening would slip past that.
+    for (const slice of level.data) {
+      expect(slice.series.endsWith("-oos")).toBe(false);
+    }
+  });
+
+  it("declares a chapter matching its id", () => {
+    expect(level.chapter).toBe(Number(level.id.split("-")[0]));
+  });
+
+  it("quotes no unmeasured percentage in its brief", () => {
+    // A figure in a brief must come from the data. Inventing one in a product
+    // whose selling point is measured base rates would be self-defeating, so any
+    // percentage has to be checkable against the slice the level shows.
+    const percentages = level.brief.match(/\d+(\.\d+)?%/g) ?? [];
+    for (const raw of percentages) {
+      const claimed = Number(raw.replace("%", ""));
+      const matches = level.data.some((slice) => {
+        const series = loadCommitted(slice.series);
+        for (let i = slice.from; i < slice.to; i += 1) {
+          const o = series.o[i];
+          const h = series.h[i];
+          const l = series.l[i];
+          const c = series.c[i];
+          if (o === undefined || h === undefined || l === undefined || c === undefined) {
+            continue;
+          }
+          const previousClose = i > 0 ? series.c[i - 1] : undefined;
+
+          // The four ways a brief legitimately quotes a percentage: how far a bar
+          // travelled, how far it closed from its open, how far it closed from the
+          // previous close, and how far it opened away from it (a gap).
+          const candidates = [
+            ((h - l) / c) * 100,
+            Math.abs(((c - o) / o) * 100),
+            ...(previousClose === undefined
+              ? []
+              : [
+                  Math.abs(((c - previousClose) / previousClose) * 100),
+                  Math.abs(((o - previousClose) / previousClose) * 100),
+                ]),
+          ];
+
+          if (candidates.some((value) => Math.abs(value - claimed) < 1)) return true;
+        }
+        return false;
+      });
+      expect(
+        matches,
+        `brief claims ${raw} but no bar in the level's slices shows it`,
+      ).toBe(true);
+    }
+  });
+});
+
+describe("chapter-level rules", () => {
+  const byChapter = new Map<number, AnyLevel[]>();
+  for (const level of LEVELS) {
+    byChapter.set(level.chapter, [...(byChapter.get(level.chapter) ?? []), level]);
+  }
+
+  it("runs each boss on an asset its chapter did not teach on", () => {
+    for (const [chapter, levels] of byChapter) {
+      if (chapter < BOSS_ASSET_RULE_FROM_CHAPTER) continue;
+      const boss = levels.find((l) => l.id.endsWith("-B"));
+      if (!boss) continue;
+
+      const taught = new Set(
+        levels
+          .filter((l) => l !== boss)
+          .flatMap((l) => l.data.map((s) => s.series)),
+      );
+      for (const slice of boss.data) {
+        expect(
+          taught.has(slice.series),
+          `chapter ${chapter} boss uses ${slice.series}, which its levels already taught on`,
+        ).toBe(false);
+      }
+    }
+  });
+
+  it("uses the reconstructed AAPL series in exactly one level", () => {
+    // AAPL-1d-raw is deliberately misleading — split-unadjusted prices showing a
+    // crash that never happened. It exists to be exposed once; teaching from it
+    // anywhere else would be teaching from a known falsehood.
+    const users = LEVELS.filter((l) =>
+      l.data.some((s) => s.series === "AAPL-1d-raw"),
+    );
+    if (users.length === 0) return;
+    expect(users.map((l) => l.id)).toHaveLength(1);
+  });
+
+  it("declares each level id only once", () => {
+    const ids = LEVELS.map((l) => l.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});

@@ -9,7 +9,7 @@ import { loadSeries } from "@/lib/data/load-series";
 import { getChapter, levelIds } from "@/lib/levels/chapters";
 import type { Grade } from "@/lib/levels/grade";
 import { componentFor, gradeAny } from "@/lib/levels/kinds";
-import { isAuthored } from "@/lib/levels/registry";
+import { getLevel, isAuthored } from "@/lib/levels/registry";
 import type { AnyLevel, Attempt, LevelKind } from "@/lib/levels/schema";
 import { useGameStore } from "@/lib/store/game";
 import { useHydrated } from "@/lib/store/use-hydrated";
@@ -17,11 +17,40 @@ import { useHydrated } from "@/lib/store/use-hydrated";
 /**
  * Runs one level.
  *
+ * Takes an id rather than a level, and resolves it from the registry here on the
+ * client. Levels carry misconception `test` functions, and functions cannot cross
+ * the server/client boundary — but they also never need to: level content is
+ * static code the client can import directly.
+ *
  * Dispatches through the kind registry and contains no kind-specific logic. That
  * rule is what keeps ~73 levels from becoming ~73 components — if a branch on
  * `level.kind` ever appears here, the abstraction has failed.
  */
-export function LevelPlayer({ level }: { level: AnyLevel }) {
+export function LevelPlayer({ levelId }: { levelId: string }) {
+  const level = getLevel(levelId);
+  if (!level) return <NotAuthored levelId={levelId} />;
+  return <Player level={level} />;
+}
+
+function NotAuthored({ levelId }: { levelId: string }) {
+  const chapter = levelId.split("-")[0] ?? "1";
+  return (
+    <>
+      <Link
+        href={`/chapter/${chapter}`}
+        className="text-sm text-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-accent"
+      >
+        ← Chapter {chapter}
+      </Link>
+      <h1 className="text-2xl font-semibold tracking-tight">Level {levelId}</h1>
+      <p className="max-w-prose text-muted">
+        Not authored yet. This chapter arrives in a later milestone.
+      </p>
+    </>
+  );
+}
+
+function Player({ level }: { level: AnyLevel }) {
   const hydrated = useHydrated();
   const recordAttempt = useGameStore((s) => s.recordAttempt);
   const recordPrediction = useGameStore((s) => s.recordPrediction);

@@ -18,6 +18,10 @@ const eslintConfig = defineConfig([
       "lib/levels/kinds/**/grade.ts",
       "lib/levels/content/**/*.ts",
     ],
+    ignores: [
+      // Tests are not shipped content; comparing timestamps in one is fine.
+      "**/*.test.ts",
+    ],
     rules: {
       "no-restricted-globals": [
         "error",
