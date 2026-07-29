@@ -1,3 +1,4 @@
+import type { Drawing, Side } from "@/lib/chart/geometry";
 import type { Series, SeriesId } from "@/lib/chart/types";
 import type { LevelId, YAxisMode } from "@/lib/store/schema";
 
@@ -8,7 +9,7 @@ import type { LevelId, YAxisMode } from "@/lib/store/schema";
  * of these kinds. The union grows one milestone at a time; a new kind needs a
  * level the existing ones genuinely cannot express. See docs/ARCHITECTURE.md.
  */
-export type LevelKind = "classify" | "mark-bars" | "predict-next";
+export type LevelKind = "classify" | "mark-bars" | "predict-next" | "annotate";
 
 export type ToolId =
   | "crosshair"
@@ -58,6 +59,7 @@ export type Attempt = {
     calls: (Direction | null)[];
     hintsUsed: number;
   };
+  annotate: { kind: "annotate"; drawing: Drawing | null; hintsUsed: number };
 };
 
 export type Direction = "up" | "down";
@@ -90,6 +92,19 @@ export type KindConfig = {
     /** How many marks the player is expected to make; shown in the UI. */
     expected?: number;
   };
+  annotate: {
+    prompt: string;
+    shape: Drawing["shape"];
+    /** Which extreme the drawing should track. */
+    side: Side;
+    /** Touches needed for full marks on that component of the score. */
+    requiredTouches: number;
+    /**
+     * Expected sign of the slope. A support line sloping the wrong way is not the
+     * thing asked for, so this is a gate rather than a scored component.
+     */
+    expectSlope?: "up" | "down" | "flat";
+  };
   "predict-next": {
     prompt: string;
     /**
@@ -105,6 +120,13 @@ export type KindTarget = {
   classify: { correct: string[] };
   "mark-bars": { marks: Mark[] };
   /**
+   * Shown as the correction and used by `perfectAttempt`, never to score. A
+   * trendline is not unique — BTC-1d alone holds 182 lines with three or more
+   * touches and no body cuts — so grading against one author's line would mark
+   * most correct answers wrong.
+   */
+  annotate: { reference: Drawing };
+  /**
    * `predict-next` has no authored target — the answer is whatever the data did.
    * The grader derives it, which is also why the kind cannot be brute-forced by
    * reading the level file.
@@ -116,6 +138,11 @@ export type KindTolerance = {
   classify: Record<string, never>;
   "mark-bars": {
     /** A mark this many bars either side of a target still counts. */
+    barSlop: number;
+  };
+  annotate: {
+    /** Price tolerance as a fraction of the window's high-low span. Scale-free. */
+    priceFracOfRange: number;
     barSlop: number;
   };
   "predict-next": Record<string, never>;
@@ -153,7 +180,14 @@ export type OverlaySpec =
   | { kind: "none" }
   | { kind: "marks"; missed: Mark[]; wrong: Mark[]; hit: Mark[] }
   | { kind: "options"; correct: string[]; chosen: string[] }
-  | { kind: "calls"; actual: Direction[]; called: (Direction | null)[] };
+  | { kind: "calls"; actual: Direction[]; called: (Direction | null)[] }
+  | {
+      kind: "drawing";
+      drawn: Drawing | null;
+      reference: Drawing;
+      touched: number[];
+      cuts: number[];
+    };
 
 export type StarThresholds = [number, number, number];
 
@@ -182,7 +216,8 @@ export type Level<K extends LevelKind = LevelKind> = {
 export type AnyLevel =
   | Level<"classify">
   | Level<"mark-bars">
-  | Level<"predict-next">;
+  | Level<"predict-next">
+  | Level<"annotate">;
 
 export function isKind<K extends LevelKind>(
   level: AnyLevel,

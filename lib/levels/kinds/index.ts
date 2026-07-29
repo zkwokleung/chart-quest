@@ -3,6 +3,7 @@ import type { Series } from "@/lib/chart/types";
 import type { Grade } from "../grade";
 import type { KindModule } from "../kind-module";
 import type { AnyLevel, Attempt, LevelKind } from "../schema";
+import { annotateKind } from "./annotate";
 import { classifyKind } from "./classify";
 import { markBarsKind } from "./mark-bars";
 import { predictNextKind } from "./predict-next";
@@ -15,6 +16,7 @@ import { predictNextKind } from "./predict-next";
  * the rule that keeps ~73 levels from becoming ~73 components.
  */
 export const KINDS = {
+  annotate: annotateKind,
   classify: classifyKind,
   "mark-bars": markBarsKind,
   "predict-next": predictNextKind,

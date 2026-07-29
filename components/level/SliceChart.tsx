@@ -3,6 +3,7 @@
 import { useState, type Ref } from "react";
 import { Chart, type ChartHandle, type PriceScale } from "@/components/chart/Chart";
 import type { Series } from "@/lib/chart/types";
+import type { RenderableDrawing } from "@/components/chart/DrawingPrimitive";
 import type { LevelSlice } from "@/lib/levels/schema";
 
 type SliceChartProps = {
@@ -14,6 +15,7 @@ type SliceChartProps = {
   showVolume?: boolean;
   /** Offers a log/linear toggle. Level 1.5 is entirely about this. */
   scaleToggle?: boolean;
+  drawings?: RenderableDrawing[];
   ref?: Ref<ChartHandle | null>;
 };
 
@@ -31,6 +33,7 @@ export function SliceChart({
   height = 380,
   showVolume = true,
   scaleToggle = false,
+  drawings,
   ref,
 }: SliceChartProps) {
   const [priceScale, setPriceScale] = useState<PriceScale>("linear");
@@ -61,6 +64,7 @@ export function SliceChart({
           priceScale={priceScale}
           showVolume={showVolume}
           height={height}
+          drawings={drawings}
         />
       </div>
     </figure>
