@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import type { ChartHandle } from "@/components/chart/Chart";
 import type { RenderableDrawing } from "@/components/chart/DrawingPrimitive";
 import { SliceChart } from "@/components/level/SliceChart";
+import { anchorsNeeded, buildDrawing } from "@/lib/chart/build-drawing";
 import { xToBarIndex, yToPrice } from "@/lib/chart/coords";
 import type { Anchor, Drawing } from "@/lib/chart/geometry";
 import { barAt, type Series } from "@/lib/chart/types";
@@ -38,12 +39,15 @@ export function Annotate({
 
   const committed = grade !== null;
   const { shape } = level.config;
+  const needed = anchorsNeeded(shape);
 
   const drawing = committed ? (attempt?.drawing ?? null) : buildDrawing(shape, anchors);
 
   function place(anchor: Anchor) {
     if (committed) return;
-    setAnchors((current) => (current.length >= 2 ? [anchor] : [...current, anchor]));
+    // Starts over once the shape is complete, so a further click means "move it"
+    // rather than appending a point the shape has no use for.
+    setAnchors((current) => (current.length >= needed ? [anchor] : [...current, anchor]));
   }
 
   function pointerAnchor(event: React.PointerEvent<HTMLDivElement>): Anchor | null {
@@ -128,7 +132,6 @@ export function Annotate({
   if (drawing) drawings.push({ drawing, role: committed ? "hit" : "attempt" });
   if (overlay) drawings.push({ drawing: overlay.reference, role: "reference" });
 
-  const needed = shape === "zone" || shape === "level" ? 2 : 2;
   const ready = anchors.length >= needed;
 
   return (
@@ -161,8 +164,8 @@ export function Annotate({
 
       <p className="font-mono text-xs text-muted" aria-live="polite">
         {committed
-          ? describeGrade(overlay)
-          : `${anchors.length} of ${needed} points · cursor ${describe(series, cursor)}`}
+          ? describeGrade(overlay, shape)
+          : `${anchors.length} of ${needed} ${needed === 1 ? "point" : "points"} · cursor ${describe(series, cursor)}`}
       </p>
 
       {committed ? null : (
@@ -202,38 +205,13 @@ function describe(series: Series<string>, anchor: Anchor): string {
   return `bar ${anchor.bar}, ${date}, ${anchor.price.toFixed(2)}`;
 }
 
-function describeGrade(overlay: { touched: number[]; cuts: number[] } | null): string {
+function describeGrade(
+  overlay: { touched: number[]; cuts: number[] } | null,
+  shape: Drawing["shape"],
+): string {
   if (!overlay) return "";
-  return `${overlay.touched.length} touches · ${overlay.cuts.length} body cuts · dashed line is one correct answer`;
-}
-
-/**
- * Two anchors become whichever shape the level asked for.
- *
- * A zone and a level care only about price, so they read it off the anchors and
- * ignore the bars — which lets one interaction serve all four shapes.
- */
-function buildDrawing(shape: Drawing["shape"], anchors: Anchor[]): Drawing | null {
-  const [a, b] = anchors;
-  if (!a) return null;
-
-  if (shape === "level") return { shape: "level", price: a.price };
-  if (!b) return null;
-
-  switch (shape) {
-    case "trendline":
-      return a.bar <= b.bar
-        ? { shape: "trendline", a, b }
-        : { shape: "trendline", a: b, b: a };
-    case "zone":
-      return {
-        shape: "zone",
-        top: Math.max(a.price, b.price),
-        bottom: Math.min(a.price, b.price),
-      };
-    case "channel":
-      return a.bar <= b.bar
-        ? { shape: "channel", a, b, offset: 0 }
-        : { shape: "channel", a: b, b: a, offset: 0 };
-  }
+  // A zone's reference renders as a box, so calling it a line was wrong on the
+  // one zone level that already ships.
+  const reference = shape === "zone" ? "dashed box" : "dashed line";
+  return `${overlay.touched.length} touches · ${overlay.cuts.length} body cuts · ${reference} is one correct answer`;
 }
