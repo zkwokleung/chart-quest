@@ -43,6 +43,15 @@ export type JournalEntry = {
   reason: string;
   tags: string[];
   at: string;
+  /**
+   * Which attempt at this level the trade was, counting from one.
+   *
+   * Optional, so saves written before M5 stay valid and `SCHEMA_VERSION` need not
+   * move. Every committed trade is logged, retries included — a journal that hides
+   * them is not a record — and this is what lets Ch 9.6 tell a considered trade
+   * from the fifth try at the same level.
+   */
+  attemptNo?: number;
 };
 
 export type SavedStrategy = {

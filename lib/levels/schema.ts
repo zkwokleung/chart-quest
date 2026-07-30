@@ -1,5 +1,6 @@
 import type { Drawing, Side } from "@/lib/chart/geometry";
 import type { Series, SeriesId } from "@/lib/chart/types";
+import type { TradeSide } from "@/lib/trade/simulate";
 import type { LevelId, YAxisMode } from "@/lib/store/schema";
 
 /**
@@ -14,17 +15,14 @@ export type LevelKind =
   | "mark-bars"
   | "predict-next"
   | "annotate"
+  | "replay-trade"
   | "composite";
 
 /** Every kind a composite step may use. Nesting is excluded by construction. */
 export type StepKind = Exclude<LevelKind, "composite">;
 
 export type ToolId =
-  | "crosshair"
-  | "timeframe"
-  | "log-scale"
-  | "y-axis-mode"
-  | "measure";
+  "crosshair" | "timeframe" | "log-scale" | "y-axis-mode" | "measure";
 
 /**
  * A window into a committed series, addressed by bar index rather than date.
@@ -44,7 +42,8 @@ export type LevelSlice = {
  * `open` and `close` are the two edges of the body; the wicks are the lines above
  * and below it.
  */
-export type CandlePart = "upper-wick" | "lower-wick" | "body" | "open" | "close";
+export type CandlePart =
+  "upper-wick" | "lower-wick" | "body" | "open" | "close";
 
 /**
  * A thing the player marked.
@@ -68,6 +67,22 @@ export type Attempt = {
     hintsUsed: number;
   };
   annotate: { kind: "annotate"; drawing: Drawing | null; hintsUsed: number };
+  "replay-trade": {
+    kind: "replay-trade";
+    /** The bar the player committed on. Entry fills at its close. */
+    entryBar: number;
+    stop: number;
+    target: number | null;
+    /**
+     * Why they took it, in their own words.
+     *
+     * Required by the config rather than optional decoration: Chapter 9.6 analyses
+     * the player's stated reasons against their own results, and it can only do
+     * that if the very first trade carried one.
+     */
+    reason: string;
+    hintsUsed: number;
+  };
   composite: {
     kind: "composite";
     /** One entry per step, in order. `null` until that step is committed. */
@@ -104,7 +119,11 @@ export type AnyStep =
   | CompositeStep<"classify">
   | CompositeStep<"mark-bars">
   | CompositeStep<"predict-next">
-  | CompositeStep<"annotate">;
+  | CompositeStep<"annotate">
+  // Boss 4.B scans an unseen chart and then trades it, and 5.B and 6.B do the
+  // same with indicators and two timeframes. Including it here is what makes
+  // those levels authoring rather than building.
+  | CompositeStep<"replay-trade">;
 
 export type Direction = "up" | "down";
 
@@ -162,6 +181,24 @@ export type KindConfig = {
      */
     horizon: number;
   };
+  "replay-trade": {
+    prompt: string;
+    side: TradeSide;
+    /** Bars shown before the player may act. The rest arrive through the replay. */
+    primeBars: number;
+    /** Bars the replay will advance before forcing an exit at the close. */
+    maxBars: number;
+    /**
+     * Reward:risk needed for full marks on that component of the plan score.
+     *
+     * A gate on quality of thinking, not on outcome: a 1:1 trade needs to be right
+     * more than half the time to break even, which is the arithmetic Chapter 7
+     * makes explicit and Chapter 3 introduces.
+     */
+    minRR: number;
+    /** ATR period for judging whether a stop has room. */
+    atrPeriod?: number;
+  };
 };
 
 export type KindTarget = {
@@ -174,6 +211,14 @@ export type KindTarget = {
    * most correct answers wrong.
    */
   annotate: { reference: Drawing };
+  /**
+   * The structure the stop is meant to respect, and the bar the setup triggers on.
+   *
+   * There is no "correct" stop price: many are defensible, so the plan is scored on
+   * whether it sits beyond this structure with sensible room, not on matching a
+   * number. Same reasoning as the trendline reference in `annotate`.
+   */
+  "replay-trade": { structure: Drawing; triggerBar: number };
   /** A composite's answers live on its steps. */
   composite: Record<string, never>;
   /**
@@ -197,6 +242,21 @@ export type KindTolerance = {
   };
   composite: Record<string, never>;
   "predict-next": Record<string, never>;
+  "replay-trade": {
+    /**
+     * How much room a stop needs beyond the structure, and how much is too much,
+     * both in ATR multiples.
+     *
+     * In ATR rather than price because the same numbers then work on Bitcoin at
+     * 25,000 and the euro at 1.09. A stop with less than `minAtr` of room is
+     * sitting where everyone else's is; more than `maxAtr` is not a stop, it is a
+     * hope.
+     */
+    minAtr: number;
+    maxAtr: number;
+    /** Bars either side of the trigger that still count as entering on time. */
+    barSlop: number;
+  };
 };
 
 /**
@@ -209,7 +269,11 @@ export type KindTolerance = {
  * `test` must be pure — the authoring guards depend on it being deterministic.
  */
 export type Misconception<K extends LevelKind = LevelKind> = DiagnosisEntry & {
-  test: (attempt: Attempt[K], level: Level<K>, data: Series<string>[]) => boolean;
+  test: (
+    attempt: Attempt[K],
+    level: Level<K>,
+    data: Series<string>[],
+  ) => boolean;
 };
 
 /**
@@ -238,6 +302,20 @@ export type OverlaySpec =
       reference: Drawing;
       touched: number[];
       cuts: number[];
+    }
+  | {
+      kind: "trade";
+      structure: Drawing;
+      entryPrice: number;
+      stop: number;
+      target: number | null;
+      exitBar: number;
+      exitPrice: number;
+      /** Risk-multiples achieved. Journalled from here, so the record and the
+          score card cannot disagree about what happened. */
+      r: number;
+      /** How the trade ended, in the words the score card uses. */
+      outcome: string;
     };
 
 export type StarThresholds = [number, number, number];
@@ -269,6 +347,7 @@ export type AnyLevel =
   | Level<"mark-bars">
   | Level<"predict-next">
   | Level<"annotate">
+  | Level<"replay-trade">
   | Level<"composite">;
 
 export function isKind<K extends LevelKind>(

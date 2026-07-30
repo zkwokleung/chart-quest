@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { Series } from "@/lib/chart/types";
 import type { ReplayFeed } from "@/lib/replay/feed";
+import type { JournalEntry } from "@/lib/store/schema";
 import type { Grade } from "./grade";
 import type { Attempt, Level, LevelKind } from "./schema";
 
@@ -74,4 +75,28 @@ export type KindModule<K extends LevelKind> = {
    * drift from the number the grader uses.
    */
   revealHorizon?: (level: Level<K>) => number;
+  /**
+   * Bars visible before the player acts, when that is fewer than the whole slice.
+   *
+   * Only a replay needs this. A trade level's slice must *contain* its outcome so
+   * the grader can score it, which means the initial reveal has to be held back
+   * deliberately — otherwise authoring the level hands over the answer.
+   */
+  primedBars?: (level: Level<K>) => number;
+  /**
+   * A journal entry for this attempt, or null if this kind does not produce one.
+   *
+   * Declared by the kind so `LevelPlayer` never branches on `level.kind` to decide
+   * what to persist. Chapter 7 adds several more trade levels and Chapter 9 reads
+   * the whole record back, so "which kinds write trades" has to be a property of
+   * the kinds rather than a growing condition in the player.
+   */
+  journalEntry?: (
+    attempt: Attempt[K],
+    level: Level<K>,
+    grade: Grade,
+  ) => JournalDraft | null;
 };
+
+/** A journal entry before the store stamps its id, timestamp and attempt number. */
+export type JournalDraft = Omit<JournalEntry, "id" | "at" | "attemptNo">;

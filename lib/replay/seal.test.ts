@@ -2,10 +2,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Series } from "@/lib/chart/types";
-import { KINDS, revealHorizonFor } from "@/lib/levels/kinds";
+import { KINDS, primedBarsFor, revealHorizonFor } from "@/lib/levels/kinds";
 import { ALL_LEVELS } from "@/lib/levels/content";
 import type { AnyLevel } from "@/lib/levels/schema";
-import { createFeed, type ReplayFeed } from "./feed";
+import { createLevelFeed, type ReplayFeed } from "./feed";
 
 /**
  * Proves the look-ahead seal over every authored level.
@@ -49,12 +49,9 @@ function series(id: string): Series<string> {
 /** Builds feeds the way LevelPlayer does, so the test covers the real wiring. */
 function feedsFor(level: AnyLevel): ReplayFeed[] {
   const horizon = revealHorizonFor(level);
+  const primedBars = primedBarsFor(level) ?? undefined;
   return level.data.map((slice) =>
-    createFeed(
-      series(slice.series),
-      { from: slice.from, to: slice.to + horizon },
-      { primeBars: slice.to - slice.from },
-    ),
+    createLevelFeed(series(slice.series), slice, { horizon, primedBars }),
   );
 }
 

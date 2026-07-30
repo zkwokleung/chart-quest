@@ -22,7 +22,16 @@ import { farPriceAtBar, priceAtBar, type Drawing } from "@/lib/chart/geometry";
  * under concurrent rendering, where a discarded render leaves the ref inconsistent.
  */
 
-export type DrawingRole = "attempt" | "reference" | "hit" | "wrong";
+export type DrawingRole =
+  | "attempt"
+  | "reference"
+  | "hit"
+  | "wrong"
+  // A trade's three levels. Roles rather than a second renderer: entry, stop and
+  // target are horizontal lines, which this already draws.
+  | "entry"
+  | "stop"
+  | "target";
 
 export type RenderableDrawing = {
   /** Bar indices are absolute, as levels author them. */
@@ -39,13 +48,19 @@ export type DrawingCoords = {
   range: () => { from: number; to: number };
 };
 
-const STYLES: Record<DrawingRole, { color: string; width: number; dash: number[] }> = {
+const STYLES: Record<
+  DrawingRole,
+  { color: string; width: number; dash: number[] }
+> = {
   // Distinguished by dash pattern as well as colour, so the roles survive
   // colour-blindness — the same rule the candles follow.
   attempt: { color: "#5ec8d8", width: 2, dash: [] },
   reference: { color: "#9aa4b2", width: 2, dash: [7, 5] },
   hit: { color: "#3fb98e", width: 2.5, dash: [] },
   wrong: { color: "#e2603f", width: 2.5, dash: [3, 3] },
+  entry: { color: "#5ec8d8", width: 2, dash: [] },
+  stop: { color: "#e2603f", width: 2, dash: [6, 4] },
+  target: { color: "#3fb98e", width: 2, dash: [6, 4] },
 };
 
 class DrawingsRenderer implements IPrimitivePaneRenderer {

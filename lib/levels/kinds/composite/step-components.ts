@@ -7,6 +7,7 @@ import { Annotate } from "../annotate/Annotate";
 import { Classify } from "../classify/Classify";
 import { MarkBars } from "../mark-bars/MarkBars";
 import { PredictNext } from "../predict-next/PredictNext";
+import { ReplayTrade } from "../replay-trade/ReplayTrade";
 
 /**
  * Step components, imported directly for the same reason as their graders: the
@@ -17,6 +18,7 @@ const COMPONENTS = {
   classify: Classify,
   "mark-bars": MarkBars,
   "predict-next": PredictNext,
+  "replay-trade": ReplayTrade,
 } as const;
 
 export function componentForStep(
@@ -46,6 +48,17 @@ export function stepRevealHorizon(step: AnyStep): number {
   if (step.kind === "predict-next") return step.config.horizon;
   if (step.kind === "classify") return step.config.revealBars ?? 0;
   return 0;
+}
+
+/**
+ * Bars a stage starts with visible, or undefined for its whole slice.
+ *
+ * Only a trade stage holds anything back — its slice contains the outcome the
+ * grader needs, so showing all of it up front would hand over the answer. Boss 4.B
+ * onwards depends on this.
+ */
+export function stepPrimedBars(step: AnyStep): number | undefined {
+  return step.kind === "replay-trade" ? step.config.primeBars : undefined;
 }
 
 /**

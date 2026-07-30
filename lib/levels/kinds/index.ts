@@ -2,13 +2,14 @@ import type { ComponentType } from "react";
 import type { ErasedKindProps } from "./erased";
 import type { Series } from "@/lib/chart/types";
 import type { Grade } from "../grade";
-import type { KindModule } from "../kind-module";
+import type { JournalDraft, KindModule } from "../kind-module";
 import type { AnyLevel, Attempt, LevelKind } from "../schema";
 import { annotateKind } from "./annotate";
 import { compositeKind } from "./composite";
 import { classifyKind } from "./classify";
 import { markBarsKind } from "./mark-bars";
 import { predictNextKind } from "./predict-next";
+import { replayTradeKind } from "./replay-trade";
 
 /**
  * Every kind, keyed by name.
@@ -23,6 +24,7 @@ export const KINDS = {
   classify: classifyKind,
   "mark-bars": markBarsKind,
   "predict-next": predictNextKind,
+  "replay-trade": replayTradeKind,
 } satisfies { [K in LevelKind]: KindModule<K> };
 
 export function kindFor<K extends LevelKind>(kind: K): KindModule<K> {
@@ -47,6 +49,12 @@ type ErasedPerfect = (
   level: AnyLevel,
   data: Series<string>[],
 ) => Attempt[LevelKind];
+
+type ErasedJournal = (
+  attempt: Attempt[LevelKind],
+  level: AnyLevel,
+  grade: Grade,
+) => JournalDraft | null;
 
 /** Grades a level without the caller needing to know its kind. */
 export function gradeAny(
@@ -75,6 +83,33 @@ export function revealHorizonFor(level: AnyLevel): number {
   const horizon = KINDS[level.kind].revealHorizon as
     ((level: AnyLevel) => number) | undefined;
   return Math.max(0, Math.trunc(horizon?.(level) ?? 0));
+}
+
+/**
+ * Bars a level starts with visible, or null meaning "the whole slice".
+ *
+ * Asked of the kind for the same reason as the horizon: the level player must not
+ * have to know that a replay trade begins part-way through its own window.
+ */
+export function primedBarsFor(level: AnyLevel): number | null {
+  const primed = KINDS[level.kind].primedBars as
+    ((level: AnyLevel) => number) | undefined;
+  if (!primed) return null;
+  return Math.max(1, Math.trunc(primed(level)));
+}
+
+/**
+ * The journal entry an attempt produces, or null when the kind makes none.
+ *
+ * Erased like the grader, and for the same contravariance reason.
+ */
+export function journalEntryFor(
+  level: AnyLevel,
+  attempt: Attempt[LevelKind],
+  grade: Grade,
+): JournalDraft | null {
+  const build = KINDS[level.kind].journalEntry as ErasedJournal | undefined;
+  return build ? build(attempt, level, grade) : null;
 }
 
 /** The attempt a player who did it perfectly would submit. Used by the guards. */

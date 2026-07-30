@@ -34,9 +34,15 @@ export function gradeComposite(
       return;
     }
 
-    const grade = gradeStep(step.kind, submitted, stepAsAnyLevel(level, step), data);
+    const grade = gradeStep(
+      step.kind,
+      submitted,
+      stepAsAnyLevel(level, step),
+      data,
+    );
     weighted += grade.score * weight;
-    detail[label] = `${Math.round(grade.score * 100)}% × ${Math.round(weight * 100)}%`;
+    detail[label] =
+      `${Math.round(grade.score * 100)}% × ${Math.round(weight * 100)}%`;
 
     // Prefixed with the stage, so a player reading four explanations knows which
     // part of the boss each belongs to.

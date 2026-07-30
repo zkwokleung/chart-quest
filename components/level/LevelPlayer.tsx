@@ -8,10 +8,16 @@ import type { Series } from "@/lib/chart/types";
 import { loadSeries } from "@/lib/data/load-series";
 import { getChapter, levelIds } from "@/lib/levels/chapters";
 import type { Grade } from "@/lib/levels/grade";
-import { componentFor, gradeAny, revealHorizonFor } from "@/lib/levels/kinds";
+import {
+  componentFor,
+  gradeAny,
+  journalEntryFor,
+  primedBarsFor,
+  revealHorizonFor,
+} from "@/lib/levels/kinds";
 import { getLevel, isAuthored } from "@/lib/levels/registry";
 import type { AnyLevel, Attempt, LevelKind } from "@/lib/levels/schema";
-import { createFeed, type ReplayFeed } from "@/lib/replay/feed";
+import { createLevelFeed, type ReplayFeed } from "@/lib/replay/feed";
 import { useGameStore } from "@/lib/store/game";
 import { useHydrated } from "@/lib/store/use-hydrated";
 
@@ -55,6 +61,7 @@ function Player({ level }: { level: AnyLevel }) {
   const hydrated = useHydrated();
   const recordAttempt = useGameStore((s) => s.recordAttempt);
   const recordPrediction = useGameStore((s) => s.recordPrediction);
+  const logTrade = useGameStore((s) => s.logTrade);
 
   // The full series stays here and goes to the grader. Kind components get feeds
   // built from it, which is the only thing standing between a player and the
@@ -89,19 +96,15 @@ function Player({ level }: { level: AnyLevel }) {
   const feeds = useMemo<ReplayFeed[] | null>(() => {
     if (!data) return null;
     void feedNonce;
-    // The feed's window is wider than the visible one by the kind's reveal
-    // horizon, and primed to show only the slice. Those extra bars exist so the
-    // kind can reveal them later; until it does, they are not in `visible()`.
+    // How far a kind may reveal, and how much it starts with, are the kind's own
+    // business — asked of the registry so nothing here branches on level.kind.
     const horizon = revealHorizonFor(level);
+    const primedBars = primedBarsFor(level) ?? undefined;
     return level.data.map((slice, i) => {
       const series = data[i];
       if (!series)
         throw new Error(`${level.id}: no series loaded for slice ${i}`);
-      return createFeed(
-        series,
-        { from: slice.from, to: slice.to + horizon },
-        { primeBars: slice.to - slice.from },
-      );
+      return createLevelFeed(series, slice, { horizon, primedBars });
     });
   }, [data, level, feedNonce]);
 
@@ -114,6 +117,10 @@ function Player({ level }: { level: AnyLevel }) {
     // Some levels store the player's answer for a much later chapter to hand
     // back — the coin-flip score in 1.B is recalled in 9.2.
     if (result.detail) recordPrediction(level.id, result.detail);
+    // Asked of the kind, not decided here: kinds that produce a trade say so, and
+    // this file stays free of any branch on level.kind.
+    const trade = journalEntryFor(level, submitted, result);
+    if (trade) logTrade(trade);
   }
 
   function retry() {

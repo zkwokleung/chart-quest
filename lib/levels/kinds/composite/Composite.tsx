@@ -5,9 +5,13 @@ import { Stars } from "@/components/ui/Stars";
 import type { Grade } from "@/lib/levels/grade";
 import type { KindProps } from "@/lib/levels/kind-module";
 import type { StepAttempt } from "@/lib/levels/schema";
-import { createFeed } from "@/lib/replay/feed";
+import { createLevelFeed } from "@/lib/replay/feed";
 import { gradeStep } from "./step-graders";
-import { renderStep, stepRevealHorizon } from "./step-components";
+import {
+  renderStep,
+  stepPrimedBars,
+  stepRevealHorizon,
+} from "./step-components";
 import { stepAsAnyLevel } from "./steps";
 
 /**
@@ -50,11 +54,10 @@ export function Composite({
       (s.data ?? level.data).map((slice, i) => {
         const source = series[i];
         if (!source) return null;
-        return createFeed(
-          source,
-          { from: slice.from, to: slice.to + stepRevealHorizon(s) },
-          { primeBars: slice.to - slice.from },
-        );
+        return createLevelFeed(source, slice, {
+          horizon: stepRevealHorizon(s),
+          primedBars: stepPrimedBars(s),
+        });
       }),
     );
   }, [steps, level.data, truth]);

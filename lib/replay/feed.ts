@@ -157,6 +157,32 @@ export function fullyRevealed(
   return createFeed(series, range);
 }
 
+/**
+ * Builds the feed for one level slice.
+ *
+ * The arithmetic relating a slice to a feed window lives here and nowhere else,
+ * because three callers need it — the level player, the composite building feeds
+ * for its stages, and the seal test proving both — and a fourth interpretation of
+ * "how many bars start visible" is exactly how a look-ahead leak would get back in.
+ *
+ * `horizon` widens the window past the slice, for a kind that reveals more than it
+ * initially shows. `primedBars` shrinks the *initial* reveal, which a replay trade
+ * needs: its slice has to contain the outcome for the grader to score it, so
+ * without this the player would be handed that outcome before deciding.
+ */
+export function createLevelFeed(
+  series: Series<string>,
+  slice: BarRange,
+  options: { horizon?: number; primedBars?: number } = {},
+): ReplayFeed {
+  const span = slice.to - slice.from;
+  return createFeed(
+    series,
+    { from: slice.from, to: slice.to + (options.horizon ?? 0) },
+    { primeBars: Math.min(options.primedBars ?? span, span) },
+  );
+}
+
 function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, value));

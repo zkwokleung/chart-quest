@@ -5,6 +5,7 @@ import { gradeAnnotate, perfectAnnotate } from "../annotate/grade";
 import { gradeClassify, perfectClassify } from "../classify/grade";
 import { gradeMarkBars, perfectMarkBars } from "../mark-bars/grade";
 import { gradePredictNext, perfectPredictNext } from "../predict-next/grade";
+import { gradeReplayTrade, perfectReplayTrade } from "../replay-trade/grade";
 
 /**
  * Step graders, imported directly rather than through the kind registry.
@@ -20,6 +21,7 @@ const GRADERS = {
   classify: gradeClassify,
   "mark-bars": gradeMarkBars,
   "predict-next": gradePredictNext,
+  "replay-trade": gradeReplayTrade,
 } as const;
 
 const PERFECT = {
@@ -27,6 +29,7 @@ const PERFECT = {
   classify: perfectClassify,
   "mark-bars": perfectMarkBars,
   "predict-next": perfectPredictNext,
+  "replay-trade": perfectReplayTrade,
 } as const;
 
 type ErasedGrader = (
@@ -35,7 +38,10 @@ type ErasedGrader = (
   data: Series<string>[],
 ) => Grade;
 
-type ErasedPerfect = (level: Level<StepKind>, data: Series<string>[]) => StepAttempt;
+type ErasedPerfect = (
+  level: Level<StepKind>,
+  data: Series<string>[],
+) => StepAttempt;
 
 export function gradeStep(
   kind: StepKind,

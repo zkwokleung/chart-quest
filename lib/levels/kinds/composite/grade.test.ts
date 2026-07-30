@@ -22,8 +22,16 @@ function series(n = 30): Series<string> {
 const data = [series()];
 
 const misconceptions = [
-  { id: "a", test: () => false, message: "a placeholder explanation, long enough" },
-  { id: "b", test: () => false, message: "b placeholder explanation, long enough" },
+  {
+    id: "a",
+    test: () => false,
+    message: "a placeholder explanation, long enough",
+  },
+  {
+    id: "b",
+    test: () => false,
+    message: "b placeholder explanation, long enough",
+  },
 ];
 
 /** Four stages mirroring boss 2.B, with the free predict step down-weighted. */
@@ -99,7 +107,10 @@ function level(over: Partial<Level<"composite">> = {}): Level<"composite"> {
   };
 }
 
-function attempt(stepAttempts: (StepAttempt | null)[], hintsUsed = 0): Attempt["composite"] {
+function attempt(
+  stepAttempts: (StepAttempt | null)[],
+  hintsUsed = 0,
+): Attempt["composite"] {
   return { kind: "composite", steps: stepAttempts, hintsUsed };
 }
 
@@ -112,7 +123,9 @@ describe("weightsOf", () => {
   });
 
   it("normalises weights that do not, so a rounding slip cannot deflate a boss", () => {
-    const half = steps().map((s) => ({ ...s, weight: s.weight / 2 }) as AnyStep);
+    const half = steps().map(
+      (s) => ({ ...s, weight: s.weight / 2 }) as AnyStep,
+    );
     const normalised = weightsOf(half);
     expect(normalised.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 10);
   });
@@ -141,7 +154,12 @@ describe("gradeComposite", () => {
   it("weights each step by its share", () => {
     // Only the classify step, worth 25%.
     const grade = gradeComposite(
-      attempt([null, null, { kind: "classify", selected: ["up"], hintsUsed: 0 }, null]),
+      attempt([
+        null,
+        null,
+        { kind: "classify", selected: ["up"], hintsUsed: 0 },
+        null,
+      ]),
       lvl,
       data,
     );
@@ -203,12 +221,19 @@ describe("gradeComposite", () => {
       },
     });
     const grade = gradeComposite(
-      attempt([{ kind: "mark-bars", marks: [barMark(5)], hintsUsed: 0 }, null, null, null]),
+      attempt([
+        { kind: "mark-bars", marks: [barMark(5)], hintsUsed: 0 },
+        null,
+        null,
+        null,
+      ]),
       withDiagnosis,
       data,
     );
     const messages = grade.diagnosis.map((d) => d.message);
-    expect(messages.some((m) => m.startsWith("Mark the swing highs — "))).toBe(true);
+    expect(messages.some((m) => m.startsWith("Mark the swing highs — "))).toBe(
+      true,
+    );
   });
 
   it("reports a per-step breakdown for the score card", () => {
