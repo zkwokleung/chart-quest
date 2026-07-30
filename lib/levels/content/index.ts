@@ -14,6 +14,13 @@ import { level as ch2_4 } from "./ch2/2-4";
 import { level as ch2_5 } from "./ch2/2-5";
 import { level as ch2_6 } from "./ch2/2-6";
 import { level as ch2_B } from "./ch2/2-B";
+import { level as ch3_1 } from "./ch3/3-1";
+import { level as ch3_2 } from "./ch3/3-2";
+import { level as ch3_3 } from "./ch3/3-3";
+import { level as ch3_4 } from "./ch3/3-4";
+import { level as ch3_5 } from "./ch3/3-5";
+import { level as ch3_6 } from "./ch3/3-6";
+import { level as ch3_B } from "./ch3/3-B";
 
 /**
  * Every authored level, imported explicitly.
@@ -38,4 +45,11 @@ export const ALL_LEVELS: AnyLevel[] = [
   ch2_5,
   ch2_6,
   ch2_B,
+  ch3_1,
+  ch3_2,
+  ch3_3,
+  ch3_4,
+  ch3_5,
+  ch3_6,
+  ch3_B,
 ];

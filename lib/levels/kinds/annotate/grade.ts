@@ -21,8 +21,27 @@ import type { Attempt, Level } from "../../schema";
  * answers wrong and teach guessing the author instead of reading the chart.
  */
 
-/** Weights across the scored components. Slope is a gate, not a component. */
-const WEIGHTS = { touches: 0.5, cuts: 0.35, anchors: 0.15 };
+/**
+ * Weights across the scored components. Slope is a gate, not a component.
+ *
+ * Shape-dependent, and it has to be. A body cut means price traded on both sides of
+ * the drawing inside one bar, so it was not acting as support or resistance there —
+ * a real fault in a *trendline*. For a horizontal level or a zone it is not a fault
+ * at all: a price that price keeps returning to is a price price keeps crossing, and
+ * penalising that is penalising the thing being asked for. Chapter 3's own level
+ * 3.1 scored two stars against its measured reference until this was split, which is
+ * the winnability guard earning its place.
+ *
+ * Anchor placement goes the same way. `anchorsOf` returns nothing for a level or a
+ * zone, so the component would award a free 0.15 for having no anchors to misplace.
+ * Both weights fold into touches, which for those shapes is the whole question.
+ */
+const LINE_WEIGHTS = { touches: 0.5, cuts: 0.35, anchors: 0.15 };
+const BAND_WEIGHTS = { touches: 1, cuts: 0, anchors: 0 };
+
+function weightsFor(shape: Drawing["shape"]): typeof LINE_WEIGHTS {
+  return shape === "level" || shape === "zone" ? BAND_WEIGHTS : LINE_WEIGHTS;
+}
 
 export type AnnotateBreakdown = {
   touches: number;
@@ -75,7 +94,9 @@ export function measure(
   const cuts = countBodyCuts(drawing, series, range, tol);
 
   const anchors = anchorsOf(drawing);
-  const onWick = anchors.filter((a) => anchorQuality(a, series, tol) === "wick").length;
+  const onWick = anchors.filter(
+    (a) => anchorQuality(a, series, tol) === "wick",
+  ).length;
 
   const slope = slopeOf(drawing);
   const slopeOk =
@@ -139,7 +160,12 @@ export function gradeAnnotate(
   };
 
   if (!stats) {
-    return { score: 0, stars: 0, diagnosis: diagnose(attempt, level, data), reference: overlay };
+    return {
+      score: 0,
+      stars: 0,
+      diagnosis: diagnose(attempt, level, data),
+      reference: overlay,
+    };
   }
 
   // A support line sloping downwards is not a badly-drawn support line, it is a
@@ -174,18 +200,22 @@ export function gradeAnnotate(
   }
 
   const required = Math.max(2, level.config.requiredTouches);
-  const touchScore = Math.max(0, Math.min(1, (stats.touches - 1) / (required - 1)));
+  const touchScore = Math.max(
+    0,
+    Math.min(1, (stats.touches - 1) / (required - 1)),
+  );
   const cutScore = stats.cuts === 0 ? 1 : Math.max(0, 1 - 0.34 * stats.cuts);
   const anchorScore =
     stats.anchorCount === 0 ? 1 : stats.anchorsOnWick / stats.anchorCount;
 
+  const weights = weightsFor(drawing.shape);
   const score = Math.max(
     0,
     Math.min(
       1,
-      touchScore * WEIGHTS.touches +
-        cutScore * WEIGHTS.cuts +
-        anchorScore * WEIGHTS.anchors,
+      touchScore * weights.touches +
+        cutScore * weights.cuts +
+        anchorScore * weights.anchors,
     ),
   );
 
@@ -194,10 +224,17 @@ export function gradeAnnotate(
     stars: starsFor(score, level.stars, attempt.hintsUsed),
     diagnosis: diagnose(attempt, level, data),
     reference: overlay,
+    // Only the components that were scored. Reporting "body cuts: 47" on a
+    // horizontal level would invite a player to fix something the grader is not
+    // asking about.
     detail: {
       touches: `${stats.touches} of ${required} needed`,
-      "body cuts": stats.cuts,
-      anchors: `${stats.anchorsOnWick} of ${stats.anchorCount} on a wick`,
+      ...(weights.cuts > 0 ? { "body cuts": stats.cuts } : {}),
+      ...(weights.anchors > 0
+        ? {
+            anchors: `${stats.anchorsOnWick} of ${stats.anchorCount} on a wick`,
+          }
+        : {}),
     },
   };
 }
