@@ -3,10 +3,17 @@ import type { BarRange, Series } from "@/lib/chart/types";
 /**
  * A window onto a series that reveals bars one at a time.
  *
- * The point of this type is what it *cannot* do. Every level kind receives feeds
- * rather than series, so a component has no way to read a bar the player has not
- * been shown — not because it is asked politely not to, but because the future is
- * held in a closure `createFeed` owns and nothing on this object leads back to it.
+ * The invariant is worth stating precisely, because the loose version ("a
+ * component cannot read ahead") is not quite what this buys. `visible()` is the
+ * only way to read bars *and* the only thing the chart renders, so **what a
+ * component can read is exactly what the player can see.** Advancing the feed is
+ * not a leak — it shows the player those bars too. Reading unrevealed bars while
+ * displaying fewer is the failure this makes structurally impossible, and it is
+ * the one that matters: it is how a `predict-next` kind would come to know the
+ * answer before the player committed.
+ *
+ * The series itself is held in a closure `createFeed` owns, so nothing reachable
+ * from this object leads back to it.
  *
  * Graders are the deliberate exception: they take the full series, because scoring
  * a prediction or a trade means knowing what actually happened.
@@ -35,6 +42,15 @@ export type ReplayFeed = {
   /** Moves the reveal point anywhere in the window, forwards or back. */
   seek(bar: number): void;
   reset(): void;
+  /**
+   * Notifies when the reveal point moves.
+   *
+   * A feed is mutable state living outside React, so a component reads it through
+   * `useSyncExternalStore` (see `useFeed`). A plain forced re-render would mostly
+   * work and would also be wrong under concurrent rendering, which is the same
+   * trap that made writing a ref during render illegal in `Chart.tsx`.
+   */
+  subscribe(listener: () => void): () => void;
 };
 
 export type FeedOptions = {
@@ -78,6 +94,14 @@ export function createFeed(
 
   let at = primed;
   const memo = new Map<number, Series<string>>();
+  const listeners = new Set<() => void>();
+
+  function moveTo(next: number): void {
+    const clamped = clamp(next, first, last);
+    if (clamped === at) return;
+    at = clamped;
+    for (const listener of listeners) listener();
+  }
 
   function visible(): Series<string> {
     const cached = memo.get(at);
@@ -108,19 +132,28 @@ export function createFeed(
     },
     visible,
     step(n = 1) {
-      at = clamp(at + Math.trunc(n), first, last);
+      moveTo(at + Math.trunc(n));
     },
     seek(bar) {
-      at = clamp(Math.trunc(bar), first, last);
+      moveTo(Math.trunc(bar));
     },
     reset() {
-      at = primed;
+      moveTo(primed);
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
     },
   };
 }
 
 /** A feed with nothing withheld — what a kind that does not replay anything gets. */
-export function fullyRevealed(series: Series<string>, range: BarRange): ReplayFeed {
+export function fullyRevealed(
+  series: Series<string>,
+  range: BarRange,
+): ReplayFeed {
   return createFeed(series, range);
 }
 

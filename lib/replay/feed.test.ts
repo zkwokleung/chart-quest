@@ -139,6 +139,27 @@ describe("createFeed", () => {
     expect(feed.visible().c).toHaveLength(20);
   });
 
+  it("notifies subscribers when the reveal point moves, and only then", () => {
+    const feed = createFeed(fixture(), { from: 0, to: 20 }, { primeBars: 5 });
+    let calls = 0;
+    const unsubscribe = feed.subscribe(() => {
+      calls += 1;
+    });
+
+    feed.step();
+    expect(calls).toBe(1);
+    // Already at the last bar: no move, so no notification. Without this a
+    // held-down step key would re-render forever at the end of a replay.
+    feed.seek(19);
+    expect(calls).toBe(2);
+    feed.step(5);
+    expect(calls).toBe(2);
+
+    unsubscribe();
+    feed.seek(3);
+    expect(calls).toBe(2);
+  });
+
   it("memoises visible() per reveal point", () => {
     const feed = createFeed(fixture(), { from: 0, to: 20 }, { primeBars: 5 });
     const a = feed.visible();

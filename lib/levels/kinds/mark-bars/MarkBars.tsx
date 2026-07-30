@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { ChartHandle } from "@/components/chart/Chart";
-import { SliceChart } from "@/components/level/SliceChart";
+import { FeedChart } from "@/components/level/FeedChart";
 import { xToBarIndex } from "@/lib/chart/coords";
 import { barAt, type Series } from "@/lib/chart/types";
 import type { KindProps } from "@/lib/levels/kind-module";
@@ -28,7 +28,7 @@ function describeBar(series: Series<string>, index: number): string {
 
 function MarkBarsOnChart({
   level,
-  data,
+  feeds,
   hintsUsed,
   grade,
   attempt,
@@ -37,7 +37,8 @@ function MarkBarsOnChart({
   const handleRef = useRef<ChartHandle | null>(null);
   const [marks, setMarks] = useState<Mark[]>([]);
   const slice = level.data[0];
-  const series = data[0];
+  const feed = feeds[0];
+  const series = feed?.visible();
   const [cursor, setCursor] = useState(slice?.from ?? 0);
 
   const committed = grade !== null;
@@ -49,7 +50,9 @@ function MarkBarsOnChart({
     if (committed) return;
     const mark = barMark(absoluteIndex);
     setMarks((current) =>
-      current.includes(mark) ? current.filter((m) => m !== mark) : [...current, mark],
+      current.includes(mark)
+        ? current.filter((m) => m !== mark)
+        : [...current, mark],
     );
   }
 
@@ -57,7 +60,11 @@ function MarkBarsOnChart({
     const handle = handleRef.current;
     if (committed || !handle || !slice) return;
     const rect = event.currentTarget.getBoundingClientRect();
-    const logical = xToBarIndex(handle.scale, event.clientX - rect.left, handle.bounds);
+    const logical = xToBarIndex(
+      handle.scale,
+      event.clientX - rect.left,
+      handle.bounds,
+    );
     if (logical === null) return;
     // `bounds` is relative to the data handed to the chart, which starts at
     // `slice.from`. Levels author absolute indices, so translate before marking —
@@ -99,7 +106,7 @@ function MarkBarsOnChart({
     }
   }
 
-  if (!slice || !series) return null;
+  if (!slice || !series || !feed) return null;
 
   const cursorMarked = shown.includes(barMark(cursor));
 
@@ -115,7 +122,7 @@ function MarkBarsOnChart({
         onKeyDown={onKeyDown}
         className="cursor-crosshair rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
-        <SliceChart slice={slice} series={series} ref={handleRef} height={360} />
+        <FeedChart slice={slice} feed={feed} ref={handleRef} height={360} />
       </div>
 
       {/* The keyboard cursor's position, announced rather than only drawn, so the
@@ -157,7 +164,8 @@ function MarkBarsOnChart({
                     : "border-border hover:border-down",
               ].join(" ")}
             >
-              {state === "hit" ? "✓ " : state === "wrong" ? "✗ " : ""}bar {index}
+              {state === "hit" ? "✓ " : state === "wrong" ? "✗ " : ""}bar{" "}
+              {index}
             </button>
           );
         })}

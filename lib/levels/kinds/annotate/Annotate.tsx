@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import type { ChartHandle } from "@/components/chart/Chart";
 import type { RenderableDrawing } from "@/components/chart/DrawingPrimitive";
-import { SliceChart } from "@/components/level/SliceChart";
+import { FeedChart } from "@/components/level/FeedChart";
 import { anchorsNeeded, buildDrawing } from "@/lib/chart/build-drawing";
 import { xToBarIndex, yToPrice } from "@/lib/chart/coords";
 import type { Anchor, Drawing } from "@/lib/chart/geometry";
@@ -21,7 +21,7 @@ import type { KindProps } from "@/lib/levels/kind-module";
  */
 export function Annotate({
   level,
-  data,
+  feeds,
   hintsUsed,
   grade,
   attempt,
@@ -29,7 +29,8 @@ export function Annotate({
 }: KindProps<"annotate">) {
   const handleRef = useRef<ChartHandle | null>(null);
   const slice = level.data[0];
-  const series = data[0];
+  const feed = feeds[0];
+  const series = feed?.visible();
 
   const [anchors, setAnchors] = useState<Anchor[]>([]);
   const [cursor, setCursor] = useState<Anchor>(() => ({
@@ -41,20 +42,30 @@ export function Annotate({
   const { shape } = level.config;
   const needed = anchorsNeeded(shape);
 
-  const drawing = committed ? (attempt?.drawing ?? null) : buildDrawing(shape, anchors);
+  const drawing = committed
+    ? (attempt?.drawing ?? null)
+    : buildDrawing(shape, anchors);
 
   function place(anchor: Anchor) {
     if (committed) return;
     // Starts over once the shape is complete, so a further click means "move it"
     // rather than appending a point the shape has no use for.
-    setAnchors((current) => (current.length >= needed ? [anchor] : [...current, anchor]));
+    setAnchors((current) =>
+      current.length >= needed ? [anchor] : [...current, anchor],
+    );
   }
 
-  function pointerAnchor(event: React.PointerEvent<HTMLDivElement>): Anchor | null {
+  function pointerAnchor(
+    event: React.PointerEvent<HTMLDivElement>,
+  ): Anchor | null {
     const handle = handleRef.current;
     if (!handle || !slice) return null;
     const rect = event.currentTarget.getBoundingClientRect();
-    const logical = xToBarIndex(handle.scale, event.clientX - rect.left, handle.bounds);
+    const logical = xToBarIndex(
+      handle.scale,
+      event.clientX - rect.left,
+      handle.bounds,
+    );
     const price = yToPrice(handle.scale, event.clientY - rect.top);
     if (logical === null || price === null) return null;
     // Bounds are relative to the data the chart was handed, which starts at
@@ -125,7 +136,7 @@ export function Annotate({
     }
   }
 
-  if (!slice || !series) return null;
+  if (!slice || !series || !feed) return null;
 
   const overlay = grade?.reference.kind === "drawing" ? grade.reference : null;
   const drawings: RenderableDrawing[] = [];
@@ -152,9 +163,9 @@ export function Annotate({
         onKeyDown={onKeyDown}
         className="cursor-crosshair rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
-        <SliceChart
+        <FeedChart
           slice={slice}
-          series={series}
+          feed={feed}
           ref={handleRef}
           height={380}
           showVolume={false}

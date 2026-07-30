@@ -43,7 +43,10 @@ type ErasedGrader = (
   data: Series<string>[],
 ) => Grade;
 
-type ErasedPerfect = (level: AnyLevel, data: Series<string>[]) => Attempt[LevelKind];
+type ErasedPerfect = (
+  level: AnyLevel,
+  data: Series<string>[],
+) => Attempt[LevelKind];
 
 /** Grades a level without the caller needing to know its kind. */
 export function gradeAny(
@@ -60,6 +63,18 @@ export function gradeAny(
     );
   }
   return (KINDS[level.kind].grade as ErasedGrader)(attempt, level, data);
+}
+
+/**
+ * Bars a level may reveal past the end of each slice.
+ *
+ * Asked of the kind rather than decided here, so `LevelPlayer` can size a feed's
+ * window without knowing what a horizon means for any particular kind.
+ */
+export function revealHorizonFor(level: AnyLevel): number {
+  const horizon = KINDS[level.kind].revealHorizon as
+    ((level: AnyLevel) => number) | undefined;
+  return Math.max(0, Math.trunc(horizon?.(level) ?? 0));
 }
 
 /** The attempt a player who did it perfectly would submit. Used by the guards. */

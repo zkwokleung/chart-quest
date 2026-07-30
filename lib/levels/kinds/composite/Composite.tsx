@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Stars } from "@/components/ui/Stars";
 import type { Grade } from "@/lib/levels/grade";
 import type { KindProps } from "@/lib/levels/kind-module";
 import type { StepAttempt } from "@/lib/levels/schema";
+import { createFeed } from "@/lib/replay/feed";
 import { gradeStep } from "./step-graders";
-import { renderStep } from "./step-components";
+import { renderStep, stepRevealHorizon } from "./step-components";
 import { stepAsAnyLevel } from "./steps";
 
 /**
@@ -18,7 +19,7 @@ import { stepAsAnyLevel } from "./steps";
  */
 export function Composite({
   level,
-  data,
+  truth,
   hintsUsed,
   grade,
   attempt,
@@ -38,9 +39,31 @@ export function Composite({
   const shown = committed ? (attempt?.steps ?? answers) : answers;
   const step = steps[current];
 
+  // A stage's slice may differ from the boss's, and a `predict-next` stage needs a
+  // horizon past its own end, so the composite builds each stage's feed itself
+  // rather than passing its own through. This is the one place `truth` is used and
+  // the reason the composite gets it: grading a stage as the player finishes it
+  // means knowing what happened next.
+  const stepFeeds = useMemo(() => {
+    const series = truth ?? [];
+    return steps.map((s) =>
+      (s.data ?? level.data).map((slice, i) => {
+        const source = series[i];
+        if (!source) return null;
+        return createFeed(
+          source,
+          { from: slice.from, to: slice.to + stepRevealHorizon(s) },
+          { primeBars: slice.to - slice.from },
+        );
+      }),
+    );
+  }, [steps, level.data, truth]);
+
   function commitStep(stepAttempt: StepAttempt) {
     if (committed) return;
-    setAnswers((current_) => current_.map((a, i) => (i === current ? stepAttempt : a)));
+    setAnswers((current_) =>
+      current_.map((a, i) => (i === current ? stepAttempt : a)),
+    );
   }
 
   if (!step) return null;
@@ -83,7 +106,9 @@ export function Composite({
           on what the step actually is. */}
       {renderStep(step.kind, {
         level: stepLevel,
-        data,
+        feeds: (stepFeeds[current] ?? []).filter(
+          (f): f is NonNullable<typeof f> => f !== null,
+        ),
         hintsUsed,
         // A step shows its own grade once answered, so the player gets feedback
         // per stage rather than only at the end.
@@ -93,7 +118,9 @@ export function Composite({
           commitStep(stepAttempt);
           setStepGrades((gs) =>
             gs.map((g, i) =>
-              i === current ? gradeStep(step.kind, stepAttempt, stepLevel, data) : g,
+              i === current
+                ? gradeStep(step.kind, stepAttempt, stepLevel, truth ?? [])
+                : g,
             ),
           );
         },
@@ -119,7 +146,9 @@ export function Composite({
       {committed || !allAnswered ? null : (
         <button
           type="button"
-          onClick={() => onCommit({ kind: "composite", steps: answers, hintsUsed })}
+          onClick={() =>
+            onCommit({ kind: "composite", steps: answers, hintsUsed })
+          }
           className="self-start rounded-md bg-accent px-5 py-2.5 font-medium text-bg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           Finish the boss

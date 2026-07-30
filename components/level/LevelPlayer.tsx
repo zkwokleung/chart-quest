@@ -1,6 +1,6 @@
 "use client";
 
-import { createElement, useEffect, useState } from "react";
+import { createElement, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Feedback } from "@/components/level/Feedback";
 import { Hints } from "@/components/level/Hints";
@@ -8,9 +8,10 @@ import type { Series } from "@/lib/chart/types";
 import { loadSeries } from "@/lib/data/load-series";
 import { getChapter, levelIds } from "@/lib/levels/chapters";
 import type { Grade } from "@/lib/levels/grade";
-import { componentFor, gradeAny } from "@/lib/levels/kinds";
+import { componentFor, gradeAny, revealHorizonFor } from "@/lib/levels/kinds";
 import { getLevel, isAuthored } from "@/lib/levels/registry";
 import type { AnyLevel, Attempt, LevelKind } from "@/lib/levels/schema";
+import { createFeed, type ReplayFeed } from "@/lib/replay/feed";
 import { useGameStore } from "@/lib/store/game";
 import { useHydrated } from "@/lib/store/use-hydrated";
 
@@ -55,6 +56,9 @@ function Player({ level }: { level: AnyLevel }) {
   const recordAttempt = useGameStore((s) => s.recordAttempt);
   const recordPrediction = useGameStore((s) => s.recordPrediction);
 
+  // The full series stays here and goes to the grader. Kind components get feeds
+  // built from it, which is the only thing standing between a player and the
+  // answer on a replay level — see lib/replay/feed.ts.
   const [data, setData] = useState<Series<string>[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hintsUsed, setHintsUsed] = useState(0);
@@ -70,12 +74,36 @@ function Player({ level }: { level: AnyLevel }) {
         if (!cancelled) setData(loaded);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
+        if (!cancelled)
+          setError(err instanceof Error ? err.message : String(err));
       });
     return () => {
       cancelled = true;
     };
   }, [level]);
+
+  // One feed per slice, rebuilt when the data or the level changes. `retry`
+  // bumps a nonce so a replayed level starts from a fresh reveal point rather
+  // than wherever the last attempt left the bars.
+  const [feedNonce, setFeedNonce] = useState(0);
+  const feeds = useMemo<ReplayFeed[] | null>(() => {
+    if (!data) return null;
+    void feedNonce;
+    // The feed's window is wider than the visible one by the kind's reveal
+    // horizon, and primed to show only the slice. Those extra bars exist so the
+    // kind can reveal them later; until it does, they are not in `visible()`.
+    const horizon = revealHorizonFor(level);
+    return level.data.map((slice, i) => {
+      const series = data[i];
+      if (!series)
+        throw new Error(`${level.id}: no series loaded for slice ${i}`);
+      return createFeed(
+        series,
+        { from: slice.from, to: slice.to + horizon },
+        { primeBars: slice.to - slice.from },
+      );
+    });
+  }, [data, level, feedNonce]);
 
   function commit(submitted: Attempt[LevelKind]) {
     if (!data || grade) return;
@@ -92,6 +120,7 @@ function Player({ level }: { level: AnyLevel }) {
     setGrade(null);
     setAttempt(null);
     setHintsUsed(0);
+    setFeedNonce((n) => n + 1);
   }
 
   const chapter = getChapter(level.chapter);
@@ -108,7 +137,7 @@ function Player({ level }: { level: AnyLevel }) {
     );
   }
 
-  if (!data || !hydrated) {
+  if (!data || !feeds || !hydrated) {
     return <p className="text-sm text-muted">Loading level&hellip;</p>;
   }
 
@@ -131,11 +160,14 @@ function Player({ level }: { level: AnyLevel }) {
           dynamic lookup is a static component. */}
       {createElement(componentFor(level), {
         level,
-        data,
+        feeds,
         hintsUsed,
         grade,
         attempt,
         onCommit: commit,
+        // Only the composite, which grades its own stages as the player finishes
+        // them. Every other kind is sealed to what its feed has revealed.
+        ...(level.kind === "composite" ? { truth: data } : {}),
       })}
 
       <Hints

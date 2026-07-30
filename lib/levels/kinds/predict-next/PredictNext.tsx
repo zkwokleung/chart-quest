@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { SliceChart } from "@/components/level/SliceChart";
+import { useEffect, useState } from "react";
+import { FeedChart } from "@/components/level/FeedChart";
 import type { KindProps } from "@/lib/levels/kind-module";
 import type { Direction } from "@/lib/levels/schema";
 import { actualDirection } from "./grade";
@@ -16,7 +16,7 @@ import { actualDirection } from "./grade";
  */
 export function PredictNext({
   level,
-  data,
+  feeds,
   hintsUsed,
   grade,
   attempt,
@@ -31,13 +31,22 @@ export function PredictNext({
   const committed = grade !== null;
   const shown = committed ? (attempt?.calls ?? calls) : calls;
   const slice = rounds[round];
-  const series = data[round];
+  const feed = feeds[round];
   const called = shown[round] ?? null;
   const revealed = called !== null;
 
+  // Locking in a call reveals that round's horizon. The reveal is what makes the
+  // answer knowable here: before it, those bars are not in `visible()` at all.
+  // The previous version read them from a full series this component held — gated
+  // on `revealed`, but nothing structural stood between it and the answer.
+  useEffect(() => {
+    if (!revealed || !feed) return;
+    feed.step(level.config.horizon);
+  }, [revealed, feed, level.config.horizon]);
+
   const truth =
-    revealed && slice
-      ? actualDirection(series, slice.to - 1, level.config.horizon)
+    revealed && slice && feed
+      ? actualDirection(feed.visible(), slice.to - 1, level.config.horizon)
       : null;
 
   function call(direction: Direction) {
@@ -48,7 +57,7 @@ export function PredictNext({
   const answered = shown.filter((c) => c !== null).length;
   const allAnswered = answered === rounds.length;
 
-  if (!slice || !series) return null;
+  if (!slice || !feed) return null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -59,15 +68,8 @@ export function PredictNext({
         </p>
       </div>
 
-      <SliceChart
-        slice={slice}
-        series={series}
-        // Only extend the window once the call is locked in. Revealing before
-        // that would hand the player the answer.
-        to={revealed ? slice.to + level.config.horizon : slice.to}
-        height={360}
-        showVolume={false}
-      />
+      {/* The window follows the feed, which only advances once the call is in. */}
+      <FeedChart slice={slice} feed={feed} height={360} showVolume={false} />
 
       {revealed ? (
         <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -79,7 +81,8 @@ export function PredictNext({
             {truth === called ? "✓ right" : "✗ wrong"}
           </span>
           <span className="text-muted">
-            you called <strong>{called}</strong>, it went <strong>{truth}</strong>
+            you called <strong>{called}</strong>, it went{" "}
+            <strong>{truth}</strong>
           </span>
           {round < rounds.length - 1 ? (
             <button

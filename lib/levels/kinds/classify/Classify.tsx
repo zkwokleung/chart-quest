@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { SliceChart } from "@/components/level/SliceChart";
+import { useEffect, useState } from "react";
+import { FeedChart } from "@/components/level/FeedChart";
 import type { KindProps } from "@/lib/levels/kind-module";
 
 /**
@@ -14,7 +14,7 @@ import type { KindProps } from "@/lib/levels/kind-module";
  */
 export function Classify({
   level,
-  data,
+  feeds,
   hintsUsed,
   grade,
   attempt,
@@ -23,6 +23,14 @@ export function Classify({
   const [selected, setSelected] = useState<string[]>([]);
   const committed = grade !== null;
   const { options, multiple, prompt, revealBars } = level.config;
+
+  // Committing reveals the next bars on every chart. The feed is the reveal: the
+  // bars simply were not in `visible()` before, rather than being present and
+  // cropped out of the render.
+  useEffect(() => {
+    if (!committed || !revealBars) return;
+    for (const feed of feeds) feed.step(revealBars);
+  }, [committed, revealBars, feeds]);
 
   const chosen = committed ? (attempt?.selected ?? []) : selected;
   const correct = new Set(level.target.correct);
@@ -42,18 +50,13 @@ export function Classify({
     <div className="flex flex-col gap-5">
       <div className="grid gap-4 lg:grid-cols-2">
         {level.data.map((slice, i) => {
-          const series = data[i];
-          if (!series) return null;
-          // After committing, extend the window so the player sees what happened
-          // next — the payoff for having taken a position on the question.
-          const to =
-            committed && revealBars ? slice.to + revealBars : slice.to;
+          const feed = feeds[i];
+          if (!feed) return null;
           return (
-            <SliceChart
+            <FeedChart
               key={`${slice.series}-${slice.from}`}
               slice={slice}
-              series={series}
-              to={to}
+              feed={feed}
               height={level.data.length > 1 ? 260 : 360}
               scaleToggle={level.unlocks?.includes("log-scale") ?? false}
             />
@@ -96,7 +99,11 @@ export function Classify({
                     {/* Shape as well as colour, so the answer survives
                         colour-blindness. */}
                     <span className="font-mono text-xs text-muted">
-                      {isCorrect ? "✓ correct" : isChosen ? "✗ your answer" : ""}
+                      {isCorrect
+                        ? "✓ correct"
+                        : isChosen
+                          ? "✗ your answer"
+                          : ""}
                     </span>
                     {option.note ? (
                       <span className="text-xs text-muted">{option.note}</span>
@@ -113,9 +120,7 @@ export function Classify({
         <button
           type="button"
           disabled={selected.length === 0}
-          onClick={() =>
-            onCommit({ kind: "classify", selected, hintsUsed })
-          }
+          onClick={() => onCommit({ kind: "classify", selected, hintsUsed })}
           className="self-start rounded-md bg-accent px-5 py-2.5 font-medium text-bg disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           Commit answer

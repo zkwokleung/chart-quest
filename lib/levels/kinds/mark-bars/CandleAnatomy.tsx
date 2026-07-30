@@ -22,7 +22,7 @@ const BODY_W = 90;
 
 export function CandleAnatomy({
   level,
-  data,
+  feeds,
   hintsUsed,
   grade,
   attempt,
@@ -33,7 +33,7 @@ export function CandleAnatomy({
   const shown = committed ? (attempt?.marks ?? []) : marks;
 
   const slice = level.data[0];
-  const series = data[0];
+  const series = feeds[0]?.visible();
   const focus = level.config.focusBar ?? slice?.from ?? 0;
   const bar = series ? barAt(series, focus) : null;
 
@@ -44,7 +44,9 @@ export function CandleAnatomy({
     if (committed) return;
     const mark = partMark(part);
     setMarks((current) =>
-      current.includes(mark) ? current.filter((m) => m !== mark) : [...current, mark],
+      current.includes(mark)
+        ? current.filter((m) => m !== mark)
+        : [...current, mark],
     );
   }
 
@@ -63,9 +65,19 @@ export function CandleAnatomy({
   const cx = W / 2;
 
   const ZONES: { part: CandlePart; y: number; h: number; label: string }[] = [
-    { part: "upper-wick", y: yHigh, h: Math.max(8, yTop - yHigh), label: "upper wick" },
+    {
+      part: "upper-wick",
+      y: yHigh,
+      h: Math.max(8, yTop - yHigh),
+      label: "upper wick",
+    },
     { part: "body", y: yTop, h: Math.max(12, yBottom - yTop), label: "body" },
-    { part: "lower-wick", y: yBottom, h: Math.max(8, yLow - yBottom), label: "lower wick" },
+    {
+      part: "lower-wick",
+      y: yBottom,
+      h: Math.max(8, yLow - yBottom),
+      label: "lower wick",
+    },
   ];
 
   function stateOf(part: CandlePart): "hit" | "wrong" | "chosen" | "idle" {
@@ -158,34 +170,34 @@ export function CandleAnatomy({
               of the feedback that teaches. */}
           {CANDLE_PARTS.filter(
             (p) =>
-              !committed || asked.has(partMark(p)) || shown.includes(partMark(p)),
-          ).map(
-            (part) => {
-              const state = stateOf(part);
-              return (
-                <button
-                  key={part}
-                  type="button"
-                  onClick={() => toggle(part)}
-                  aria-pressed={shown.includes(partMark(part))}
-                  className={[
-                    "rounded border px-3 py-2 text-left text-sm",
-                    state === "hit"
-                      ? "border-up text-up"
-                      : state === "wrong"
-                        ? "border-down text-down"
-                        : state === "chosen"
-                          ? "border-accent"
-                          : "border-border hover:border-muted",
-                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                  ].join(" ")}
-                >
-                  {state === "hit" ? "✓ " : state === "wrong" ? "✗ " : ""}
-                  {partLabel(part)}
-                </button>
-              );
-            },
-          )}
+              !committed ||
+              asked.has(partMark(p)) ||
+              shown.includes(partMark(p)),
+          ).map((part) => {
+            const state = stateOf(part);
+            return (
+              <button
+                key={part}
+                type="button"
+                onClick={() => toggle(part)}
+                aria-pressed={shown.includes(partMark(part))}
+                className={[
+                  "rounded border px-3 py-2 text-left text-sm",
+                  state === "hit"
+                    ? "border-up text-up"
+                    : state === "wrong"
+                      ? "border-down text-down"
+                      : state === "chosen"
+                        ? "border-accent"
+                        : "border-border hover:border-muted",
+                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                ].join(" ")}
+              >
+                {state === "hit" ? "✓ " : state === "wrong" ? "✗ " : ""}
+                {partLabel(part)}
+              </button>
+            );
+          })}
         </fieldset>
       </div>
 

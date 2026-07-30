@@ -1,7 +1,7 @@
 import { createElement, type ComponentType, type ReactElement } from "react";
-import type { Series } from "@/lib/chart/types";
+import type { ReplayFeed } from "@/lib/replay/feed";
 import type { Grade } from "../../grade";
-import type { Level, StepAttempt, StepKind } from "../../schema";
+import type { AnyStep, Level, StepAttempt, StepKind } from "../../schema";
 import type { ErasedKindProps } from "../erased";
 import { Annotate } from "../annotate/Annotate";
 import { Classify } from "../classify/Classify";
@@ -19,18 +19,34 @@ const COMPONENTS = {
   "predict-next": PredictNext,
 } as const;
 
-export function componentForStep(kind: StepKind): ComponentType<ErasedKindProps> {
+export function componentForStep(
+  kind: StepKind,
+): ComponentType<ErasedKindProps> {
   return COMPONENTS[kind] as unknown as ComponentType<ErasedKindProps>;
 }
 
 export type StepProps = {
   level: Level<StepKind>;
-  data: Series<string>[];
+  feeds: ReplayFeed[];
   hintsUsed: number;
   grade: Grade | null;
   attempt: StepAttempt | null;
   onCommit: (attempt: StepAttempt) => void;
 };
+
+/**
+ * Bars a step may reveal past its slice.
+ *
+ * The registry's `revealHorizonFor` cannot be used here — it imports the
+ * composite, so reaching back through it would cycle, the same reason the step
+ * graders and components are imported directly. Small enough to state twice; the
+ * numbers come from the same config fields either way.
+ */
+export function stepRevealHorizon(step: AnyStep): number {
+  if (step.kind === "predict-next") return step.config.horizon;
+  if (step.kind === "classify") return step.config.revealBars ?? 0;
+  return 0;
+}
 
 /**
  * Renders one step through its kind's component.

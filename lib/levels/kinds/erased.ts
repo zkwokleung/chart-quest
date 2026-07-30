@@ -1,4 +1,5 @@
 import type { Series } from "@/lib/chart/types";
+import type { ReplayFeed } from "@/lib/replay/feed";
 import type { Grade } from "../grade";
 import type { AnyLevel, Attempt, LevelKind } from "../schema";
 
@@ -14,9 +15,11 @@ import type { AnyLevel, Attempt, LevelKind } from "../schema";
  */
 export type ErasedKindProps = {
   level: AnyLevel;
-  data: Series<string>[];
+  feeds: ReplayFeed[];
   hintsUsed: number;
   grade: Grade | null;
   attempt: Attempt[LevelKind] | null;
   onCommit: (attempt: Attempt[LevelKind]) => void;
+  /** See `KindProps.truth` — composite only, and asserted so in seal.test.ts. */
+  truth?: Series<string>[];
 };
