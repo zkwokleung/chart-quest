@@ -258,7 +258,59 @@ scripts/        fetch-data.ts, compute-base-rates.ts
 public/data/    series/*.json, oos/*.json, base-rates.json, manifest.json
 ```
 
-## 11. The client bundle, and where it runs out
+## 11. The replay feed, and what the seal proves
+
+Kind components never receive a `Series`. They receive one `ReplayFeed` per slice,
+and the series itself lives in a closure `createFeed` owns.
+
+```ts
+// lib/replay/feed.ts
+type ReplayFeed = {
+  readonly at: number; // absolute index of the last revealed bar
+  readonly last: number; // the final bar this feed will ever reveal
+  visible(): Series; // arrays cut at `at`; absolute indices intact
+  step(n?): void;
+  seek(bar): void; // scrubbing, both directions
+  subscribe(fn): () => void;
+};
+```
+
+`visible()` truncates the arrays rather than re-basing them at the window start, so
+an absolute bar index still means what the level file said it means. Re-basing would
+have shifted every index across the authored levels and reopened the off-by-`from`
+trap that bit `mark-bars` and the drawing primitive.
+
+**The invariant, stated precisely.** `visible()` is both the only way to read bars
+and the only thing the chart renders, so _what a component can read is exactly what
+the player can see_. Advancing a feed is not a leak — it shows the player those bars
+too. What is ruled out is reading unrevealed bars while displaying fewer, which is
+how a `predict-next` kind would come to know the answer before the call was locked in.
+`lib/replay/seal.test.ts` asserts it over every authored level.
+
+**What it does not prove.** Nothing about the network. Whole series files are fetched
+and shared across levels by design, so a player with devtools can read any bar of any
+committed series. Chapter 10's holdback is the strong guarantee — separate files no
+level can name, enforced at the type level by `OosSeriesId`. This is the weaker,
+in-process one, and saying so here is deliberate.
+
+**One intentional hole.** `KindProps.truth` hands full series to `composite` alone,
+because a boss grades each stage as the player finishes it and grading a
+`predict-next` stage means knowing what happened next. The seal test asserts no other
+kind receives it.
+
+Two things the kinds declare rather than the player inferring, so `LevelPlayer` never
+branches on `level.kind`: `revealHorizon` (how far past the slice a kind may reveal —
+`classify`'s `revealBars`, `predict-next`'s horizon) and `primedBars` (how much starts
+visible, which only a trade level shrinks, because its slice must _contain_ the
+outcome the grader scores).
+
+**Replay redraws with `setData`, not `series.update()`**, which supersedes the note in
+`docs/PLAN.md`. `update()` requires each appended bar to be strictly newer, making a
+rewind impossible, and a replay you cannot scrub backwards is not a teaching tool.
+Slices are a few hundred bars at at most twenty reveals a second, so the rebuild cost
+is irrelevant.
+
+## 12. The client bundle, and where it runs out
 
 Measured after Chapter 2, not projected: **every level route loads the identical
 11 chunks.** `/level/1-1`, `/level/2-3` and `/level/2-B` are byte-for-byte the
@@ -277,7 +329,7 @@ deliberately _not_ done yet: it trades a static import for an async one in the
 level player's loading path, and doing that before the replay engine exists means
 doing it twice. When CI fails the budget, that is the fix, not a bigger number.
 
-## 12. Accessibility
+## 13. Accessibility
 
 Non-negotiable for a chart-driven game:
 

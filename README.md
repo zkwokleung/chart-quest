@@ -6,7 +6,7 @@ An interactive game that teaches technical analysis, from "what is a candle" to 
 
 **Live:** <https://chart-quest.vercel.app>
 
-**Status:** pre-alpha. **Chapters 1 and 2 are playable** — 15 levels across five interaction kinds, including draw tools and a multi-skill boss. Chapter 3 and the replay engine are next. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
+**Status:** pre-alpha. **Chapters 1 to 3 are playable** — 22 levels across six interaction kinds, including draw tools, a replay engine, and a graded first trade with a journal. Chapter 4 and the pattern base rates are next. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
 
 ---
 
