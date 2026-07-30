@@ -146,41 +146,78 @@ describe("3-2 a line is too thin", () => {
 
 describe("3-3 the retest", () => {
   const level = need("3-3", "mark-bars");
-  const LEVEL_PRICE = 87.65;
+  const LEVEL_PRICE = 129.43;
+  const BREAK_BAR = 410;
+
+  it("shows the level being tested three times, inside the window", () => {
+    // The failure this exists for: the first version of this level pointed at a
+    // window where price was already above its level throughout, so the "break" the
+    // brief describes had no counterpart on the chart at all.
+    const slice = level.data[0]!;
+    const tol = LEVEL_PRICE * 0.004;
+    const hits: number[] = [];
+    for (let bar = slice.from; bar < BREAK_BAR; bar += 1) {
+      if (
+        spy.l[bar]! - tol <= LEVEL_PRICE &&
+        spy.h[bar]! + tol >= LEVEL_PRICE
+      ) {
+        hits.push(bar);
+      }
+    }
+    const visits: number[][] = [];
+    for (const hit of hits) {
+      const last = visits.at(-1);
+      if (last && hit - last.at(-1)! <= 8) last.push(hit);
+      else visits.push([hit]);
+    }
+    expect(visits.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("spends most of the window below the level before breaking it", () => {
+    // Otherwise it is not resistance, just a price the chart wandered through.
+    const slice = level.data[0]!;
+    let below = 0;
+    for (let bar = slice.from; bar < BREAK_BAR; bar += 1) {
+      if (spy.c[bar]! < LEVEL_PRICE * 0.99) below += 1;
+    }
+    expect(below / (BREAK_BAR - slice.from)).toBeGreaterThan(0.5);
+  });
+
+  it("breaks decisively at the bar the misconceptions key off", () => {
+    expect(spy.c[BREAK_BAR]!).toBeGreaterThan(LEVEL_PRICE * 1.008);
+    expect(spy.c[BREAK_BAR - 1]!).toBeLessThan(LEVEL_PRICE * 1.008);
+  });
 
   it("targets a bar that traded through the level and closed above it", () => {
     const bar = barIndexOf(level.target.marks[0]!);
     expect(bar).not.toBeNull();
     if (bar === null) return;
+    expect(bar).toBeGreaterThan(BREAK_BAR);
     expect(spy.l[bar]!).toBeLessThan(LEVEL_PRICE);
     expect(spy.c[bar]!).toBeGreaterThan(LEVEL_PRICE);
   });
 
   it("targets the deepest bar of the retest cluster", () => {
-    // barSlop 2 accepts the neighbours because the honest answer is "any of these",
-    // but the target itself should be the one that pushed furthest through.
     const bar = barIndexOf(level.target.marks[0]!) ?? 0;
-    const cluster = [1133, 1134, 1135, 1136, 1137, 1138];
-    const lows = cluster.map((i) => spy.l[i]!);
-    expect(spy.l[bar]!).toBe(Math.min(...lows));
+    const slop = level.tolerance.barSlop;
+    const cluster: number[] = [];
+    for (let i = bar - slop; i <= bar + slop; i += 1) cluster.push(i);
+    expect(spy.l[bar]!).toBe(Math.min(...cluster.map((i) => spy.l[i]!)));
   });
 
-  it("really was a break that held, twenty bars on", () => {
+  it("really held, and kept holding", () => {
+    // Measured from the target bar, not from the break: +1.9% at twenty bars and
+    // +5.7% at forty. The retest was slow rather than explosive, which is worth the
+    // level being honest about — the drift for the first ten bars is only 0.4%.
     const bar = barIndexOf(level.target.marks[0]!) ?? 0;
-    expect(spy.c[bar + 20]! / LEVEL_PRICE - 1).toBeGreaterThan(0.05);
-  });
-
-  it("shows the break inside the window, so the retest has something to test", () => {
-    const slice = level.data[0]!;
-    let broke = false;
-    for (
-      let i = slice.from;
-      i < (barIndexOf(level.target.marks[0]!) ?? 0);
-      i += 1
-    ) {
-      if (spy.c[i]! > LEVEL_PRICE * 1.004) broke = true;
+    expect(spy.c[bar + 20]! / LEVEL_PRICE - 1).toBeGreaterThan(0.015);
+    expect(spy.c[bar + 40]! / LEVEL_PRICE - 1).toBeGreaterThan(0.05);
+    // And it never closed back below the level in between, which is what "held" means.
+    for (let i = bar + 1; i <= bar + 40; i += 1) {
+      expect(spy.c[i]!, `bar ${i} closed back below the level`).toBeGreaterThan(
+        LEVEL_PRICE * 0.99,
+      );
     }
-    expect(broke).toBe(true);
   });
 });
 
