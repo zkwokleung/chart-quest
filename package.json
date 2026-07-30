@@ -2,6 +2,7 @@
   "name": "chart-quest",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "An interactive game that teaches technical analysis — learn to read any market, one level at a time.",
   "engines": {

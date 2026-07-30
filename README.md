@@ -6,7 +6,7 @@ An interactive game that teaches technical analysis, from "what is a candle" to 
 
 **Live:** <https://chart-quest.vercel.app>
 
-**Status:** pre-alpha. The app shell, persistence and chart engine are in place; no level is playable yet. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
+**Status:** pre-alpha. **Chapters 1 and 2 are playable** — 15 levels across five interaction kinds, including draw tools and a multi-skill boss. Chapter 3 and the replay engine are next. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
 
 ---
 
@@ -14,13 +14,13 @@ An interactive game that teaches technical analysis, from "what is a candle" to 
 
 Most technical-analysis material is either a wall of prose or a pattern catalogue with invented win rates. Chart Quest is built on three commitments:
 
-**1. Every level is an interaction, not a lesson.** You draw the trendline, click the swing highs, place the stop, predict the next bar. Reading is kept to a sentence or two. Feedback names your specific mistake — *"your line is anchored to bodies, not wicks"* — instead of a score.
+**1. Every level is an interaction, not a lesson.** You draw the trendline, click the swing highs, place the stop, predict the next bar. Reading is kept to a sentence or two. Feedback names your specific mistake — _"your line is anchored to bodies, not wicks"_ — instead of a score.
 
-**2. Every number is measured, not asserted.** Pattern win rates are computed at build time from the bundled historical data, per asset, with sample sizes and confidence intervals. When head & shoulders runs 41% on EURUSD and 58% on BTC, the game shows you both — because the real lesson is that pattern edge is asset- and regime-dependent, so you have to measure it on *your* market.
+**2. Every number is measured, not asserted.** Pattern win rates are computed at build time from the bundled historical data, per asset, with sample sizes and confidence intervals. When head & shoulders runs 41% on EURUSD and 58% on BTC, the game shows you both — because the real lesson is that pattern edge is asset- and regime-dependent, so you have to measure it on _your_ market.
 
 **3. What you learn must transfer to any asset.** A crypto-only curriculum produces a player who believes they learned technical analysis and actually learned crypto. Four mechanisms prevent that:
 
-- **Cross-asset bosses** — every chapter's boss runs on a *different asset* than that chapter's levels, so any asset-specific crutch fails at the gate.
+- **Cross-asset bosses** — every chapter's boss runs on a _different asset_ than that chapter's levels, so any asset-specific crutch fails at the gate.
 - **Normalized measurement** — a y-axis toggle (price → % → ATR-multiples) means every measurement you make is already unit-free.
 - **One sizing formula, four instrument classes** — spot crypto, shares, futures contracts, FX lots. Same math, different `valuePerPoint`.
 - **Per-asset base rates** — a distribution across six markets, never a single number.
@@ -33,18 +33,18 @@ The game also teaches you to distrust your own results. The Chapter 1 boss is a 
 
 Ten chapters, ~73 levels. Full breakdown in [`docs/CURRICULUM.md`](docs/CURRICULUM.md).
 
-| Ch | Title | Ends with |
-|---|---|---|
-| 1 | Reading the Chart | A coin-flip boss proving you can't predict yet |
-| 2 | Market Structure | Swings, trendlines, breaks of structure |
-| 3 | Zones | Your first real trade, in replay |
-| 4 | Patterns & Base Rates | Guessing win rates, then seeing them measured |
-| 5 | Indicators | ATR as % — the normalization keystone |
-| 6 | Confluence & Multi-Timeframe | Full MTF replay trade |
-| 7 | Risk, R & Sizing | 10 trades; scored on expectancy, not profit |
-| 8 | Asset Character | Measuring trend-persistence yourself, per asset |
-| 9 | Edge & Probability | Spotting overfit and under-sampled backtests |
-| 10 | Build Your Own Strategy | An exported playbook that works on ≥2 asset classes |
+| Ch  | Title                        | Ends with                                           |
+| --- | ---------------------------- | --------------------------------------------------- |
+| 1   | Reading the Chart            | A coin-flip boss proving you can't predict yet      |
+| 2   | Market Structure             | Swings, trendlines, breaks of structure             |
+| 3   | Zones                        | Your first real trade, in replay                    |
+| 4   | Patterns & Base Rates        | Guessing win rates, then seeing them measured       |
+| 5   | Indicators                   | ATR as % — the normalization keystone               |
+| 6   | Confluence & Multi-Timeframe | Full MTF replay trade                               |
+| 7   | Risk, R & Sizing             | 10 trades; scored on expectancy, not profit         |
+| 8   | Asset Character              | Measuring trend-persistence yourself, per asset     |
+| 9   | Edge & Probability           | Spotting overfit and under-sampled backtests        |
+| 10  | Build Your Own Strategy      | An exported playbook that works on ≥2 asset classes |
 
 ---
 
@@ -79,6 +79,7 @@ npm run lint         # eslint . --quiet
 npm test             # vitest run
 npm run test:e2e     # playwright test (runs against a production build)
 npm run build        # production build
+npm run check:bundle # per-route client JS budget (needs a build first)
 npm run data:fetch   # rebuild public/data from upstream sources
 ```
 
@@ -94,22 +95,22 @@ Ten committed series spanning crypto, an index, a single stock, FX, gold and an 
 
 Every dependency is pinned exactly (`save-exact=true`), because two windows in this stack are narrow:
 
-- **TypeScript is held at 6.0.3**, not 7.x — `eslint-config-next` depends on `typescript-eslint@^8`, which declares `typescript ">=4.8.4 <6.1.0"`.
-- **ESLint is held at 9.x**, not 10.x — `eslint-plugin-react` peers at `^9.7` and calls `context.getFilename()`, removed in ESLint 10.
+- **TypeScript is held at 6.0.3**, not 7.x. Re-verified 2026-07-30: `tsc` and the whole test suite already pass on 7.0.2 — it is the toolchain that does not. `typescript-eslint` refuses TS 7.0 outright (peer `>=4.8.4 <6.1.0`; TS ≥7.1 tracked in [typescript-eslint#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940)), and `next build` reports that 7.0.2 "does not provide the compiler API required by Next.js".
+- **ESLint is held at 9.x**, not 10.x. One unguarded line: `eslint-plugin-react/lib/util/version.js:31` calls `context.getFilename()`, removed in ESLint 10. The plugin ships a compat shim for `getScope`, `getAncestors` and `getSourceCode`, but not this one — and it sits in React-version detection, which nearly every `react/*` rule consults, so it takes out the whole config.
 
-Both are worth revisiting once the plugin ecosystem catches up. Until then a minor bump silently breaks the lint gate.
+Both are worth revisiting once the plugin ecosystem catches up — tracked in [#31](https://github.com/zkwokleung/chart-quest/issues/31). Until then a minor bump silently breaks the lint gate.
 
 ## Documentation
 
-| Doc | What's in it |
-|---|---|
-| [`docs/PLAN.md`](docs/PLAN.md) | The full design plan — the source of truth for scope |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | The level-kind engine, schemas, grader contract, storage |
-| [`docs/CURRICULUM.md`](docs/CURRICULUM.md) | All 10 chapters and ~73 levels, plus the cross-asset boss rule |
-| [`docs/DATA.md`](docs/DATA.md) | The six-series data spine, sources, format, out-of-sample rules |
-| [`docs/AUTHORING.md`](docs/AUTHORING.md) | How to add a level — the most-repeated task in the project |
-| [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) | Orientation: the invariants, code conventions, verification commands |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Branches, commits, and the verification gates |
+| Doc                                            | What's in it                                                         |
+| ---------------------------------------------- | -------------------------------------------------------------------- |
+| [`docs/PLAN.md`](docs/PLAN.md)                 | The full design plan — the source of truth for scope                 |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | The level-kind engine, schemas, grader contract, storage             |
+| [`docs/CURRICULUM.md`](docs/CURRICULUM.md)     | All 10 chapters and ~73 levels, plus the cross-asset boss rule       |
+| [`docs/DATA.md`](docs/DATA.md)                 | The six-series data spine, sources, format, out-of-sample rules      |
+| [`docs/AUTHORING.md`](docs/AUTHORING.md)       | How to add a level — the most-repeated task in the project           |
+| [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)   | Orientation: the invariants, code conventions, verification commands |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md)           | Branches, commits, and the verification gates                        |
 
 ## Contributing
 
@@ -126,4 +127,10 @@ Chart Quest is educational software. It is **not financial advice**, and it does
 
 ## License
 
-Not yet chosen — see [#1](https://github.com/zkwokleung/chart-quest/issues/1).
+[MIT](LICENSE). Fork it, teach with it, build your own curriculum on the level-kind
+engine — the point is that the teaching spreads.
+
+Third-party notices: charting is [lightweight-charts](https://github.com/tradingview/lightweight-charts)
+(Apache-2.0), which requires attribution to TradingView. The price data under
+`public/data/` is derived from public Binance, Stooq and Yahoo endpoints and is
+redistributed for education; see [`docs/DATA.md`](docs/DATA.md) for provenance.
