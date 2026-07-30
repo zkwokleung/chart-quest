@@ -25,6 +25,9 @@ jobs:
       # A passing typecheck does not prove the production build works — they
       # fail for different reasons, so both are gates.
       - run: npm run build
+      # Every level route loads the same chunks, so all level content ships to
+      # every one of them. That cost grows with the curriculum, not with the page.
+      - run: npm run check:bundle
 
   e2e:
     runs-on: ubuntu-latest

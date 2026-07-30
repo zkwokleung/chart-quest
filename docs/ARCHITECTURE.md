@@ -2,7 +2,7 @@
 
 The central problem: **~73 levels must not be ~73 components.**
 
-The solution is a small set of reusable interaction primitives ("level kinds"). Each kind is one React component plus one pure grader function. Every level is *data* referencing a slice of a price series. Adding a level means adding a data file, not writing code.
+The solution is a small set of reusable interaction primitives ("level kinds"). Each kind is one React component plus one pure grader function. Every level is _data_ referencing a slice of a price series. Adding a level means adding a data file, not writing code.
 
 ---
 
@@ -10,18 +10,18 @@ The solution is a small set of reusable interaction primitives ("level kinds"). 
 
 Ten kinds cover the whole curriculum.
 
-| Kind | Interaction | Teaches |
-|---|---|---|
-| `annotate` | Drag to draw. Modes: `trendline`, `level`, `zone`, `channel`, `fib`. | Structure, zones, geometry |
-| `mark-bars` | Click candles / ranges. Graded as set overlap, ±n bar tolerance. | Pattern spotting, swings, volume events |
-| `classify` | Chart shown, choose a label. Grounded in a *chart*, never in prose. | Regime, pattern ID, breakout vs fakeout |
-| `predict-next` | Chart truncated at bar N. Commit a direction/target. Reveal animates the real bars. | Humility, probabilistic thinking |
-| `replay-trade` | Bar-by-bar replay, play/pause/step. Place entry/stop/target, manage the position. | Everything real |
-| `tune-param` | Live slider over a parameter. Find the value satisfying a condition. | Indicator lag, parameter sensitivity, overfitting |
-| `sort-rank` | Drag to order, then reveal the true ordering. | Base rates, setup quality, confluence |
-| `sizing-calc` | Numeric input, graded with tolerance, parameterized by `InstrumentSpec`. | R-multiples, sizing across instruments, expectancy |
-| `spot-the-flaw` | A finished bad trade or a backtest report; identify what's wrong. | Anti-patterns, critical reading |
-| `build-rules` | Block composer → multi-asset backtest → hit an objective. | Chapter 10 |
+| Kind            | Interaction                                                                         | Teaches                                            |
+| --------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `annotate`      | Drag to draw. Modes: `trendline`, `level`, `zone`, `channel`, `fib`.                | Structure, zones, geometry                         |
+| `mark-bars`     | Click candles / ranges. Graded as set overlap, ±n bar tolerance.                    | Pattern spotting, swings, volume events            |
+| `classify`      | Chart shown, choose a label. Grounded in a _chart_, never in prose.                 | Regime, pattern ID, breakout vs fakeout            |
+| `predict-next`  | Chart truncated at bar N. Commit a direction/target. Reveal animates the real bars. | Humility, probabilistic thinking                   |
+| `replay-trade`  | Bar-by-bar replay, play/pause/step. Place entry/stop/target, manage the position.   | Everything real                                    |
+| `tune-param`    | Live slider over a parameter. Find the value satisfying a condition.                | Indicator lag, parameter sensitivity, overfitting  |
+| `sort-rank`     | Drag to order, then reveal the true ordering.                                       | Base rates, setup quality, confluence              |
+| `sizing-calc`   | Numeric input, graded with tolerance, parameterized by `InstrumentSpec`.            | R-multiples, sizing across instruments, expectancy |
+| `spot-the-flaw` | A finished bad trade or a backtest report; identify what's wrong.                   | Anti-patterns, critical reading                    |
+| `build-rules`   | Block composer → multi-asset backtest → hit an objective.                           | Chapter 10                                         |
 
 Some levels are **composite** — a boss may chain `mark-bars` → `annotate` → `classify` → `predict-next` and average the scores. Composites are expressed as a sequence of kinds, not a new kind.
 
@@ -32,20 +32,20 @@ Some levels are **composite** — a boss may chain `mark-bars` → `annotate` �
 ```ts
 // lib/levels/schema.ts
 interface Level {
-  id: LevelId;                       // '3-4' | '3-B'
+  id: LevelId; // '3-4' | '3-B'
   chapter: number;
   title: string;
   kind: LevelKind;
-  brief: string;                     // one or two sentences, max
-  data: { series: SeriesId; from: number; to: number; reveal?: number }[];  // array → MTF & multi-asset
-  config: KindConfig;                // discriminated on `kind`
-  target: KindTarget;                // the reference answer
+  brief: string; // one or two sentences, max
+  data: { series: SeriesId; from: number; to: number; reveal?: number }[]; // array → MTF & multi-asset
+  config: KindConfig; // discriminated on `kind`
+  target: KindTarget; // the reference answer
   tolerance: KindTolerance;
-  stars: [number, number, number];   // score thresholds for 1/2/3 stars
-  misconceptions: Misconception[];   // REQUIRED, min 2 — see §4
+  stars: [number, number, number]; // score thresholds for 1/2/3 stars
+  misconceptions: Misconception[]; // REQUIRED, min 2 — see §4
   unlocks?: ToolId[];
-  hints: string[];                   // progressive, costs stars
-  yAxis?: 'price' | 'pct' | 'atr';   // default mode; player may toggle unless locked
+  hints: string[]; // progressive, costs stars
+  yAxis?: "price" | "pct" | "atr"; // default mode; player may toggle unless locked
 }
 ```
 
@@ -59,14 +59,17 @@ interface Level {
 
 ```ts
 type Grade = {
-  score: number;                     // 0..1
+  score: number; // 0..1
   stars: 0 | 1 | 2 | 3;
-  diagnosis: Misconception[];        // matched, most specific first
-  reference: OverlaySpec;            // animated onto the player's attempt
+  diagnosis: Misconception[]; // matched, most specific first
+  reference: OverlaySpec; // animated onto the player's attempt
 };
 
-type Grader<K extends LevelKind> =
-  (attempt: Attempt<K>, level: Level & { kind: K }, data: Series[]) => Grade;
+type Grader<K extends LevelKind> = (
+  attempt: Attempt<K>,
+  level: Level & { kind: K },
+  data: Series[],
+) => Grade;
 ```
 
 Graders are **pure and deterministic**. No `Date.now()`, no `Math.random()`, no DOM, no store access. This makes them the highest-value and cheapest-to-test code in the project.
@@ -81,12 +84,12 @@ Registry: `lib/levels/graders/index.ts` maps `LevelKind → Grader`. The level p
 interface Misconception {
   id: string;
   test: (attempt: Attempt, level: Level, data: Series[]) => boolean;
-  message: string;                   // "Your line cuts 2 candle bodies — anchor to wicks."
-  showOverlay?: OverlaySpec;         // draw the correction on their attempt
+  message: string; // "Your line cuts 2 candle bodies — anchor to wicks."
+  showOverlay?: OverlaySpec; // draw the correction on their attempt
 }
 ```
 
-A grader that returns `0.62` teaches nothing. A grader that returns *"you anchored to bodies instead of wicks"* teaches the thing. This is the single most important design decision in the codebase.
+A grader that returns `0.62` teaches nothing. A grader that returns _"you anchored to bodies instead of wicks"_ teaches the thing. This is the single most important design decision in the codebase.
 
 **Invariant: every level authors ≥2 misconceptions** covering its commonest wrong answers. Enforced by test. A PR adding a level without them fails CI.
 
@@ -117,13 +120,13 @@ Chart y-axis mode is `'price' | 'pct' | 'atr'`, toggleable on every chart (unloc
 // lib/instruments/specs.ts
 type InstrumentSpec = {
   id: SeriesId;
-  class: 'crypto-spot' | 'equity' | 'futures' | 'fx';
-  valuePerPoint: number;    // $ per 1.0 price move, per unit
-  lotSize: number;          // 1e-8 crypto | 1 share | 1 contract | 0.01 FX lot
-  tick?: number;            // futures tick size
-  tickValue?: number;       // futures $ per tick
+  class: "crypto-spot" | "equity" | "futures" | "fx";
+  valuePerPoint: number; // $ per 1.0 price move, per unit
+  lotSize: number; // 1e-8 crypto | 1 share | 1 contract | 0.01 FX lot
+  tick?: number; // futures tick size
+  tickValue?: number; // futures $ per tick
   quoteCcy: string;
-  hours: TradingHours;      // drives gap/session lessons AND backtest bar validity
+  hours: TradingHours; // drives gap/session lessons AND backtest bar validity
   typicalSpreadBps: number; // slippage lesson
 };
 ```
@@ -132,10 +135,10 @@ The one formula, everywhere:
 
 ```ts
 riskPerUnit = Math.abs(entry - stop) * spec.valuePerPoint;
-units       = roundToLot((equity * riskPct) / riskPerUnit, spec);
+units = roundToLot((equity * riskPct) / riskPerUnit, spec);
 ```
 
-`hours` deliberately does double duty — it is teaching content (Ch 1.6 gaps, Ch 6.6 sessions) *and* backtest correctness. A gap the game teaches about is the same gap the backtester must not fill inside.
+`hours` deliberately does double duty — it is teaching content (Ch 1.6 gaps, Ch 6.6 sessions) _and_ backtest correctness. A gap the game teaches about is the same gap the backtester must not fill inside.
 
 ---
 
@@ -150,17 +153,27 @@ Strategy representation:
 
 ```ts
 type Block =
-  | { kind: 'cross';      fast: IndicatorRef; slow: IndicatorRef; dir: 'above'|'below' }
-  | { kind: 'compare';    left: IndicatorRef; op: '<'|'>'; right: number | IndicatorRef }
-  | { kind: 'structure';  event: 'bos'|'retest'|'swing-high'|'swing-low' }
-  | { kind: 'zone';       touching: 'support'|'resistance' }
-  | { kind: 'volatility'; atrPct: { op: '<'|'>'; value: number } };   // unlocked by Ch 8
+  | {
+      kind: "cross";
+      fast: IndicatorRef;
+      slow: IndicatorRef;
+      dir: "above" | "below";
+    }
+  | {
+      kind: "compare";
+      left: IndicatorRef;
+      op: "<" | ">";
+      right: number | IndicatorRef;
+    }
+  | { kind: "structure"; event: "bos" | "retest" | "swing-high" | "swing-low" }
+  | { kind: "zone"; touching: "support" | "resistance" }
+  | { kind: "volatility"; atrPct: { op: "<" | ">"; value: number } }; // unlocked by Ch 8
 
 type Strategy = {
   entry: { all: Block[] };
-  exit:  { stop: StopRule; target: TargetRule; timeStop?: number };
-  risk:  { perTradePct: number };
-  scope: { series: SeriesId; from: number; to: number }[];   // multi-asset
+  exit: { stop: StopRule; target: TargetRule; timeStop?: number };
+  risk: { perTradePct: number };
+  scope: { series: SeriesId; from: number; to: number }[]; // multi-asset
 };
 ```
 
@@ -175,14 +188,27 @@ Anti-overfit guards in `lib/backtest/guards.ts`: forced in-sample/out-of-sample 
 No accounts, no server. One versioned root key.
 
 ```ts
-const KEY = 'chart-quest';
+const KEY = "chart-quest";
 type Persisted = {
   version: 1;
-  profile:     { xp: number; streak: number; lastPlayed: string; settings: Settings };
-  progress:    Record<LevelId, { stars: 0|1|2|3; bestScore: number; attempts: number; completedAt: string }>;
-  journal:     JournalEntry[];        // includes seriesId + asset class → Ch 9.6 breakdown
-  strategies:  SavedStrategy[];
-  predictions: Record<LevelId, unknown>;   // e.g. Ch 4.5 win-rate guesses, Ch 1.B score
+  profile: {
+    xp: number;
+    streak: number;
+    lastPlayed: string;
+    settings: Settings;
+  };
+  progress: Record<
+    LevelId,
+    {
+      stars: 0 | 1 | 2 | 3;
+      bestScore: number;
+      attempts: number;
+      completedAt: string;
+    }
+  >;
+  journal: JournalEntry[]; // includes seriesId + asset class → Ch 9.6 breakdown
+  strategies: SavedStrategy[];
+  predictions: Record<LevelId, unknown>; // e.g. Ch 4.5 win-rate guesses, Ch 1.B score
 };
 ```
 
@@ -190,7 +216,7 @@ type Persisted = {
 - `migrate(persisted)` runs on read whenever `version` is behind.
 - **Export/import JSON** is a real feature, not a nicety: with no cloud sync it's the only way to move devices, and it protects ten chapters of progress against a cleared cache.
 
-The journal is what makes Ch 9.6 possible — because progress is local, the trade log is genuinely the player's own, so the game can tell them *"you're +0.6R on trend continuation and −0.9R counter-trend; your average loss is 1.4R, not the 1R you set."*
+The journal is what makes Ch 9.6 possible — because progress is local, the trade log is genuinely the player's own, so the game can tell them _"you're +0.6R on trend continuation and −0.9R counter-trend; your average loss is 1.4R, not the 1R you set."_
 
 ---
 
@@ -200,7 +226,7 @@ The journal is what makes Ch 9.6 possible — because progress is local, the tra
 
 Why not a fully custom renderer: crosshair, log scale, pan/zoom, autoscale and the volume pane come free, and `timeScale().coordinateToTime()` / `series.coordinateToPrice()` provide exactly the price↔pixel conversion draw tools need, so annotations stay locked to the chart through pan and zoom. Replay is incremental `series.update()`.
 
-**Escape hatch:** if one level kind fights the library, drop to a focused Canvas 2D renderer *for that kind only*. Do not rewrite everything.
+**Escape hatch:** if one level kind fights the library, drop to a focused Canvas 2D renderer _for that kind only_. Do not rewrite everything.
 
 Coordinate helpers, geometry, and hit-testing live in `lib/chart/` and are pure — testable without a DOM.
 
@@ -232,7 +258,26 @@ scripts/        fetch-data.ts, compute-base-rates.ts
 public/data/    series/*.json, oos/*.json, base-rates.json, manifest.json
 ```
 
-## 11. Accessibility
+## 11. The client bundle, and where it runs out
+
+Measured after Chapter 2, not projected: **every level route loads the identical
+11 chunks.** `/level/1-1`, `/level/2-3` and `/level/2-B` are byte-for-byte the
+same 257 KB gzipped, because the level registry is a client module that statically
+imports all content — so every level ships the whole curriculum.
+
+That means bundle cost grows with the number of levels rather than with the page,
+and the arithmetic is not comfortable. Fifteen levels of content are ~16 KB
+gzipped; 73 levels extrapolate to ~78 KB, which would take a level route past
+320 KB. **The 275 KB budget in `scripts/check-bundle.ts` should be reached around
+Chapter 4 or 5** and CI will say so.
+
+The structural answer is to load content per level — `import(\`./content/\${id}.ts\`)`
+keyed by level id, so a route carries its own level and not the other 72. It is
+deliberately _not_ done yet: it trades a static import for an async one in the
+level player's loading path, and doing that before the replay engine exists means
+doing it twice. When CI fails the budget, that is the fix, not a bigger number.
+
+## 12. Accessibility
 
 Non-negotiable for a chart-driven game:
 
