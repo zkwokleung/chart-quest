@@ -6,7 +6,7 @@ An interactive game that teaches technical analysis, from "what is a candle" to 
 
 **Live:** <https://chart-quest.vercel.app>
 
-**Status:** pre-alpha. **Chapters 1, 2, 3 and 5 are playable** — 29 levels across seven interaction kinds, including draw tools, a replay engine, a graded first trade with a journal, and indicators with a price/percent/ATR y-axis. Chapter 4 and the measured pattern base rates are next. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
+**Status:** pre-alpha. **Chapters 1 through 5 are playable end to end** — 36 levels across eight interaction kinds, including draw tools, a replay engine, a graded first trade with a journal, indicators with a price/percent/ATR y-axis, and pattern base rates measured per asset with sample sizes and confidence intervals. Confluence and multi-timeframe are next. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
 
 ---
 
@@ -16,14 +16,18 @@ Most technical-analysis material is either a wall of prose or a pattern catalogu
 
 **1. Every level is an interaction, not a lesson.** You draw the trendline, click the swing highs, place the stop, predict the next bar. Reading is kept to a sentence or two. Feedback names your specific mistake — _"your line is anchored to bodies, not wicks"_ — instead of a score.
 
-**2. Every number is measured, not asserted.** Pattern win rates are computed at build time from the bundled historical data, per asset, with sample sizes and confidence intervals. When head & shoulders runs 41% on EURUSD and 58% on BTC, the game shows you both — because the real lesson is that pattern edge is asset- and regime-dependent, so you have to measure it on _your_ market.
+**2. Every number is measured, not asserted.** Pattern win rates are computed at build time from the bundled historical data, per asset, with sample sizes and confidence intervals.
+
+This commitment has teeth, and the pattern chapter is where it bit hardest. The plan for it assumed win rates would come in around 40–60% and vary interestingly by market. Measured, all five patterns land between **47.6% and 50.1%**, every confidence interval overlaps every other, and no mean forward move reaches a quarter of a daily range in either direction. The first run looked better — double tops at 73% — until it turned out that a swing high isn't knowable until four later bars have failed to exceed it, and measuring from before that hands the pattern four bars of hindsight. Correct the clock and the edge disappears entirely.
+
+So the level built on those numbers asks a different question than planned: not which pattern wins most, but **how much evidence there is for any of it**. Sample sizes run from 3,733 pin bars down to 66 head & shoulders — and the rarest, most storied shape reads 26.7% on gold and 66.7% on a small-cap industrial, from fifteen and eighteen examples respectively. The most impressive number in the table is the one with the least behind it, which is a better lesson than the one we set out to teach.
 
 **3. What you learn must transfer to any asset.** A crypto-only curriculum produces a player who believes they learned technical analysis and actually learned crypto. Four mechanisms prevent that:
 
 - **Cross-asset bosses** — every chapter's boss runs on a _different asset_ than that chapter's levels, so any asset-specific crutch fails at the gate.
 - **Normalized measurement** — a y-axis toggle (price → % → ATR-multiples) means every measurement you make is already unit-free.
 - **One sizing formula, four instrument classes** — spot crypto, shares, futures contracts, FX lots. Same math, different `valuePerPoint`.
-- **Per-asset base rates** — a distribution across six markets, never a single number.
+- **Per-asset base rates** — a distribution across five markets, never a single number.
 
 The game also teaches you to distrust your own results. The Chapter 1 boss is a coin flip you score ~50% on. Chapter 9 makes you overfit a rule until it looks brilliant, then reveals the out-of-sample collapse.
 

@@ -45,7 +45,7 @@ export const level: Level<"composite"> = {
       {
         kind: "mark-bars",
         weight: 0.25,
-        brief: "1. Mark the pullback low",
+        brief: "Mark the pullback low",
         config: {
           prompt: "Click the bar where the pullback found its low.",
           mode: "bars",
@@ -83,7 +83,7 @@ export const level: Level<"composite"> = {
       {
         kind: "classify",
         weight: 0.25,
-        brief: "2. Read the indicators",
+        brief: "Read the indicators",
         config: {
           prompt: "RSI is near 63 here. What does that justify?",
           options: [
@@ -125,7 +125,7 @@ export const level: Level<"composite"> = {
       {
         kind: "replay-trade",
         weight: 0.5,
-        brief: "3. Take the trade",
+        brief: "Take the trade",
         config: {
           prompt:
             "Place your stop and target, say why, then play the replay out.",

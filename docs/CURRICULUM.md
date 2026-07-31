@@ -88,17 +88,55 @@ _unlocks: horizontal level, rectangle, measure tool_
 
 _unlocks: pattern library with per-asset stats_
 
-| #       | Level                                                                       | Kind            |
-| ------- | --------------------------------------------------------------------------- | --------------- |
-| 4.1     | Pin bar, doji, engulfing — find them                                        | `mark-bars`     |
-| 4.2     | Context beats pattern — same pin bar in trend vs chop                       | `classify`      |
-| 4.3     | Continuation: flag, triangle — draw the boundaries                          | `annotate`      |
-| 4.4     | Reversal: double top, head & shoulders — mark the components                | `mark-bars`     |
-| 4.5     | **Guess the win rate** of 5 patterns → see it measured across all 6 assets  | `sort-rank`     |
-| 4.6     | A perfect pattern that failed — why?                                        | `spot-the-flaw` |
-| **4.B** | **BOSS (EURUSD 1h):** scan unseen chart, find the setup, trade it in replay | composite       |
+| #       | Level                                                                 | Kind        |
+| ------- | --------------------------------------------------------------------- | ----------- |
+| 4.1     | Pin bar, doji, engulfing — find them (and the bars that nearly are)   | `mark-bars` |
+| 4.2     | The same candle, twice — one ran, one collapsed                       | `classify`  |
+| 4.3     | Continuation: the falling ceiling of a bear flag — draw it            | `annotate`  |
+| 4.4     | Reversal: head & shoulders — mark the three peaks                     | `mark-bars` |
+| 4.5     | **Rank the patterns by evidence**, then see every win rate            | `sort-rank` |
+| 4.6     | A perfect pattern that failed — why?                                  | `classify`  |
+| **4.B** | **BOSS (LAKE 1d):** find the setup on an unseen market, then trade it | composite   |
 
-> **4.5 is the chapter's payload.** The player guesses (usually 70%+), then sees head & shoulders run 41% on EURUSD and 58% on BTC — with `n` and a 95% CI wide enough to be visibly untrustworthy. The lesson upgrades from _"patterns are weaker than you think"_ to **"pattern edge is asset- and regime-dependent, so measure it on your own market."** Guesses are stored and recalled in Ch 9.
+> **4.5 is still the chapter's payload, and it asks a different question than planned.**
+> The specified version had the player rank five patterns by win rate and discover the
+> rates were lower and more asset-dependent than they guessed. Measured with the shipped
+> detector across five markets, the pooled rates are 47.6%–50.1% — a 2.5 point spread
+> with every 95% interval overlapping every other. There is no ordering there to be right
+> about, and ranking it would be the "metric that is nearly constant across the answer
+> space" fault that sank three earlier levels.
+>
+> So the ranking is by **sample size**, which spans 66 to 3,733 and is derivable from the
+> rules taught in 4.1. The reveal then shows that 57× more evidence buys no separation in
+> outcome at all, and that head & shoulders — rarest and most storied — reads 26.7% on
+> gold and 66.7% on LAKE from fifteen and eighteen examples. The lesson lands as *"the
+> most impressive number in the table is the one with the least behind it"*, and the
+> ranking is stored for Ch 9.
+
+### Where Chapter 4 diverged from this plan, and why
+
+Each is recorded in full in the level's own file.
+
+- **4.2** was to show that context beats pattern: trend good, chop bad. Apple's bullish
+  pin bars do _worst_ in uptrends (51.2%, +0.10 ATR) and best after downtrends (64.7%,
+  +0.59 ATR); Bitcoin's run the other way (53.9% vs 53.8%, +1.28 vs −0.08 ATR). The two
+  spine assets disagree about the sign of the effect, so the answer is that the shape is
+  not carrying the information — a stronger version of the same lesson, and measured.
+- **4.3** asks for one trendline rather than a flag's two boundaries. The annotate grader
+  scores a `channel`'s primary rail only, so asking for a channel would grade half of
+  what it asked. A bear flag's floor is a horizontal level, which is Chapter 3.
+- **4.6** is `classify`, not `spot-the-flaw` — the third time that call has come up,
+  after 1.7 and 5.6. It is a chart plus a choice. `spot-the-flaw` stays unbuilt until a
+  level needs a non-chart artefact, most likely a backtest report in Chapter 9.
+- **4.B** runs on LAKE-1d, not EURUSD 1h. Hourly euro holds 1,295 pin bars in 7,163 bars,
+  so "scan the chart and find the setup" has no defensible answer there, and it contains
+  zero double tops and zero head-and-shoulders at any span. LAKE gives exactly one chart
+  pattern in its window and a 3.70% daily ATR no chapter has taught on.
+
+> **Chapter 5 was unreachable until this chapter existed.** `isChapterUnlocked(5)` asks
+> for two stars on 4-B, and M6 shipped Chapter 5 with 4-B unwritten — its own e2e tests
+> seeded `"4-B": cleared` into localStorage, which made the suite pass and hid the gap.
+> `e2e/chapter4.spec.ts` now asserts the chain in both directions.
 
 ## Ch 5 — Indicators
 

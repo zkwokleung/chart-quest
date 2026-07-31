@@ -70,9 +70,9 @@ export function SortRank({
               className={[
                 "flex items-center gap-3 rounded-lg border bg-surface p-3",
                 placement === "right place"
-                  ? "border-[var(--color-positive)]"
+                  ? "border-up"
                   : placement === "wrong place"
-                    ? "border-[var(--color-negative)]"
+                    ? "border-down"
                     : "border-border",
               ].join(" ")}
             >

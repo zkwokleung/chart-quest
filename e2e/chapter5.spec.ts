@@ -3,6 +3,11 @@ import { expect, test, type Page } from "@playwright/test";
 /**
  * Chapter 5 through the browser: sliders, indicator panes and the y-axis mode.
  *
+ * The 4-B entry in these fixtures seeded a level that did not exist until M7, which
+ * is how Chapter 5 shipped unreachable and how these tests failed to notice. 4-B is a
+ * real boss now and the unlock chain itself is asserted in chapter4.spec.ts, so
+ * seeding it here is ordinary setup rather than cover for a gap.
+ *
  * The assertions worth having are the ones unit tests cannot make — that dragging a
  * slider actually changes the score, that a level route fetches its own content
  * chunk and not the whole curriculum, and that switching the y-axis leaves a

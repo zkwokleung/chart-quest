@@ -54,7 +54,7 @@ export const level: Level<"composite"> = {
       {
         kind: "mark-bars",
         weight: 0.25,
-        brief: "1. Find where the pattern completed",
+        brief: "Find where the pattern completed",
         config: {
           prompt:
             "One double top completed in this window. Click the bar of its second peak.",
@@ -88,7 +88,7 @@ export const level: Level<"composite"> = {
       {
         kind: "classify",
         weight: 0.2,
-        brief: "2. Say what it entitles you to",
+        brief: "Say what it entitles you to",
         config: {
           prompt: "The pattern is complete. What does that give you?",
           options: [
@@ -130,7 +130,7 @@ export const level: Level<"composite"> = {
       {
         kind: "replay-trade",
         weight: 0.55,
-        brief: "3. Take the trade",
+        brief: "Take the trade",
         config: {
           prompt:
             "Short it. Place your stop and target, say why, and play it out.",

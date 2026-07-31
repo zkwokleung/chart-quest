@@ -261,6 +261,42 @@ period. Check the surface before authoring the answer.
 
 ---
 
+## Ranking levels (`sort-rank`)
+
+```ts
+kind: 'sort-rank',
+data: [],                                    // a table, not a chart, is allowed
+config: {
+  prompt: '...',
+  topLabel: 'commonest', bottomLabel: 'rarest',
+  items: [{ id: 'pin-bar', label: 'Pin bar', note: 'body under a third of range' }],
+  reveal: 'pattern-base-rates',              // optional measured table on commit
+},
+target: { order: ['pin-bar', 'doji', 'engulfing', 'double-top', 'head-and-shoulders'] },
+tolerance: { swaps: 2 },
+```
+
+Scored on Kendall's tau — discordant pairs over total pairs, which is the number of
+adjacent swaps between the two orderings, normalised. `tolerance.swaps` is in that same
+unit, so you set a tolerance in swaps you can count on your fingers.
+
+**The quantity ranked has to actually separate, and it has to be inferable.** Both halves
+matter and 4.5 nearly failed the first. It was specified as "rank the patterns by win
+rate", and measured, the five rates span 2.5 points with every interval overlapping every
+other — there was no ordering to be right about. Ranked by sample size instead they span
+57×, and a player can derive that ordering from the rules alone: the tighter a definition,
+the fewer bars satisfy it.
+
+So: compute your quantity at the intended answer *and* at a deliberately wrong one. If
+they are close, the metric is wrong — the same check that caught 3.1, 3.2 and 5.2. Then
+ask whether a player could reason their way to the ordering, because one that can only be
+guessed is a lottery with a correction screen.
+
+Set `swaps` below the cost of the error you actually care about. 4.5 forgives two, and
+moving a chart pattern above all three candlesticks costs three.
+
+---
+
 ## Content review bar
 
 Before marking a level done, ask what a skeptical trader would object to:

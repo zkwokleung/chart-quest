@@ -58,7 +58,7 @@ export function BaseRateTable() {
 
   if (error) {
     return (
-      <p className="font-mono text-xs text-negative">
+      <p className="font-mono text-xs text-down">
         The measured rates could not be loaded ({error}). Nothing below this line is
         worth reading without them.
       </p>
@@ -121,9 +121,7 @@ export function BaseRateTable() {
                     className="py-2 pr-3 text-right font-mono tabular-nums"
                     // The widest interval is the row the level is about, so it is
                     // marked rather than left for the player to compare by eye.
-                    style={
-                      widest(row) > 0.15 ? { color: "var(--color-negative)" } : undefined
-                    }
+                    style={widest(row) > 0.15 ? { color: "var(--color-down)" } : undefined}
                   >
                     {pct(ci95[0])} – {pct(ci95[1])}
                   </td>

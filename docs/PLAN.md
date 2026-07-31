@@ -17,7 +17,7 @@ So transferability is designed in, not bolted on, via four mechanisms:
 1. **Cross-asset bosses.** Every chapter's boss runs on a _different asset than that chapter's levels_. Any asset-specific crutch fails loudly at the gate.
 2. **Everything normalized.** A y-axis toggle (price → % → ATR-multiples) means every measurement the player ever makes is already unit-free.
 3. **One sizing formula, four instrument specs.** Spot, shares, futures contracts, FX lots — same math, different `valuePerPoint`.
-4. **Per-asset base rates.** Patterns show a _distribution across six markets_ with sample sizes and confidence intervals, never a single number.
+4. **Per-asset base rates.** Patterns show a _distribution across five markets_ with sample sizes and confidence intervals, never a single number. (Five, not six: `EURUSD-1d`'s open is an upstream artefact, so its candle figures would be too — see docs/AUTHORING.md.)
 
 Decisions locked with the user:
 
@@ -180,7 +180,7 @@ This is enforced by a test, not by discipline (§7).
 | 4.6     | A perfect pattern that failed — why?                                        | `spot-the-flaw` |
 | **4.B** | **BOSS (EURUSD 1h):** scan unseen chart, find the setup, trade it in replay | composite       |
 
-> 4.5 is the chapter's payload and the fix to the honesty contradiction. The player guesses (usually 70%+), then sees head & shoulders run **41% on EURUSD and 58% on BTC** — with n and a 95% CI wide enough to be visibly untrustworthy. The lesson upgrades from "patterns are weaker than you think" to **"pattern edge is asset- and regime-dependent, so you must measure it on your own market"** — which is the transferability lesson in its purest form. Guesses are stored and recalled in Ch 9.
+> **4.5 is the chapter's payload, and what it asks changed once the numbers existed.** The plan was: the player guesses (usually 70%+), then sees head & shoulders run 41% on EURUSD and 58% on BTC, with n and a 95% CI wide enough to be visibly untrustworthy. Measured with the shipped detector, the pooled rates for all five patterns fall between **47.6% and 50.1%** with every interval overlapping every other — so there is no ordering to rank and no asset-dependence that is distinguishable from noise. The ranking is by **sample size** instead (66 to 3,733, derivable from the definitions), and the reveal shows that 57× more evidence buys no separation in outcome. The lesson lands as **"the most impressive number in the table is the one with the least behind it"** — still the transferability lesson, and now carrying its own evidence. Rankings are stored and recalled in Ch 9. Full detail in `lib/levels/content/ch4/4-5.ts` and docs/CURRICULUM.md.
 
 ### Ch 5 — Indicators · _unlocks: indicator panel, one per level_
 
