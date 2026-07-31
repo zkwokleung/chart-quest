@@ -6,7 +6,7 @@ An interactive game that teaches technical analysis, from "what is a candle" to 
 
 **Live:** <https://chart-quest.vercel.app>
 
-**Status:** pre-alpha. **Chapters 1 to 3 are playable** — 22 levels across six interaction kinds, including draw tools, a replay engine, and a graded first trade with a journal. Chapter 4 and the pattern base rates are next. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
+**Status:** pre-alpha. **Chapters 1, 2, 3 and 5 are playable** — 29 levels across seven interaction kinds, including draw tools, a replay engine, a graded first trade with a journal, and indicators with a price/percent/ATR y-axis. Chapter 4 and the measured pattern base rates are next. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
 
 ---
 
@@ -89,7 +89,7 @@ Ten committed series spanning crypto, an index, a single stock, FX, gold and an 
 
 `npm run data:fetch` regenerates them, but **the committed JSON is the source of truth** — levels address it by bar index, so a series is immutable once committed. Two series are rolling-window snapshots that upstream cannot serve twice identically. Read [`docs/DATA.md`](docs/DATA.md) before touching anything under `public/data/`.
 
-`npm run data:rates` (per-asset base rates) arrives with the indicators milestone.
+`npm run data:rates` (per-asset base rates) arrives with Chapter 4, alongside the pattern detection it depends on.
 
 ### Version pinning
 

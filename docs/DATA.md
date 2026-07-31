@@ -10,18 +10,18 @@ Chosen so the series **disagree with each other**. Contrast is the pedagogical p
 
 Sizes are actual gzip measurements. The in-sample column is what chapters 1–9 teach on; the rest is held back for Chapter 10 (see below).
 
-| Series | Range (in-sample) | Bars | gz | Character it exists to teach |
-|---|---|---|---|---|
-| `BTCUSDT-1d` | 2017-08 → 2025-03 | 2,778 | 57 KB | Crypto · 24/7 · high vol · trend-persistent |
-| `BTCUSDT-4h` | 2021-01 → 2023-07 | 5,586 | 112 KB | Crypto intraday |
-| `SPY-1d` | 2005-01 → 2023-04 | 4,612 | 78 KB | Index · sessions · gaps · short-term mean-reverting |
-| `SPY-15m` | rolling 60 days | 1,041 | 16 KB | Intraday sessions and the opening range |
-| `AAPL-1d` | 2005-01 → 2023-04 | 4,612 | 69 KB | Single stock · earnings gaps · split-adjusted |
-| `AAPL-1d-raw` | 2020-06 → 2020-09 | 86 | 2 KB | Level 1.7 only — see *Reconstruction* |
-| `EURUSD-1d` | 2005-01 → 2023-05 | 4,755 | 64 KB | FX · 24/5 · low vol · ranging · Sunday gap |
-| `EURUSD-1h` | rolling 500 days | 7,163 | 64 KB | FX intraday |
-| `GC-1d` | 2005-01 → 2023-05 | 4,607 | 63 KB | Commodity · different volatility regime |
-| `LAKE-1d` | 2005-01 → 2023-04 | 4,612 | 54 KB | Illiquid small-cap · spread and slippage |
+| Series        | Range (in-sample) | Bars  | gz     | Character it exists to teach                        |
+| ------------- | ----------------- | ----- | ------ | --------------------------------------------------- |
+| `BTCUSDT-1d`  | 2017-08 → 2025-03 | 2,778 | 57 KB  | Crypto · 24/7 · high vol · trend-persistent         |
+| `BTCUSDT-4h`  | 2021-01 → 2023-07 | 5,586 | 112 KB | Crypto intraday                                     |
+| `SPY-1d`      | 2005-01 → 2023-04 | 4,612 | 78 KB  | Index · sessions · gaps · short-term mean-reverting |
+| `SPY-15m`     | rolling 60 days   | 1,041 | 16 KB  | Intraday sessions and the opening range             |
+| `AAPL-1d`     | 2005-01 → 2023-04 | 4,612 | 69 KB  | Single stock · earnings gaps · split-adjusted       |
+| `AAPL-1d-raw` | 2020-06 → 2020-09 | 86    | 2 KB   | Level 1.7 only — see _Reconstruction_               |
+| `EURUSD-1d`   | 2005-01 → 2023-05 | 4,755 | 64 KB  | FX · 24/5 · low vol · ranging · Sunday gap          |
+| `EURUSD-1h`   | rolling 500 days  | 7,163 | 64 KB  | FX intraday                                         |
+| `GC-1d`       | 2005-01 → 2023-05 | 4,607 | 63 KB  | Commodity · different volatility regime             |
+| `LAKE-1d`     | 2005-01 → 2023-04 | 4,612 | 54 KB  | Illiquid small-cap · spread and slippage            |
 
 **579 KB gzipped in-sample, plus 102 KB held back.** Ceiling is **150 KB gzipped per file**; the fetch script refuses to write anything larger. Files are lazy-loaded only by the levels that reference them, so page-load cost is per-level, not total.
 
@@ -40,13 +40,13 @@ Rerun with `npm run data:fetch`. Raw responses cache under `.data-cache/` (gitig
 
 ### What Yahoo will and will not give you
 
-| Constraint | Consequence |
-|---|---|
-| `quote.close` is **split-adjusted but not dividend-adjusted**; `adjclose` is both | We keep `quote` so OHLC stays internally consistent. Mixing an adjusted close with an unadjusted high produces bars whose close sits outside their own range. |
-| Daily reaches **2005 via `period1`** (the `range=10y` shorthand is what caps at ten years) | The 2007–09 crisis is reachable. |
-| Intraday is **hard-capped**: 15m and 30m at ~60 days, 1h at ~730. It errors rather than truncating | `SPY-15m` and `EURUSD-1h` are rolling-window **snapshots**. |
-| The **current in-progress bar** is appended regardless of `period2` | Trimmed client-side. Committing a partial candle would teach from an incomplete bar and silently fill in on any refetch. |
-| **Delisted tickers 404** | No real dead-ticker series is obtainable, so boss 9.B's survivorship-bias report is constructed content — which it always was, being a `spot-the-flaw` on a report rather than on data. |
+| Constraint                                                                                         | Consequence                                                                                                                                                                             |
+| -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quote.close` is **split-adjusted but not dividend-adjusted**; `adjclose` is both                  | We keep `quote` so OHLC stays internally consistent. Mixing an adjusted close with an unadjusted high produces bars whose close sits outside their own range.                           |
+| Daily reaches **2005 via `period1`** (the `range=10y` shorthand is what caps at ten years)         | The 2007–09 crisis is reachable.                                                                                                                                                        |
+| Intraday is **hard-capped**: 15m and 30m at ~60 days, 1h at ~730. It errors rather than truncating | `SPY-15m` and `EURUSD-1h` are rolling-window **snapshots**.                                                                                                                             |
+| The **current in-progress bar** is appended regardless of `period2`                                | Trimmed client-side. Committing a partial candle would teach from an incomplete bar and silently fill in on any refetch.                                                                |
+| **Delisted tickers 404**                                                                           | No real dead-ticker series is obtainable, so boss 9.B's survivorship-bias report is constructed content — which it always was, being a `spot-the-flaw` on a report rather than on data. |
 
 ### Snapshots
 
@@ -79,7 +79,7 @@ The fetch script widens the offending extreme to contain the endpoint. That is t
 type Series = {
   id: SeriesId;
   tf: Timeframe;
-  t: number[];   // epoch ms, ascending, no duplicates
+  t: number[]; // epoch ms, ascending, no duplicates
   o: number[];
   h: number[];
   l: number[];
@@ -103,7 +103,7 @@ Rounding is validated: if it flattened a series so that most bars had a high equ
 Levels reference data by **bar index**, not date:
 
 ```ts
-data: [{ series: 'BTCUSDT-1d', from: 812, to: 980 }]
+data: [{ series: "BTCUSDT-1d", from: 812, to: 980 }];
 ```
 
 Indices are stable only because series files are **immutable once committed**.
@@ -136,13 +136,13 @@ The level-content scan (`no level in Ch 1–9 references an oos series`) belongs
 
 `lib/data/integrity.test.ts` checks the committed files against the manifest: hashes, bar counts, first and last bar, column alignment, strictly increasing timestamps, every bar's range containing its own open and close, the size ceiling, and the absence of any `-oos` id from the main manifest. Verified by tampering with a single close price — three independent checks caught it.
 
-**What it cannot catch:** a deliberate refetch that shifts history *and* updates the manifest in the same commit. That surfaces as a manifest diff in review, which is why the manifest is committed. Verifying committed data against upstream needs the network and can never pass for the snapshot series, so it stays a manual step rather than a CI job.
+**What it cannot catch:** a deliberate refetch that shifts history _and_ updates the manifest in the same commit. That surfaces as a manifest diff in review, which is why the manifest is committed. Verifying committed data against upstream needs the network and can never pass for the snapshot series, so it stays a manual step rather than a CI job.
 
 ---
 
 ## Base rates
 
-*Not built yet — `compute-base-rates.ts` needs the pattern detectors from `lib/ta/`, so it lands with the indicators milestone.*
+_Not built yet — `compute-base-rates.ts` needs the pattern detectors from `lib/ta/`, so it lands with the indicators milestone._
 
 `scripts/compute-base-rates.ts` scans the spine for each pattern definition and emits measured forward-return statistics **per asset**:
 
@@ -150,8 +150,18 @@ The level-content scan (`no level in Ch 1–9 references an oos series`) belongs
 {
   "head-and-shoulders": {
     "byAsset": {
-      "BTCUSDT-1d": { "n": 34, "winRate": 0.58, "meanFwdR":  0.21, "ci95": [0.41, 0.74] },
-      "EURUSD-1d":  { "n": 41, "winRate": 0.41, "meanFwdR": -0.08, "ci95": [0.26, 0.57] }
+      "BTCUSDT-1d": {
+        "n": 34,
+        "winRate": 0.58,
+        "meanFwdR": 0.21,
+        "ci95": [0.41, 0.74]
+      },
+      "EURUSD-1d": {
+        "n": 41,
+        "winRate": 0.41,
+        "meanFwdR": -0.08,
+        "ci95": [0.26, 0.57]
+      }
     },
     "pooled": { "n": 210, "winRate": 0.49, "spread": [0.41, 0.58] }
   }
@@ -163,7 +173,7 @@ Rerun with `npm run data:rates`. Output must be **reproducible** from the commit
 Three rules for this file:
 
 1. **Per asset, always.** A single pooled number labelled "the pattern's base rate" is the exact dishonesty this project exists to correct. Ch 4.5 shows the spread across markets.
-2. **Report `n` and the CI.** The wide intervals are not a flaw to hide. At `n = 34` they *are* the lesson, and Ch 9.2 points straight at them.
+2. **Report `n` and the CI.** The wide intervals are not a flaw to hide. At `n = 34` they _are_ the lesson, and Ch 9.2 points straight at them.
 3. **≥3 assets per pattern**, or the pattern doesn't ship. Enforced by test.
 
 ---
@@ -172,8 +182,8 @@ Three rules for this file:
 
 **Resolved:**
 
-- *Illiquid small-cap* → `LAKE`. Full 2005–2026 history, median volume ~18,500 shares, plus a real 2014 news spike.
-- *Date ranges* → daily from 2005, giving four distinct regimes. Intraday is whatever upstream allows (see the caps table).
+- _Illiquid small-cap_ → `LAKE`. Full 2005–2026 history, median volume ~18,500 shares, plus a real 2014 news spike.
+- _Date ranges_ → daily from 2005, giving four distinct regimes. Intraday is whatever upstream allows (see the caps table).
 
 **Still open:**
 

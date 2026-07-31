@@ -2,33 +2,33 @@
 
 > **Chart Quest** — learn to read any market, one level at a time.
 
-*The original design plan, kept as the source of truth for scope and for the reasoning behind each decision. Where it disagrees with `ARCHITECTURE.md`, `CURRICULUM.md` or `DATA.md`, those are newer and win.*
+_The original design plan, kept as the source of truth for scope and for the reasoning behind each decision. Where it disagrees with `ARCHITECTURE.md`, `CURRICULUM.md` or `DATA.md`, those are newer and win._
 
 ## Context
 
 A public, account-free website that teaches technical analysis as a **playable puzzle game**. Progress lives only in `localStorage`. The player starts at "what is a candle" and finishes by composing and backtesting their own strategy in-browser, then exporting it as a playbook.
 
-The name was chosen for beginner legibility: a newcomer should guess the subject *and* the format from the name alone. "Chart" is the word they already have; "Quest" maps onto the real structure of ten chapters with sequential unlocks and bosses. The tagline carries what the name can't — the asset-agnostic promise. Both belong in `<title>`, the landing hero, and the OG card.
+The name was chosen for beginner legibility: a newcomer should guess the subject _and_ the format from the name alone. "Chart" is the word they already have; "Quest" maps onto the real structure of ten chapters with sequential unlocks and bosses. The tagline carries what the name can't — the asset-agnostic promise. Both belong in `<title>`, the landing hero, and the OG card.
 
-**The defining constraint: what the player learns must transfer to any asset.** An earlier draft of this plan centered on crypto for clean 24/7 mechanics. That produced a player who would learn *crypto*-TA and believe they had learned TA — five specific, money-losing blind spots: stops placed inside gap-space, position sizing that only works in fractional spot units, volatility priors calibrated to BTC and applied to SPY, breakout logic applied to a mean-reverting index, and no model of why any of that differs. It also broke the plan's own honesty promise: base rates measured on BTC 2017–2024 and labelled "the pattern's base rate" are the same dishonesty in a nicer wrapper.
+**The defining constraint: what the player learns must transfer to any asset.** An earlier draft of this plan centered on crypto for clean 24/7 mechanics. That produced a player who would learn _crypto_-TA and believe they had learned TA — five specific, money-losing blind spots: stops placed inside gap-space, position sizing that only works in fractional spot units, volatility priors calibrated to BTC and applied to SPY, breakout logic applied to a mean-reverting index, and no model of why any of that differs. It also broke the plan's own honesty promise: base rates measured on BTC 2017–2024 and labelled "the pattern's base rate" are the same dishonesty in a nicer wrapper.
 
 So transferability is designed in, not bolted on, via four mechanisms:
 
-1. **Cross-asset bosses.** Every chapter's boss runs on a *different asset than that chapter's levels*. Any asset-specific crutch fails loudly at the gate.
+1. **Cross-asset bosses.** Every chapter's boss runs on a _different asset than that chapter's levels_. Any asset-specific crutch fails loudly at the gate.
 2. **Everything normalized.** A y-axis toggle (price → % → ATR-multiples) means every measurement the player ever makes is already unit-free.
 3. **One sizing formula, four instrument specs.** Spot, shares, futures contracts, FX lots — same math, different `valuePerPoint`.
-4. **Per-asset base rates.** Patterns show a *distribution across six markets* with sample sizes and confidence intervals, never a single number.
+4. **Per-asset base rates.** Patterns show a _distribution across six markets_ with sample sizes and confidence intervals, never a single number.
 
 Decisions locked with the user:
 
-| Decision | Choice |
-|---|---|
-| Chart data | Bundled real historical OHLCV, committed as static JSON. Offline, deterministic. |
-| Data spine | 6 series, contrast-picked so they disagree with each other (§4). |
-| Feel | Playable puzzle game. Every level is an interaction on a chart — draw, click, predict, trade. Minimal reading. |
-| Curriculum | 10 chapters, ~73 levels. Asset Character is its own chapter after Risk. |
-| Sizing | Four instrument classes: spot, shares, futures, FX. |
-| Final chapter | Real in-browser backtester; objective requires ≥2 of 3 asset *classes* to work. |
+| Decision      | Choice                                                                                                         |
+| ------------- | -------------------------------------------------------------------------------------------------------------- |
+| Chart data    | Bundled real historical OHLCV, committed as static JSON. Offline, deterministic.                               |
+| Data spine    | 6 series, contrast-picked so they disagree with each other (§4).                                               |
+| Feel          | Playable puzzle game. Every level is an interaction on a chart — draw, click, predict, trade. Minimal reading. |
+| Curriculum    | 10 chapters, ~73 levels. Asset Character is its own chapter after Risk.                                        |
+| Sizing        | Four instrument classes: spot, shares, futures, FX.                                                            |
+| Final chapter | Real in-browser backtester; objective requires ≥2 of 3 asset _classes_ to work.                                |
 
 The architectural problem: **73 levels must not be 73 components.** The core of the plan is a small set of reusable interaction primitives plus levels authored as data.
 
@@ -38,44 +38,44 @@ The architectural problem: **73 levels must not be 73 components.** The core of 
 
 Each level kind = one React component + one pure grader. Levels are data referencing a slice of a series.
 
-| Kind | Interaction | Teaches |
-|---|---|---|
-| `annotate` | Drag to draw. Modes: `trendline`, `level`, `zone`, `channel`, `fib`. | Structure, zones, geometry |
-| `mark-bars` | Click candles / ranges. Graded as set overlap, ±n bar tolerance. | Pattern spotting, swings, volume events |
-| `classify` | Chart shown, choose a label. Grounded in a *chart*, never in prose. | Regime, pattern ID, breakout vs fakeout |
-| `predict-next` | Chart truncated at bar N. Commit a direction/target. Reveal animates the real bars. | Humility, probabilistic thinking |
-| `replay-trade` | Bar-by-bar replay, play/pause/step. Place entry/stop/target, manage the position. | Everything real |
-| `tune-param` | Live slider over a parameter. Find the value satisfying a condition. | Indicator lag, parameter sensitivity, overfitting |
-| `sort-rank` | Drag to order, then reveal the true ordering. | Base rates, setup quality, confluence |
-| `sizing-calc` | Numeric input, graded with tolerance, parameterized by `InstrumentSpec`. | R-multiples, sizing across instruments, expectancy |
-| `spot-the-flaw` | A finished bad trade or a backtest report; identify what's wrong. | Anti-patterns, critical reading |
-| `build-rules` | Block composer → multi-asset backtest → hit an objective. | Chapter 10 |
+| Kind            | Interaction                                                                         | Teaches                                            |
+| --------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `annotate`      | Drag to draw. Modes: `trendline`, `level`, `zone`, `channel`, `fib`.                | Structure, zones, geometry                         |
+| `mark-bars`     | Click candles / ranges. Graded as set overlap, ±n bar tolerance.                    | Pattern spotting, swings, volume events            |
+| `classify`      | Chart shown, choose a label. Grounded in a _chart_, never in prose.                 | Regime, pattern ID, breakout vs fakeout            |
+| `predict-next`  | Chart truncated at bar N. Commit a direction/target. Reveal animates the real bars. | Humility, probabilistic thinking                   |
+| `replay-trade`  | Bar-by-bar replay, play/pause/step. Place entry/stop/target, manage the position.   | Everything real                                    |
+| `tune-param`    | Live slider over a parameter. Find the value satisfying a condition.                | Indicator lag, parameter sensitivity, overfitting  |
+| `sort-rank`     | Drag to order, then reveal the true ordering.                                       | Base rates, setup quality, confluence              |
+| `sizing-calc`   | Numeric input, graded with tolerance, parameterized by `InstrumentSpec`.            | R-multiples, sizing across instruments, expectancy |
+| `spot-the-flaw` | A finished bad trade or a backtest report; identify what's wrong.                   | Anti-patterns, critical reading                    |
+| `build-rules`   | Block composer → multi-asset backtest → hit an objective.                           | Chapter 10                                         |
 
 ### Level schema
 
 ```ts
 // lib/levels/schema.ts
 interface Level {
-  id: LevelId;                       // '3-4' | '3-B'
+  id: LevelId; // '3-4' | '3-B'
   chapter: number;
   title: string;
   kind: LevelKind;
-  brief: string;                     // one or two sentences, max
-  data: { series: SeriesId; from: number; to: number; reveal?: number }[];  // array → MTF & multi-asset levels
-  config: KindConfig;                // discriminated on `kind`
-  target: KindTarget;                // reference answer
+  brief: string; // one or two sentences, max
+  data: { series: SeriesId; from: number; to: number; reveal?: number }[]; // array → MTF & multi-asset levels
+  config: KindConfig; // discriminated on `kind`
+  target: KindTarget; // reference answer
   tolerance: KindTolerance;
   stars: [number, number, number];
-  misconceptions: Misconception[];   // where the teaching actually lives
+  misconceptions: Misconception[]; // where the teaching actually lives
   unlocks?: ToolId[];
-  hints: string[];                   // progressive, costs stars
-  yAxis?: 'price' | 'pct' | 'atr';   // default; player can toggle unless locked
+  hints: string[]; // progressive, costs stars
+  yAxis?: "price" | "pct" | "atr"; // default; player can toggle unless locked
 }
 
 interface Misconception {
   id: string;
   test: (attempt: Attempt, level: Level, data: Series[]) => boolean;
-  message: string;                   // "Your line cuts 2 candle bodies — anchor to wicks."
+  message: string; // "Your line cuts 2 candle bodies — anchor to wicks."
   showOverlay?: OverlaySpec;
 }
 ```
@@ -84,19 +84,22 @@ interface Misconception {
 
 ```ts
 type Grade = {
-  score: number;                     // 0..1
+  score: number; // 0..1
   stars: 0 | 1 | 2 | 3;
-  diagnosis: Misconception[];        // matched, most specific first
-  reference: OverlaySpec;            // animated onto the player's attempt
+  diagnosis: Misconception[]; // matched, most specific first
+  reference: OverlaySpec; // animated onto the player's attempt
 };
 
-type Grader<K extends LevelKind> =
-  (attempt: Attempt<K>, level: Level & { kind: K }, data: Series[]) => Grade;
+type Grader<K extends LevelKind> = (
+  attempt: Attempt<K>,
+  level: Level & { kind: K },
+  data: Series[],
+) => Grade;
 ```
 
 Graders are pure and deterministic — the highest-value tests in the project.
 
-**Misconceptions matter more than scores.** A grader returning "62%" teaches nothing; one returning *"you anchored to bodies instead of wicks"* teaches the thing. Every level authors ≥2 misconceptions covering its commonest wrong answers. A level without them should fail review.
+**Misconceptions matter more than scores.** A grader returning "62%" teaches nothing; one returning _"you anchored to bodies instead of wicks"_ teaches the thing. Every level authors ≥2 misconceptions covering its commonest wrong answers. A level without them should fail review.
 
 ---
 
@@ -106,151 +109,161 @@ Graders are pure and deterministic — the highest-value tests in the project.
 
 ### The cross-asset boss rule
 
-| Ch | Levels taught on | **Boss runs on** |
-|---|---|---|
-| 1 | BTC, SPY, EURUSD (mixed by design) | all three |
-| 2 | BTC 1d | **EURUSD 1d** |
-| 3 | SPY 1d | **BTC 4h** |
-| 4 | BTC 1d + AAPL 1d | **EURUSD 1h** |
-| 5 | EURUSD 1d | **SPY 15m** |
-| 6 | BTC 1d/4h | **AAPL 1d + SPY 1d** |
-| 7 | all four instrument classes | **GC 1d** |
-| 8 | all six (by definition) | **unseen regime slice** |
-| 9 | player's own journal | **3 reports on 3 assets** |
-| 10 | player's choice | **≥3 asset classes** |
+| Ch  | Levels taught on                   | **Boss runs on**          |
+| --- | ---------------------------------- | ------------------------- |
+| 1   | BTC, SPY, EURUSD (mixed by design) | all three                 |
+| 2   | BTC 1d                             | **EURUSD 1d**             |
+| 3   | SPY 1d                             | **BTC 4h**                |
+| 4   | BTC 1d + AAPL 1d                   | **EURUSD 1h**             |
+| 5   | EURUSD 1d                          | **SPY 15m**               |
+| 6   | BTC 1d/4h                          | **AAPL 1d + SPY 1d**      |
+| 7   | all four instrument classes        | **GC 1d**                 |
+| 8   | all six (by definition)            | **unseen regime slice**   |
+| 9   | player's own journal               | **3 reports on 3 assets** |
+| 10  | player's choice                    | **≥3 asset classes**      |
 
 This is enforced by a test, not by discipline (§7).
 
 ---
 
-### Ch 1 — Reading the Chart · *unlocks: crosshair, timeframe switch, log/linear, y-axis mode*
-| # | Level | Kind |
-|---|---|---|
-| 1.1 | Anatomy of a candle — click the wick, body, open, close | `mark-bars` |
-| 1.2 | Line vs candles — the line chart hid a 12% wick. Find it. | `classify` |
-| 1.3 | The timeframe illusion — two charts "trending" opposite ways are the same data | `classify` |
-| 1.4 | Volume — click the 3 highest-volume bars, see what happened around them | `mark-bars` |
-| 1.5 | Log vs linear — why the 2017 BTC run vanishes on a linear scale | `tune-param` |
-| 1.6 | **Four clocks** — BTC 24/7, EURUSD 24/5, SPY 6.5h. The market closes and price moves anyway → that's a gap, and your stop doesn't protect you across it. | `classify` |
-| 1.7 | **The split trap** — unadjusted AAPL shows a −75% crash in Aug 2020. It never happened. | `spot-the-flaw` |
-| **1.B** | **BOSS: Coin flip** — predict direction 5× across three different assets. Score lands near 50%. | `predict-next` |
+### Ch 1 — Reading the Chart · _unlocks: crosshair, timeframe switch, log/linear, y-axis mode_
+
+| #       | Level                                                                                                                                                    | Kind            |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| 1.1     | Anatomy of a candle — click the wick, body, open, close                                                                                                  | `mark-bars`     |
+| 1.2     | Line vs candles — the line chart hid a 12% wick. Find it.                                                                                                | `classify`      |
+| 1.3     | The timeframe illusion — two charts "trending" opposite ways are the same data                                                                           | `classify`      |
+| 1.4     | Volume — click the 3 highest-volume bars, see what happened around them                                                                                  | `mark-bars`     |
+| 1.5     | Log vs linear — why the 2017 BTC run vanishes on a linear scale                                                                                          | `tune-param`    |
+| 1.6     | **Four clocks** — BTC 24/7, EURUSD 24/5, SPY 6.5h. The market closes and price moves anyway → that's a gap, and your stop doesn't protect you across it. | `classify`      |
+| 1.7     | **The split trap** — unadjusted AAPL shows a −75% crash in Aug 2020. It never happened.                                                                  | `spot-the-flaw` |
+| **1.B** | **BOSS: Coin flip** — predict direction 5× across three different assets. Score lands near 50%.                                                          | `predict-next`  |
 
 > 1.B is deliberate: the first boss proves the player **cannot predict yet**. It sets the humility baseline, and Ch 9 calls this exact score back.
 > 1.6 is the single highest-value early addition — it's the gap blind spot, taught before any stop is ever placed.
 
-### Ch 2 — Market Structure · *unlocks: swing detector, trendline tool*
-| # | Level | Kind |
-|---|---|---|
-| 2.1 | Click every swing high (fractal ±2 bars) | `mark-bars` |
-| 2.2 | HH/HL vs LH/LL across 4 charts | `classify` |
-| 2.3 | Draw the trendline — graded on touches, wick anchoring, zero body cuts | `annotate:trendline` |
-| 2.4 | Draw the channel | `annotate:channel` |
-| 2.5 | Break of structure vs deviation — click the bar that actually broke it | `mark-bars` |
-| 2.6 | Ranges — bound it, then classify range vs trend | `annotate:zone` |
-| **2.B** | **BOSS (EURUSD):** mark swings → trendline → classify regime → predict 10 bars | composite |
+### Ch 2 — Market Structure · _unlocks: swing detector, trendline tool_
 
-### Ch 3 — Zones · *unlocks: horizontal level, rectangle, measure tool*
-| # | Level | Kind |
-|---|---|---|
-| 3.1 | A level from multiple touches | `annotate:level` |
-| 3.2 | Why a line is wrong — widen it into a zone | `annotate:zone` |
-| 3.3 | Click the retest bar | `mark-bars` |
-| 3.4 | Breakout or fakeout? 6 mini-charts; reveal shows each one's next 20 bars | `classify` |
-| 3.5 | Round numbers and where stops cluster | `mark-bars` |
-| 3.6 | **Trap:** a textbook-clean break that fails | `predict-next` |
-| **3.B** | **BOSS (BTC 4h) — your first trade:** mark the zone, place entry/stop/target, replay to outcome | `replay-trade` |
+| #       | Level                                                                          | Kind                 |
+| ------- | ------------------------------------------------------------------------------ | -------------------- |
+| 2.1     | Click every swing high (fractal ±2 bars)                                       | `mark-bars`          |
+| 2.2     | HH/HL vs LH/LL across 4 charts                                                 | `classify`           |
+| 2.3     | Draw the trendline — graded on touches, wick anchoring, zero body cuts         | `annotate:trendline` |
+| 2.4     | Draw the channel                                                               | `annotate:channel`   |
+| 2.5     | Break of structure vs deviation — click the bar that actually broke it         | `mark-bars`          |
+| 2.6     | Ranges — bound it, then classify range vs trend                                | `annotate:zone`      |
+| **2.B** | **BOSS (EURUSD):** mark swings → trendline → classify regime → predict 10 bars | composite            |
+
+### Ch 3 — Zones · _unlocks: horizontal level, rectangle, measure tool_
+
+| #       | Level                                                                                           | Kind             |
+| ------- | ----------------------------------------------------------------------------------------------- | ---------------- |
+| 3.1     | A level from multiple touches                                                                   | `annotate:level` |
+| 3.2     | Why a line is wrong — widen it into a zone                                                      | `annotate:zone`  |
+| 3.3     | Click the retest bar                                                                            | `mark-bars`      |
+| 3.4     | Breakout or fakeout? 6 mini-charts; reveal shows each one's next 20 bars                        | `classify`       |
+| 3.5     | Round numbers and where stops cluster                                                           | `mark-bars`      |
+| 3.6     | **Trap:** a textbook-clean break that fails                                                     | `predict-next`   |
+| **3.B** | **BOSS (BTC 4h) — your first trade:** mark the zone, place entry/stop/target, replay to outcome | `replay-trade`   |
 
 > 3.B scores **R achieved and stop-placement quality separately.** A profitable trade with a stop in a stupid place gets 1 star. This split runs through every later boss and is the main lever against teaching outcome-chasing.
 
-### Ch 4 — Patterns & Base Rates · *unlocks: pattern library with per-asset stats*
-| # | Level | Kind |
-|---|---|---|
-| 4.1 | Pin bar, doji, engulfing — find them | `mark-bars` |
-| 4.2 | Context beats pattern — same pin bar in trend vs chop | `classify` |
-| 4.3 | Continuation: flag, triangle — draw the boundaries | `annotate` |
-| 4.4 | Reversal: double top, head & shoulders — mark the components | `mark-bars` |
-| 4.5 | **Guess the win rate** of 5 patterns → see it measured across all 6 assets | `sort-rank` |
-| 4.6 | A perfect pattern that failed — why? | `spot-the-flaw` |
-| **4.B** | **BOSS (EURUSD 1h):** scan unseen chart, find the setup, trade it in replay | composite |
+### Ch 4 — Patterns & Base Rates · _unlocks: pattern library with per-asset stats_
+
+| #       | Level                                                                       | Kind            |
+| ------- | --------------------------------------------------------------------------- | --------------- |
+| 4.1     | Pin bar, doji, engulfing — find them                                        | `mark-bars`     |
+| 4.2     | Context beats pattern — same pin bar in trend vs chop                       | `classify`      |
+| 4.3     | Continuation: flag, triangle — draw the boundaries                          | `annotate`      |
+| 4.4     | Reversal: double top, head & shoulders — mark the components                | `mark-bars`     |
+| 4.5     | **Guess the win rate** of 5 patterns → see it measured across all 6 assets  | `sort-rank`     |
+| 4.6     | A perfect pattern that failed — why?                                        | `spot-the-flaw` |
+| **4.B** | **BOSS (EURUSD 1h):** scan unseen chart, find the setup, trade it in replay | composite       |
 
 > 4.5 is the chapter's payload and the fix to the honesty contradiction. The player guesses (usually 70%+), then sees head & shoulders run **41% on EURUSD and 58% on BTC** — with n and a 95% CI wide enough to be visibly untrustworthy. The lesson upgrades from "patterns are weaker than you think" to **"pattern edge is asset- and regime-dependent, so you must measure it on your own market"** — which is the transferability lesson in its purest form. Guesses are stored and recalled in Ch 9.
 
-### Ch 5 — Indicators · *unlocks: indicator panel, one per level*
-| # | Level | Kind |
-|---|---|---|
-| 5.1 | An MA is just smoothed price — drag the period, watch lag appear | `tune-param` |
-| 5.2 | Find the MA this market actually respected | `tune-param` |
-| 5.3 | RSI 80 for 40 bars while price doubles — overbought ≠ sell | `classify` |
-| 5.4 | MACD is two MAs — click every cross, count how many were noise | `mark-bars` |
-| 5.5 | **ATR as % of price** — BTC 3%/day is Tuesday, SPY 3%/day is a crisis. Same chart, three assets, y-axis in ATR units. | `tune-param` |
-| 5.6 | Indicator soup — 6 indicators, 6 conflicting signals | `spot-the-flaw` |
-| **5.B** | **BOSS (SPY 15m):** structure + 2 indicators, entry in replay | `replay-trade` |
+### Ch 5 — Indicators · _unlocks: indicator panel, one per level_
+
+| #       | Level                                                                                                                 | Kind            |
+| ------- | --------------------------------------------------------------------------------------------------------------------- | --------------- |
+| 5.1     | An MA is just smoothed price — drag the period, watch lag appear                                                      | `tune-param`    |
+| 5.2     | Find the MA this market actually respected                                                                            | `tune-param`    |
+| 5.3     | RSI 80 for 40 bars while price doubles — overbought ≠ sell                                                            | `classify`      |
+| 5.4     | MACD is two MAs — click every cross, count how many were noise                                                        | `mark-bars`     |
+| 5.5     | **ATR as % of price** — BTC 3%/day is Tuesday, SPY 3%/day is a crisis. Same chart, three assets, y-axis in ATR units. | `tune-param`    |
+| 5.6     | Indicator soup — 6 indicators, 6 conflicting signals                                                                  | `spot-the-flaw` |
+| **5.B** | **BOSS (SPY 15m):** structure + 2 indicators, entry in replay                                                         | `replay-trade`  |
 
 > 5.5 is the normalization keystone. Once the player thinks in ATR-multiples instead of dollars, volatility intuition transfers between assets for free.
 
-### Ch 6 — Confluence & Multi-Timeframe · *unlocks: MTF split view*
-| # | Level | Kind |
-|---|---|---|
-| 6.1 | HTF bias, LTF entry | `classify` (split) |
-| 6.2 | HTF zone + LTF trigger, both panes live | `replay-trade` |
-| 6.3 | When timeframes disagree | `classify` |
-| 6.4 | Rank 4 setups by confluence, then reveal outcomes — the top-ranked one loses | `sort-rank` |
-| 6.5 | Over-confluence and analysis paralysis | `spot-the-flaw` |
-| 6.6 | Session context — the opening range exists on SPY and not on BTC | `mark-bars` |
-| **6.B** | **BOSS (AAPL + SPY):** full MTF replay trade | `replay-trade` |
+### Ch 6 — Confluence & Multi-Timeframe · _unlocks: MTF split view_
 
-### Ch 7 — Risk, R & Sizing · *unlocks: position-size calculator, R overlay*
-| # | Level | Kind |
-|---|---|---|
-| 7.1 | What 1R is — place entry and stop, read your R | `annotate` |
-| 7.2 | Sizing from account, entry, stop, risk % — **BTC fractional** | `sizing-calc` |
-| 7.3 | **The same trade in four markets** — AAPL whole shares, one ES contract, EURUSD lots. One formula, four `valuePerPoint`. | `sizing-calc` |
-| 7.4 | Structural stop vs arbitrary stop — replay the *same trade* with both | `replay-trade` |
-| 7.5 | R:R vs required win rate — slider, then test the claim on data | `tune-param` |
-| 7.6 | **The 6-loss streak** — replay it at 1% risk, then 5%. Watch the account. | `replay-trade` |
-| 7.7 | Trailing stops and partials | `replay-trade` |
-| **7.B** | **BOSS (GC 1d) — 10 trades:** survive with the account intact. Scored on expectancy, not profit. | `replay-trade` |
+| #       | Level                                                                        | Kind               |
+| ------- | ---------------------------------------------------------------------------- | ------------------ |
+| 6.1     | HTF bias, LTF entry                                                          | `classify` (split) |
+| 6.2     | HTF zone + LTF trigger, both panes live                                      | `replay-trade`     |
+| 6.3     | When timeframes disagree                                                     | `classify`         |
+| 6.4     | Rank 4 setups by confluence, then reveal outcomes — the top-ranked one loses | `sort-rank`        |
+| 6.5     | Over-confluence and analysis paralysis                                       | `spot-the-flaw`    |
+| 6.6     | Session context — the opening range exists on SPY and not on BTC             | `mark-bars`        |
+| **6.B** | **BOSS (AAPL + SPY):** full MTF replay trade                                 | `replay-trade`     |
+
+### Ch 7 — Risk, R & Sizing · _unlocks: position-size calculator, R overlay_
+
+| #       | Level                                                                                                                    | Kind           |
+| ------- | ------------------------------------------------------------------------------------------------------------------------ | -------------- |
+| 7.1     | What 1R is — place entry and stop, read your R                                                                           | `annotate`     |
+| 7.2     | Sizing from account, entry, stop, risk % — **BTC fractional**                                                            | `sizing-calc`  |
+| 7.3     | **The same trade in four markets** — AAPL whole shares, one ES contract, EURUSD lots. One formula, four `valuePerPoint`. | `sizing-calc`  |
+| 7.4     | Structural stop vs arbitrary stop — replay the _same trade_ with both                                                    | `replay-trade` |
+| 7.5     | R:R vs required win rate — slider, then test the claim on data                                                           | `tune-param`   |
+| 7.6     | **The 6-loss streak** — replay it at 1% risk, then 5%. Watch the account.                                                | `replay-trade` |
+| 7.7     | Trailing stops and partials                                                                                              | `replay-trade` |
+| **7.B** | **BOSS (GC 1d) — 10 trades:** survive with the account intact. Scored on expectancy, not profit.                         | `replay-trade` |
 
 > 7.3 is what makes this chapter transfer at all. Without it the player can size a BTC trade and nothing else.
 
-### Ch 8 — ★ Asset Character *(new)* · *unlocks: y-axis normalize toggle, correlation matrix*
-| # | Level | Kind |
-|---|---|---|
-| 8.1 | **Normalize** — the same 10% move on 6 assets. Toggle price → % → ATR. Which was actually big? | `tune-param` |
-| 8.2 | **Measure trend-persistence yourself** — run an autocorrelation probe per asset. Crypto persists; the index reverts. You didn't take this on faith. | `tune-param` |
-| 8.3 | **One setup, six assets, six outcomes** — the identical breakout rule on all six | `sort-rank` |
-| 8.4 | **Correlation** — your 5 "diversified" longs are one bet. See the matrix, then the joint drawdown. | `classify` |
-| 8.5 | Regime shift — the same rule through 2017, 2018, 2020, 2022 | `spot-the-flaw` |
-| 8.6 | Which market fits which edge — match 4 edges to the assets they survive on | `sort-rank` |
-| **8.B** | **BOSS (unseen regime slice):** identify the asset's character from the chart alone, then pick and trade the appropriate edge | composite |
+### Ch 8 — ★ Asset Character _(new)_ · _unlocks: y-axis normalize toggle, correlation matrix_
+
+| #       | Level                                                                                                                                               | Kind            |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| 8.1     | **Normalize** — the same 10% move on 6 assets. Toggle price → % → ATR. Which was actually big?                                                      | `tune-param`    |
+| 8.2     | **Measure trend-persistence yourself** — run an autocorrelation probe per asset. Crypto persists; the index reverts. You didn't take this on faith. | `tune-param`    |
+| 8.3     | **One setup, six assets, six outcomes** — the identical breakout rule on all six                                                                    | `sort-rank`     |
+| 8.4     | **Correlation** — your 5 "diversified" longs are one bet. See the matrix, then the joint drawdown.                                                  | `classify`      |
+| 8.5     | Regime shift — the same rule through 2017, 2018, 2020, 2022                                                                                         | `spot-the-flaw` |
+| 8.6     | Which market fits which edge — match 4 edges to the assets they survive on                                                                          | `sort-rank`     |
+| **8.B** | **BOSS (unseen regime slice):** identify the asset's character from the chart alone, then pick and trade the appropriate edge                       | composite       |
 
 > 8.2 matters because it makes asset character **measured, not asserted**. The player runs the probe and reads the number. That's the difference between the game teaching a fact and teaching a method.
 
-### Ch 9 — Edge & Probability · *unlocks: journal analytics*
-| # | Level | Kind |
-|---|---|---|
-| 9.1 | Expectancy from a trade list | `sizing-calc` |
-| 9.2 | Sample size — coin-flip sim vs your 10 trades. How much was luck? Recall your 1.B score. | `predict-next` |
-| 9.3 | Guess the max drawdown of a +40%/yr equity curve, then see it | `predict-next` |
-| 9.4 | Hindsight bias — a replay you already solved, re-shown honestly | `replay-trade` |
-| 9.5 | **Overfitting** — tune a rule until in-sample looks incredible, then reveal out-of-sample | `tune-param` |
-| 9.6 | **Your journal** — analytics over the trades *you* logged in Ch 3–8, split by asset class | dashboard |
+### Ch 9 — Edge & Probability · _unlocks: journal analytics_
+
+| #       | Level                                                                                              | Kind            |
+| ------- | -------------------------------------------------------------------------------------------------- | --------------- |
+| 9.1     | Expectancy from a trade list                                                                       | `sizing-calc`   |
+| 9.2     | Sample size — coin-flip sim vs your 10 trades. How much was luck? Recall your 1.B score.           | `predict-next`  |
+| 9.3     | Guess the max drawdown of a +40%/yr equity curve, then see it                                      | `predict-next`  |
+| 9.4     | Hindsight bias — a replay you already solved, re-shown honestly                                    | `replay-trade`  |
+| 9.5     | **Overfitting** — tune a rule until in-sample looks incredible, then reveal out-of-sample          | `tune-param`    |
+| 9.6     | **Your journal** — analytics over the trades _you_ logged in Ch 3–8, split by asset class          | dashboard       |
 | **9.B** | **BOSS:** 3 backtest reports on 3 assets — one overfit, one under-sampled, one survivorship-biased | `spot-the-flaw` |
 
 > 9.5 is the most important level in the game; build it before Ch 10's backtester, because the backtester has to be honest enough to support it.
-> 9.6 is only possible *because* there are no accounts — the journal is genuinely the player's own. It reports things like "you're +0.6R on trend continuation and −0.9R counter-trend; your average loss is 1.4R, not the 1R you set; you're profitable on BTC and negative on everything else."
+> 9.6 is only possible _because_ there are no accounts — the journal is genuinely the player's own. It reports things like "you're +0.6R on trend continuation and −0.9R counter-trend; your average loss is 1.4R, not the 1R you set; you're profitable on BTC and negative on everything else."
 
 ### Ch 10 — Build Your Own Strategy
-| # | Level | Objective |
-|---|---|---|
-| 10.1 | Pick market + timeframe — constrained to your journal's best-performing context |
-| 10.2 | State a falsifiable edge hypothesis (structured, not free text) |
-| 10.3 | Compose entry rules from unlocked blocks |
-| 10.4 | Add invalidation and sizing — via `InstrumentSpec`, so it's tradeable in your actual market |
-| 10.5 | In-sample backtest — expectancy > 0 over ≥30 trades |
-| 10.6 | **Out-of-sample** on data held back and revealed only now — must not collapse |
-| 10.7 | **Cross-asset validation** — run on ≥3 assets from different classes. Objective: positive expectancy on ≥2, reported per asset. A BTC-2020-only strategy is flagged, not passed. |
-| **10.B** | **FINAL: export your playbook** — rules, per-asset stats, both samples, journal stats, known failure modes, review cadence |
+
+| #        | Level                                                                                                                                                                            | Objective |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| 10.1     | Pick market + timeframe — constrained to your journal's best-performing context                                                                                                  |
+| 10.2     | State a falsifiable edge hypothesis (structured, not free text)                                                                                                                  |
+| 10.3     | Compose entry rules from unlocked blocks                                                                                                                                         |
+| 10.4     | Add invalidation and sizing — via `InstrumentSpec`, so it's tradeable in your actual market                                                                                      |
+| 10.5     | In-sample backtest — expectancy > 0 over ≥30 trades                                                                                                                              |
+| 10.6     | **Out-of-sample** on data held back and revealed only now — must not collapse                                                                                                    |
+| 10.7     | **Cross-asset validation** — run on ≥3 assets from different classes. Objective: positive expectancy on ≥2, reported per asset. A BTC-2020-only strategy is flagged, not passed. |
+| **10.B** | **FINAL: export your playbook** — rules, per-asset stats, both samples, journal stats, known failure modes, review cadence                                                       |
 
 > 10.7 is the change that makes the whole game's promise true. "Works on one series" was the old objective and it would have certified overfit strategies as finished work.
 
@@ -262,7 +275,7 @@ Ranked by how much they carry the product.
 
 1. **Replay engine** — bar-by-bar reveal, play/pause/step/speed, future strictly hidden. Powers `predict-next`, `replay-trade`, free-play. Everything else is decoration beside it.
 2. **Y-axis normalize toggle** — price / % from anchor / ATR-multiples, on every chart. The mechanism that makes skills asset-portable; also the whole point of 8.1.
-3. **Diagnostic feedback** — misconception matching, then the reference answer animated onto the attempt so the player sees the *delta*, not a verdict.
+3. **Diagnostic feedback** — misconception matching, then the reference answer animated onto the attempt so the player sees the _delta_, not a verdict.
 4. **Trade journal → Ch 9 self-analysis.** Every replay trade logs entry/stop/target/exit/R/asset/tags/stated reason. The game later analyses the player's own record, split by asset class.
 5. **Progressive tool unlocks** — the toolbar visibly grows. Strong pull, and it stops Ch 2 drowning in 15 unusable buttons.
 6. **Per-asset base rates** — `base-rates.json` computed at build time with n and CI per asset, shown as a distribution.
@@ -279,113 +292,173 @@ Ranked by how much they carry the product.
 
 Six series, chosen so they **disagree with each other**. Committed, so the app stays fully static.
 
-| Series | TF | Character it teaches |
-|---|---|---|
-| `BTCUSDT` | 1d, 4h | Crypto · 24/7 · high vol · trend-persistent |
-| `SPY` | 1d, 15m | Index · sessions · gaps · short-term mean-reverting |
-| `AAPL` | 1d | Single stock · earnings gaps · splits |
-| `EURUSD` | 1d, 1h | FX · 24/5 · low vol · ranging · Sunday gap |
-| `GC` (gold) | 1d | Commodity · different volatility regime |
-| *illiquid small-cap* | 1d | Spread and slippage |
+| Series               | TF      | Character it teaches                                |
+| -------------------- | ------- | --------------------------------------------------- |
+| `BTCUSDT`            | 1d, 4h  | Crypto · 24/7 · high vol · trend-persistent         |
+| `SPY`                | 1d, 15m | Index · sessions · gaps · short-term mean-reverting |
+| `AAPL`               | 1d      | Single stock · earnings gaps · splits               |
+| `EURUSD`             | 1d, 1h  | FX · 24/5 · low vol · ranging · Sunday gap          |
+| `GC` (gold)          | 1d      | Commodity · different volatility regime             |
+| _illiquid small-cap_ | 1d      | Spread and slippage                                 |
 
-Sources: Binance public klines for crypto (no key); Stooq/Yahoo for equities, FX, gold. **Equities must be split- and dividend-adjusted** — with one deliberate exception: ship a *raw, unadjusted* AAPL slice around the Aug 2020 4:1 split so level 1.7 has a real artifact to expose.
+Sources: Binance public klines for crypto (no key); Stooq/Yahoo for equities, FX, gold. **Equities must be split- and dividend-adjusted** — with one deliberate exception: ship a _raw, unadjusted_ AAPL slice around the Aug 2020 4:1 split so level 1.7 has a real artifact to expose.
 
 Store **columnar, not per-candle objects** (~4× smaller):
+
 ```ts
-type Series = { id: SeriesId; tf: Timeframe; t: number[]; o: number[]; h: number[]; l: number[]; c: number[]; v: number[] };
+type Series = {
+  id: SeriesId;
+  tf: Timeframe;
+  t: number[];
+  o: number[];
+  h: number[];
+  l: number[];
+  c: number[];
+  v: number[];
+};
 ```
+
 One file per series+timeframe, lazy-loaded by the levels that need it. Target < 150 KB gzipped each; ~1.5–2 MB committed total.
 
 **Hold back the Ch 10 out-of-sample slices** in separate files no earlier level may load, so 10.6 is genuinely out-of-sample. Enforced by a test.
 
 `scripts/compute-base-rates.ts` emits per-asset stats with sample sizes and CIs:
+
 ```json
-{ "head-and-shoulders": {
+{
+  "head-and-shoulders": {
     "byAsset": {
-      "BTCUSDT-1d": { "n": 34, "winRate": 0.58, "meanFwdR":  0.21, "ci95": [0.41, 0.74] },
-      "EURUSD-1d":  { "n": 41, "winRate": 0.41, "meanFwdR": -0.08, "ci95": [0.26, 0.57] }
+      "BTCUSDT-1d": {
+        "n": 34,
+        "winRate": 0.58,
+        "meanFwdR": 0.21,
+        "ci95": [0.41, 0.74]
+      },
+      "EURUSD-1d": {
+        "n": 41,
+        "winRate": 0.41,
+        "meanFwdR": -0.08,
+        "ci95": [0.26, 0.57]
+      }
     },
-    "pooled": { "n": 210, "winRate": 0.49, "spread": [0.41, 0.58] } } }
+    "pooled": { "n": 210, "winRate": 0.49, "spread": [0.41, 0.58] }
+  }
+}
 ```
-The wide CIs are not a flaw to hide — at n=34 they *are* the lesson, and Ch 9.2 points straight at them.
+
+The wide CIs are not a flaw to hide — at n=34 they _are_ the lesson, and Ch 9.2 points straight at them.
 
 ---
 
 ## 5. Technical approach
 
 ### Stack
+
 - **Next.js 16 App Router**, TypeScript, fully client-side, static, on Vercel. No backend, DB, or auth.
-- **Charting: `lightweight-charts` (Apache-2.0) + an overlay canvas.** Free crosshair, log scale, pan/zoom, autoscale, volume pane; `timeScale().coordinateToTime()` and `series.coordinateToPrice()` give the price↔pixel conversion draw tools need. Replay is incremental `series.update()`. *Escape hatch:* if one level kind fights the library, drop to a focused Canvas 2D renderer for that kind only — don't rewrite everything.
+- **Charting: `lightweight-charts` (Apache-2.0) + an overlay canvas.** Free crosshair, log scale, pan/zoom, autoscale, volume pane; `timeScale().coordinateToTime()` and `series.coordinateToPrice()` give the price↔pixel conversion draw tools need. Replay is incremental `series.update()`. _Escape hatch:_ if one level kind fights the library, drop to a focused Canvas 2D renderer for that kind only — don't rewrite everything.
 - **State: Zustand + `persist`** to `localStorage`, one versioned root key with an explicit migration function.
 - **TA + backtest: own pure TS in `lib/ta/`** — SMA, EMA, RSI, MACD, ATR, Bollinger, volume MA, swing detection, autocorrelation (for 8.2), correlation matrix. No dependency, small, testable against fixtures. Backtester is a bar-by-bar loop with **no look-ahead**, asserted in test.
 - **Tailwind v4 + shadcn/ui**; **`motion`** for reveal animations.
 - **Vitest** for graders/TA/backtester; **Playwright** smoke per level kind.
 
 ### Normalization module
+
 ```ts
 // lib/ta/normalize.ts
 toPct(series, anchorIdx): number[]       // % from anchor
 toAtrUnits(series, period): number[]     // price expressed in ATR multiples
 atrPct(series, period): number[]         // ATR as % of close — the cross-asset comparator
 ```
+
 Chart y-axis mode: `'price' | 'pct' | 'atr'`.
 
 ### Instrument specs
+
 ```ts
 type InstrumentSpec = {
   id: SeriesId;
-  class: 'crypto-spot' | 'equity' | 'futures' | 'fx';
-  valuePerPoint: number;    // $ per 1.0 price move, per unit
-  lotSize: number;          // 1e-8 crypto | 1 share | 1 contract | 0.01 FX lot
-  tick?: number;            // futures tick size
-  tickValue?: number;       // futures $ per tick
+  class: "crypto-spot" | "equity" | "futures" | "fx";
+  valuePerPoint: number; // $ per 1.0 price move, per unit
+  lotSize: number; // 1e-8 crypto | 1 share | 1 contract | 0.01 FX lot
+  tick?: number; // futures tick size
+  tickValue?: number; // futures $ per tick
   quoteCcy: string;
-  hours: TradingHours;      // drives gap/session lessons AND backtest bar validity
+  hours: TradingHours; // drives gap/session lessons AND backtest bar validity
   typicalSpreadBps: number; // slippage lesson
 };
 
 // the one formula, everywhere
 riskPerUnit = Math.abs(entry - stop) * spec.valuePerPoint;
-units       = roundToLot((equity * riskPct) / riskPerUnit, spec);
+units = roundToLot((equity * riskPct) / riskPerUnit, spec);
 ```
-`hours` doing double duty — teaching content *and* backtest correctness — is deliberate: a gap the game teaches about is the same gap the backtester must not trade through.
+
+`hours` doing double duty — teaching content _and_ backtest correctness — is deliberate: a gap the game teaches about is the same gap the backtester must not trade through.
 
 ### Strategy blocks (Ch 10)
+
 ```ts
 type Block =
-  | { kind: 'cross';     fast: IndicatorRef; slow: IndicatorRef; dir: 'above'|'below' }
-  | { kind: 'compare';   left: IndicatorRef; op: '<'|'>'; right: number | IndicatorRef }
-  | { kind: 'structure'; event: 'bos'|'retest'|'swing-high'|'swing-low' }
-  | { kind: 'zone';      touching: 'support'|'resistance' }
-  | { kind: 'volatility'; atrPct: { op: '<'|'>'; value: number } };   // unlocked by Ch 8
+  | {
+      kind: "cross";
+      fast: IndicatorRef;
+      slow: IndicatorRef;
+      dir: "above" | "below";
+    }
+  | {
+      kind: "compare";
+      left: IndicatorRef;
+      op: "<" | ">";
+      right: number | IndicatorRef;
+    }
+  | { kind: "structure"; event: "bos" | "retest" | "swing-high" | "swing-low" }
+  | { kind: "zone"; touching: "support" | "resistance" }
+  | { kind: "volatility"; atrPct: { op: "<" | ">"; value: number } }; // unlocked by Ch 8
 
 type Strategy = {
   entry: { all: Block[] };
-  exit:  { stop: StopRule; target: TargetRule; timeStop?: number };
-  risk:  { perTradePct: number };
-  scope: { series: SeriesId; from: number; to: number }[];   // multi-asset
+  exit: { stop: StopRule; target: TargetRule; timeStop?: number };
+  risk: { perTradePct: number };
+  scope: { series: SeriesId; from: number; to: number }[]; // multi-asset
 };
 ```
-Blocks appear in the palette only once their chapter unlocks them — the composer's palette *is* the player's progress made concrete. Rules are expressed in ATR-relative terms wherever possible, so a strategy is portable across the spine by construction.
+
+Blocks appear in the palette only once their chapter unlocks them — the composer's palette _is_ the player's progress made concrete. Rules are expressed in ATR-relative terms wherever possible, so a strategy is portable across the spine by construction.
 
 ### localStorage
+
 ```ts
-const KEY = 'chart-quest';        // single versioned root key
+const KEY = "chart-quest"; // single versioned root key
 type Persisted = {
   version: 1;
-  profile:     { xp: number; streak: number; lastPlayed: string; settings: Settings };
-  progress:    Record<LevelId, { stars: 0|1|2|3; bestScore: number; attempts: number; completedAt: string }>;
-  journal:     JournalEntry[];        // includes seriesId + asset class → Ch 9.6 breakdown
-  strategies:  SavedStrategy[];
-  predictions: Record<LevelId, unknown>;   // e.g. 4.5 win-rate guesses, 1.B score
+  profile: {
+    xp: number;
+    streak: number;
+    lastPlayed: string;
+    settings: Settings;
+  };
+  progress: Record<
+    LevelId,
+    {
+      stars: 0 | 1 | 2 | 3;
+      bestScore: number;
+      attempts: number;
+      completedAt: string;
+    }
+  >;
+  journal: JournalEntry[]; // includes seriesId + asset class → Ch 9.6 breakdown
+  strategies: SavedStrategy[];
+  predictions: Record<LevelId, unknown>; // e.g. 4.5 win-rate guesses, 1.B score
 };
 ```
+
 All access wrapped in try/catch — private mode and quota errors degrade to in-memory with one non-blocking warning, never a crash. Migration runs on read when `version` is behind.
 
 ### Accessibility
+
 Non-negotiable for a chart game: keyboard anchor placement for draw tools (arrows + enter), direction encoded by more than red/green (fill + shape), `prefers-reduced-motion` honored by the replay engine, every `classify` level reachable without a pointer.
 
 ### Integrity guardrails
+
 No claim that TA predicts or guarantees anything. Every pattern shows its per-asset base rate with sample size. Visible "not financial advice". Levels 1.B, 4.5, 8.3, 9.2 and 9.5 exist specifically to teach the player to distrust their own results.
 
 ---
@@ -422,19 +495,19 @@ public/data/    series/*.json, oos/*.json, base-rates.json, manifest.json
 
 Each phase ends at a verification gate and waits for approval. Flagging honestly: **Phases 1–2 exceed the 5-file limit** — greenfield scaffolding and the data pipeline can't split below a working vertical slice without leaving the repo unbuildable. Later phases respect it.
 
-| Phase | Scope | Gate |
-|---|---|---|
-| 1 | Scaffold: `create-next-app --yes` (package name `chart-quest`), TS + Tailwind + Zustand persist, chart wrapper, one chart renders | `tsc`, `eslint`, chart visible |
-| 2 | Data pipeline: fetch all 6 series, columnar format, adjusted+raw AAPL, manifest, loader, OOS holdback | All series load; sizes within target; OOS files isolated |
-| 3 | Level engine: schema, registry, dispatch, star/XP store, `classify` + `mark-bars` + graders + tests | Vitest green; Ch 1 playable end-to-end |
-| 4 | Draw tools: overlay canvas, coords/hit-test, `annotate` + geometric grader + misconceptions | Ch 2 playable; trendline grading correct on fixtures |
-| 5 | Replay engine + `predict-next` + `replay-trade` + journal writes | Ch 3 playable incl. boss; no look-ahead leak (asserted) |
-| 6 | `lib/ta/` indicators + `normalize` + y-axis toggle + `tune-param`; `compute-base-rates` | Indicators match fixtures; base-rates.json has ≥3 assets/pattern |
-| 7 | `lib/instruments/` specs + sizing; `sort-rank`, `sizing-calc`, `spot-the-flaw`; content Ch 4–7 | 7.3 correct for all four instrument classes; Ch 4–7 playable |
-| 8 | Ch 8: autocorrelation probe, correlation matrix, asset-character content | 8.2 reproduces known per-asset persistence figures |
-| 9 | Journal analytics, skill radar, Ch 9 content | 9.6 reads real journal data, split by asset class |
-| 10 | Backtest engine + composer + `build-rules` + Ch 10 + playbook export | Matches a hand-computed fixture; multi-asset objective enforced; OOS verifiably untouched earlier |
-| 11 | Polish: a11y pass, reduced motion, export/import, deploy | Playwright green; Lighthouse a11y ≥ 95; preview deployed |
+| Phase | Scope                                                                                                                             | Gate                                                                                              |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| 1     | Scaffold: `create-next-app --yes` (package name `chart-quest`), TS + Tailwind + Zustand persist, chart wrapper, one chart renders | `tsc`, `eslint`, chart visible                                                                    |
+| 2     | Data pipeline: fetch all 6 series, columnar format, adjusted+raw AAPL, manifest, loader, OOS holdback                             | All series load; sizes within target; OOS files isolated                                          |
+| 3     | Level engine: schema, registry, dispatch, star/XP store, `classify` + `mark-bars` + graders + tests                               | Vitest green; Ch 1 playable end-to-end                                                            |
+| 4     | Draw tools: overlay canvas, coords/hit-test, `annotate` + geometric grader + misconceptions                                       | Ch 2 playable; trendline grading correct on fixtures                                              |
+| 5     | Replay engine + `predict-next` + `replay-trade` + journal writes                                                                  | Ch 3 playable incl. boss; no look-ahead leak (asserted)                                           |
+| 6     | `lib/ta/` indicators + `normalize` + y-axis toggle + `tune-param`; `compute-base-rates`                                           | Indicators match fixtures; base-rates.json has ≥3 assets/pattern                                  |
+| 7     | `lib/instruments/` specs + sizing; `sort-rank`, `sizing-calc`, `spot-the-flaw`; content Ch 4–7                                    | 7.3 correct for all four instrument classes; Ch 4–7 playable                                      |
+| 8     | Ch 8: autocorrelation probe, correlation matrix, asset-character content                                                          | 8.2 reproduces known per-asset persistence figures                                                |
+| 9     | Journal analytics, skill radar, Ch 9 content                                                                                      | 9.6 reads real journal data, split by asset class                                                 |
+| 10    | Backtest engine + composer + `build-rules` + Ch 10 + playbook export                                                              | Matches a hand-computed fixture; multi-asset objective enforced; OOS verifiably untouched earlier |
+| 11    | Polish: a11y pass, reduced motion, export/import, deploy                                                                          | Playwright green; Lighthouse a11y ≥ 95; preview deployed                                          |
 
 Content authoring (Phases 7–9) is the one place worth parallelizing across contributors, one chapter each, since levels are independent data files.
 

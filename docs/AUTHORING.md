@@ -214,6 +214,36 @@ when #32 retunes thresholds.
 
 ---
 
+## Slider levels (`tune-param`)
+
+```ts
+kind: 'tune-param',
+config: {
+  prompt: '...',
+  label: 'deviations',
+  min: 1, max: 3, step: 0.05, initial: 2,
+  indicator: (value) => ({ kind: 'bollinger', period: 20, deviations: value }),
+  scoring: 'target',      // or 'exploration'
+},
+target: { value: 2.35 },
+tolerance: { slop: 0.15 },
+```
+
+**Decide honestly whether the level has an answer.** `scoring: 'target'` says there
+is a measured right value; `exploration` says there is not, and scores whether the
+player moved across enough of the range to have seen the effect. 5.1 is the second
+kind — a shorter average lags less and whipsaws more, which is a trade-off rather
+than a puzzle — and a level with no right answer must not pretend to have one,
+because the player will believe it. An exploration level shows **no** correction at
+the end, for the same reason.
+
+If you are reaching for `target`, the answer has to survive being measured. 5.2 began
+as "find the MA this market respected" and did not: the winner moved between windows,
+sat inside noise of its neighbours, and three of five windows lost money on every
+period. Check the surface before authoring the answer.
+
+---
+
 ## Content review bar
 
 Before marking a level done, ask what a skeptical trader would object to:

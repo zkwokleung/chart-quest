@@ -14,7 +14,7 @@ Every chapter's boss runs on a **different asset than that chapter's levels**. T
 | 2   | BTC 1d                             | **EURUSD 1d**             |
 | 3   | SPY 1d                             | **BTC 4h**                |
 | 4   | BTC 1d + AAPL 1d                   | **EURUSD 1h**             |
-| 5   | EURUSD 1d                          | **SPY 15m**               |
+| 5   | EURUSD 1d, BTC 1d, SPY 1d          | **SPY 15m**               |
 | 6   | BTC 1d/4h                          | **AAPL 1d + SPY 1d**      |
 | 7   | all four instrument classes        | **GC 1d**                 |
 | 8   | all six (by definition)            | **unseen regime slice**   |
@@ -29,16 +29,16 @@ Enforced by test, not discipline: `every chapter boss uses a different SeriesId 
 
 _unlocks: crosshair, timeframe switch, log/linear, y-axis mode_
 
-| #       | Level                                                                                                                                                    | Kind            |
-| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| 1.1     | Anatomy of a candle — click the wick, body, open, close                                                                                                  | `mark-bars`     |
-| 1.2     | Line vs candles — the line chart hid a 12% wick. Find it.                                                                                                | `classify`      |
-| 1.3     | The timeframe illusion — two charts "trending" opposite ways are the same data                                                                           | `classify`      |
-| 1.4     | Volume — click the 3 highest-volume bars, see what happened around them                                                                                  | `mark-bars`     |
-| 1.5     | Log vs linear — why the 2017 BTC run vanishes on a linear scale                                                                                          | `tune-param`    |
-| 1.6     | **Four clocks** — BTC 24/7, EURUSD 24/5, SPY 6.5h. The market closes and price moves anyway → that's a gap, and your stop doesn't protect you across it. | `classify`      |
-| 1.7     | **The split trap** — unadjusted AAPL shows a −75% crash in Aug 2020. It never happened.                                                                  | `spot-the-flaw` |
-| **1.B** | **BOSS: Coin flip** — predict direction 5× across three different assets. Score lands near 50%.                                                          | `predict-next`  |
+| #       | Level                                                                                                                                                    | Kind           |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| 1.1     | Anatomy of a candle — click the wick, body, open, close                                                                                                  | `mark-bars`    |
+| 1.2     | Line vs candles — the line chart hid a 12% wick. Find it.                                                                                                | `classify`     |
+| 1.3     | The timeframe illusion — two charts "trending" opposite ways are the same data                                                                           | `classify`     |
+| 1.4     | Volume — click the 3 highest-volume bars, see what happened around them                                                                                  | `mark-bars`    |
+| 1.5     | Log vs linear — why the 2017 BTC run vanishes on a linear scale                                                                                          | `classify`     |
+| 1.6     | **Four clocks** — BTC 24/7, EURUSD 24/5, SPY 6.5h. The market closes and price moves anyway → that's a gap, and your stop doesn't protect you across it. | `classify`     |
+| 1.7     | **The split trap** — unadjusted AAPL shows a −75% crash in Aug 2020. It never happened.                                                                  | `classify`     |
+| **1.B** | **BOSS: Coin flip** — predict direction 5× across three different assets. Score lands near 50%.                                                          | `predict-next` |
 
 > **1.B is deliberate.** The first boss proves the player _cannot predict yet_. It sets the humility baseline the whole game is measured against, and Ch 9.2 calls this exact score back.
 >
@@ -104,17 +104,23 @@ _unlocks: pattern library with per-asset stats_
 
 _unlocks: indicator panel, one per level_
 
-| #       | Level                                                                                                                 | Kind            |
-| ------- | --------------------------------------------------------------------------------------------------------------------- | --------------- |
-| 5.1     | An MA is just smoothed price — drag the period, watch lag appear                                                      | `tune-param`    |
-| 5.2     | Find the MA this market actually respected                                                                            | `tune-param`    |
-| 5.3     | RSI 80 for 40 bars while price doubles — overbought ≠ sell                                                            | `classify`      |
-| 5.4     | MACD is two MAs — click every cross, count how many were noise                                                        | `mark-bars`     |
-| 5.5     | **ATR as % of price** — BTC 3%/day is Tuesday, SPY 3%/day is a crisis. Same chart, three assets, y-axis in ATR units. | `tune-param`    |
-| 5.6     | Indicator soup — 6 indicators, 6 conflicting signals                                                                  | `spot-the-flaw` |
-| **5.B** | **BOSS (SPY 15m):** structure + 2 indicators, entry in replay                                                         | `replay-trade`  |
+| #       | Level                                                                                                                 | Kind         |
+| ------- | --------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 5.1     | An MA is just smoothed price — drag the period, watch lag appear                                                      | `tune-param` |
+| 5.2     | Two sigma is not ninety-five percent — widen the bands until they contain what they claim                             | `tune-param` |
+| 5.3     | RSI 80 for 40 bars while price doubles — overbought ≠ sell                                                            | `classify`   |
+| 5.4     | MACD is two MAs — click every cross, count how many were noise                                                        | `mark-bars`  |
+| 5.5     | **ATR as % of price** — BTC 3%/day is Tuesday, SPY 3%/day is a crisis. Same chart, three assets, y-axis in ATR units. | `tune-param` |
+| 5.6     | Indicator soup — 6 indicators, 6 conflicting signals                                                                  | `classify`   |
+| **5.B** | **BOSS (SPY 15m):** structure + indicator read + entry in replay                                                      | composite    |
 
-> **5.5 is the normalization keystone.** Once the player thinks in ATR-multiples instead of dollars, volatility intuition transfers between assets for free.
+> **5.5 is the normalization keystone.** Once the player thinks in ATR-multiples instead of dollars, volatility intuition transfers between assets for free. Measured, the curriculum's own slogan understates it: Bitcoin's _median_ day spans 4.60% and 85.6% of its days exceed 3%, so 3% is a quiet Tuesday rather than an ordinary one. SPY clears 3% on 4.2% of days and the euro on 0.8%.
+>
+> **5.2 is not "find the MA this market respected", and the data is why.** That question has no honest answer. Counting touches or bounces, the shortest period offered wins every window; reframed as "which held you in the trend", the longest wins. Running the rule for real, the best period moves between windows and sits inside noise of its neighbours — MA150 at 13.1% against MA200 at 12.9% in 2006-07 — and in three of five windows every period loses money. Shipping an answer would have taught overfitting one chapter before the one that warns about it. The slider now tunes Bollinger deviations, which has a measured answer and a better lesson: two sigma contains 88.8% of closes here, not the 95% the textbooks promise, and 95% needs 2.35σ.
+>
+> **5.6 uses `classify` rather than `spot-the-flaw`.** A new kind needs a level the existing ones cannot express, and 5.6 is a chart with six indicators plus a choice. `spot-the-flaw` stays unbuilt until a level needs a non-chart artefact — a backtest report in Chapter 9 is the likely first. Levels 1.5 and 1.7 shipped as `classify` in M3 for the same reason, and this table said otherwise until now.
+>
+> **5.B is a composite.** SPY-15m is a 1,041-bar rolling snapshot and yields one setup under 3.B's stop discriminator, so a single-trade boss would rest on a knife edge. "Structure + 2 indicators, entry in replay" is three stages anyway, and `replay-trade` has been a valid composite step since M5 precisely so 4.B, 5.B and 6.B would be authoring rather than building.
 
 ## Ch 6 — Confluence & Multi-Timeframe
 

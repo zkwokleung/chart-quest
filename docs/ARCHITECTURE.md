@@ -310,7 +310,51 @@ rewind impossible, and a replay you cannot scrub backwards is not a teaching too
 Slices are a few hundred bars at at most twenty reveals a second, so the rebuild cost
 is irrelevant.
 
-## 12. The client bundle, and where it runs out
+## 12. Indicators and the y-axis
+
+Indicator _shape_ and indicator _values_ are separate, and the split is load-bearing.
+`indicatorShape(spec)` says how many lines an indicator has, which pane it belongs in
+and what reference lines it carries, all without touching data;
+`computeIndicator(spec, series)` fills the values in. Series are created once with the
+chart's lifetime, values are pushed on every reveal, and a `tune-param` slider
+therefore redraws a moving average without tearing down and rebuilding every series
+each frame. `indicatorLayoutKey` is what tells the two apart.
+
+Overlays share the price pane. RSI and MACD take one each, after volume's — they
+cannot share a price scale without flattening the candles into a line. All of them
+are created in the chart-lifetime effect for the reason the volume series is: the M2
+renderer crash was a cleanup running against an already-removed chart.
+
+Indicators are computed **from `feed.visible()`**, so the look-ahead seal covers
+derived data for free — an average cannot include bars the player has not seen.
+`seal.test.ts` asserts it, including that the last revealed value does not shift when
+more bars arrive, because "compute once up front and slice later" is the optimisation
+that would silently break it.
+
+**The y-axis mode is a label formatter and nothing else.** `Chart` rewrites the axis
+labels through `priceFormatter`; the series keeps raw prices, so drawings,
+hit-testing, the pane primitive and every grader carry on in the units they were
+written for. That makes "normalization never changes grading" structural rather than
+a convention someone has to remember, and a source-level test in `normalize.test.ts`
+pins it down — because transforming the data would fail no grader test at all. The
+graders would stay internally consistent, just consistently measuring the wrong thing.
+
+It is exact rather than approximate because both transforms are **affine** in price:
+percent-from-anchor subtracts a fixed anchor, ATR-multiples divides by a fixed unit,
+and a linear axis relabelled by an affine function is still a correct axis. A
+non-affine mode could not be done this way and would have to move the data.
+
+### What a level's score measures
+
+`annotate` scores a trendline on touches, body cuts and anchor placement. For a
+`level` or a `zone` it scores **swing reversals** inside the tolerance instead, and
+drops the cut and anchor components entirely — a horizontal line that price keeps
+returning to must cross bodies, and there are no anchors to misplace. Counting bar
+touches there was nearly constant across the whole answer space: level 3.1 scored
+three stars with its line lifted 40% of the window's range. The perturbation sweep in
+`score-distribution.test.ts` is what found it.
+
+## 13. The client bundle, and where it runs out
 
 Measured after Chapter 2, not projected: **every level route loads the identical
 11 chunks.** `/level/1-1`, `/level/2-3` and `/level/2-B` are byte-for-byte the
@@ -329,7 +373,7 @@ deliberately _not_ done yet: it trades a static import for an async one in the
 level player's loading path, and doing that before the replay engine exists means
 doing it twice. When CI fails the budget, that is the fix, not a bigger number.
 
-## 13. Accessibility
+## 14. Accessibility
 
 Non-negotiable for a chart-driven game:
 

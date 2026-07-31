@@ -6,7 +6,7 @@ Orientation for anyone working in this repo. An interactive game teaching techni
 
 ## The two rules most easily eroded
 
-1. **Every level authors ≥2 misconceptions.** A grader returning `0.62` teaches nothing; one returning *"you anchored to bodies, not wicks"* teaches the thing. This is the product, not a nicety. CI fails without them.
+1. **Every level authors ≥2 misconceptions.** A grader returning `0.62` teaches nothing; one returning _"you anchored to bodies, not wicks"_ teaches the thing. This is the product, not a nicety. CI fails without them.
 2. **Every chapter boss runs on a different asset than its chapter's levels.** This is the cross-asset transfer guarantee — the reason a player finishes able to read any market rather than just crypto. CI enforces it.
 
 ## Other enforced invariants
@@ -20,7 +20,7 @@ Orientation for anyone working in this repo. An interactive game teaching techni
 
 ## Architecture in one paragraph
 
-~73 levels must not be ~73 components. Ten **level kinds**, each one React component + one pure grader, and every level is *data* (`lib/levels/content/ch<N>/`) referencing bar indices into a committed price series. `app/level/[id]/page.tsx` dispatches on `level.kind` and contains no kind-specific logic. Adding a level means adding a data file.
+~73 levels must not be ~73 components. Ten **level kinds**, each one React component + one pure grader, and every level is _data_ (`lib/levels/content/ch<N>/`) referencing bar indices into a committed price series. `app/level/[id]/page.tsx` dispatches on `level.kind` and contains no kind-specific logic. Adding a level means adding a data file.
 
 ## Verification
 
@@ -40,7 +40,7 @@ A successful file write is not a working change. If one of these isn't configure
 - TypeScript strict, with `noUncheckedIndexedAccess`. No `any` — use `unknown` plus narrowing.
 - Pure logic (`lib/ta`, `lib/levels/graders`, `lib/chart/geometry`, `lib/backtest`) must not import React or touch the DOM. This is what makes it testable.
 - Conventional Commits, scopes matching the module layout. See [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
-- Comment only what the code cannot say — a non-obvious *why*, a workaround and its cause, an external constraint, a real gotcha. No line-restating comments, no divider banners, no JSDoc echoing signatures.
+- Comment only what the code cannot say — a non-obvious _why_, a workaround and its cause, an external constraint, a real gotcha. No line-restating comments, no divider banners, no JSDoc echoing signatures.
 - Before writing a new indicator or geometry helper, check `lib/ta/` and `lib/chart/` — near-duplicates are the main source of drift here.
 
 ## Tone of the product
