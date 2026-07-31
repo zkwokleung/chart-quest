@@ -1,6 +1,7 @@
 import type { Drawing, Side } from "@/lib/chart/geometry";
 import type { IndicatorSpec } from "@/lib/chart/indicator-data";
 import type { Series, SeriesId } from "@/lib/chart/types";
+import type { SignalId } from "@/lib/ta/correlation";
 import type { TradeSide } from "@/lib/trade/simulate";
 import type { LevelId, YAxisMode } from "@/lib/store/schema";
 
@@ -19,6 +20,7 @@ export type LevelKind =
   | "replay-trade"
   | "tune-param"
   | "sort-rank"
+  | "spot-the-flaw"
   | "composite";
 
 /** Every kind a composite step may use. Nesting is excluded by construction. */
@@ -104,6 +106,12 @@ export type Attempt = {
     kind: "sort-rank";
     /** Item ids in the order the player left them, best-first. */
     order: string[];
+    hintsUsed: number;
+  };
+  "spot-the-flaw": {
+    kind: "spot-the-flaw";
+    /** Claim ids the player marked as faulty. */
+    flagged: string[];
     hintsUsed: number;
   };
   composite: {
@@ -231,6 +239,20 @@ export type KindConfig = {
     /** Share of the range that must be covered, for `exploration`. Default 0.6. */
     exploreFraction?: number;
   };
+  "spot-the-flaw": {
+    prompt: string;
+    /**
+     * The artefact under review: the claims someone made, in the order shown.
+     *
+     * `signal` names a measurable reading in `lib/ta/correlation.ts` where the claim has
+     * one. That is what lets 6.5 be graded against data rather than against taste — the
+     * content-claims test recomputes which claims duplicate another and checks the
+     * authored answer still matches.
+     */
+    claims: { id: string; label: string; note?: string; signal?: SignalId }[];
+    /** A measured table to show once the answer is committed. */
+    reveal?: "signal-correlation";
+  };
   "sort-rank": {
     prompt: string;
     /** The rows to be ordered, in the order they are first shown. */
@@ -289,6 +311,13 @@ export type KindTarget = {
   /** The measured answer. Ignored entirely when scoring is `exploration`. */
   "tune-param": { value: number };
   /**
+   * The claims that add nothing, because another claim already says them.
+   *
+   * Measured, not asserted: a claim counts as flawed when it correlates above
+   * `REDUNDANT_ABOVE` with some other claim in the same set.
+   */
+  "spot-the-flaw": { flawed: string[] };
+  /**
    * The measured ordering, best-first.
    *
    * Must be derivable from data rather than from taste, and the quantity ranked has
@@ -323,6 +352,11 @@ export type KindTolerance = {
     /** Distance from the target that still earns full marks. */
     slop: number;
   };
+  /**
+   * Nothing to tolerate: a claim is either duplicated by another or it is not, and the
+   * partial credit that matters comes from `f1` over the set the player marked.
+   */
+  "spot-the-flaw": Record<string, never>;
   "sort-rank": {
     /**
      * Adjacent transpositions that still earn full marks.
@@ -404,6 +438,14 @@ export type OverlaySpec =
       explored: number;
     }
   | {
+      kind: "claims";
+      flagged: string[];
+      /** The claims that really do duplicate another. */
+      flawed: string[];
+      /** Marked and flawed. */
+      hit: string[];
+    }
+  | {
       kind: "ranking";
       submitted: string[];
       /** The measured ordering, best-first. */
@@ -460,6 +502,7 @@ export type AnyLevel =
   | Level<"replay-trade">
   | Level<"tune-param">
   | Level<"sort-rank">
+  | Level<"spot-the-flaw">
   | Level<"composite">;
 
 export function isKind<K extends LevelKind>(
