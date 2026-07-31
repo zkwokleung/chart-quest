@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BaseRateTable } from "@/components/level/BaseRateTable";
+import { FeedChart } from "@/components/level/FeedChart";
 import type { KindProps } from "@/lib/levels/kind-module";
 
 /**
@@ -18,6 +19,7 @@ import type { KindProps } from "@/lib/levels/kind-module";
  */
 export function SortRank({
   level,
+  feeds,
   hintsUsed,
   grade,
   attempt,
@@ -34,6 +36,30 @@ export function SortRank({
     grade?.reference.kind === "ranking"
       ? new Set(grade.reference.inPlace)
       : null;
+
+  /**
+   * The chart a row is about, where it has one.
+   *
+   * Rendered inside the row rather than beside it so reordering moves the chart with its
+   * label — a list where the rows move and the charts do not would be worse than no charts.
+   */
+  function chartFor(slice: number | undefined) {
+    if (slice === undefined) return null;
+    const window = level.data[slice];
+    const feed = feeds[slice];
+    if (!window || !feed) return null;
+    return (
+      <span className="mt-2 block">
+        <FeedChart
+          slice={window}
+          feed={feed}
+          height={200}
+          showVolume={false}
+          yAxis={level.yAxis}
+        />
+      </span>
+    );
+  }
 
   function move(index: number, delta: number) {
     const next = index + delta;
@@ -86,6 +112,7 @@ export function SortRank({
                     {item.note}
                   </span>
                 ) : null}
+                {chartFor(item.slice)}
               </span>
               {placement ? (
                 <span className="font-mono text-xs text-muted">{placement}</span>

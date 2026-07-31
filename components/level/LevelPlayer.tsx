@@ -4,7 +4,7 @@ import { createElement, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Feedback } from "@/components/level/Feedback";
 import { Hints } from "@/components/level/Hints";
-import type { Series } from "@/lib/chart/types";
+import type { Series, Timeframe } from "@/lib/chart/types";
 import { loadSeries } from "@/lib/data/load-series";
 import { getChapter, levelIds } from "@/lib/levels/chapters";
 import type { Grade } from "@/lib/levels/grade";
@@ -16,8 +16,9 @@ import {
   revealHorizonFor,
 } from "@/lib/levels/kinds";
 import { isAuthored, loadLevel } from "@/lib/levels/registry";
-import type { AnyLevel, Attempt, LevelKind } from "@/lib/levels/schema";
+import type { AnyLevel, Attempt, LevelKind, LevelSlice } from "@/lib/levels/schema";
 import { createLevelFeed, type ReplayFeed } from "@/lib/replay/feed";
+import { linkFeeds } from "@/lib/replay/linked";
 import { useGameStore } from "@/lib/store/game";
 import { useHydrated } from "@/lib/store/use-hydrated";
 
@@ -146,12 +147,37 @@ function Player({ level }: { level: AnyLevel }) {
     // business — asked of the registry so nothing here branches on level.kind.
     const horizon = revealHorizonFor(level);
     const primedBars = primedBarsFor(level) ?? undefined;
-    return level.data.map((slice, i) => {
+    const built = level.data.map((slice, i) => {
       const series = data[i];
       if (!series)
         throw new Error(`${level.id}: no series loaded for slice ${i}`);
       return createLevelFeed(series, slice, { horizon, primedBars });
     });
+
+    // A multi-timeframe level gets one transport, not two.
+    //
+    // Decided from the *data* rather than from the kind, which is why there is still no
+    // branch on `level.kind` here: two slices of the same instrument at different bar
+    // sizes is a multi-timeframe level, whatever kind is reading it. The finer timeframe
+    // drives and the coarser one follows, so the coarse pane cannot show a bar that has
+    // not finished — see `lib/replay/linked.ts` for why that is the whole problem.
+    //
+    // Harmless for a kind that does not replay: both feeds are fully revealed, and the
+    // follower simply sits at its last *closed* bar, which is the honest position anyway.
+    const pair = linkablePair(level.data, data);
+    if (pair) {
+      const { driver, follower } = pair;
+      const series = data[follower];
+      const slice = level.data[follower];
+      if (series && slice && built[driver]) {
+        built[follower] = linkFeeds(built[driver], {
+          series,
+          from: slice.from,
+          to: slice.to - 1 + horizon,
+        });
+      }
+    }
+    return built;
   }, [data, level, feedNonce]);
 
   function commit(submitted: Attempt[LevelKind]) {
@@ -240,4 +266,40 @@ function Player({ level }: { level: AnyLevel }) {
       ) : null}
     </div>
   );
+}
+
+/** Bar sizes, coarsest last, so "which of these two is finer" has one answer. */
+const GRANULARITY: Record<Timeframe, number> = {
+  "15m": 0,
+  "1h": 1,
+  "4h": 2,
+  "1d": 3,
+};
+
+/**
+ * The two slices to link, or null when a level is not multi-timeframe.
+ *
+ * Requires the *same instrument* at two different bar sizes. Two slices of different
+ * instruments are a comparison — 1.6 shows three markets, 5.5 shows three — and linking
+ * those would be meaningless, since one has no idea when the other's bar closed.
+ *
+ * Deliberately only handles exactly two such slices. A three-timeframe level would need a
+ * chain and no level asks for one; returning null rather than guessing keeps the failure
+ * loud if that changes.
+ */
+export function linkablePair(
+  slices: readonly LevelSlice[],
+  data: readonly Series<string>[],
+): { driver: number; follower: number } | null {
+  if (slices.length !== 2) return null;
+  const [a, b] = [data[0], data[1]];
+  if (!a || !b) return null;
+
+  const instrument = (id: string) => id.replace(/-(1d|4h|1h|15m)$/, "");
+  if (instrument(a.id) !== instrument(b.id)) return null;
+  if (GRANULARITY[a.tf] === GRANULARITY[b.tf]) return null;
+
+  return GRANULARITY[a.tf] < GRANULARITY[b.tf]
+    ? { driver: 0, follower: 1 }
+    : { driver: 1, follower: 0 };
 }

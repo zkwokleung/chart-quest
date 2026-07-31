@@ -255,8 +255,14 @@ export type KindConfig = {
   };
   "sort-rank": {
     prompt: string;
-    /** The rows to be ordered, in the order they are first shown. */
-    items: { id: string; label: string; note?: string }[];
+    /**
+     * The rows to be ordered, in the order they are first shown.
+     *
+     * `slice` indexes `level.data` where a row has a chart of its own. 4.5 ranks patterns
+     * by their definitions and needs none; 6.4 ranks four setups and is unanswerable
+     * without them.
+     */
+    items: { id: string; label: string; note?: string; slice?: number }[];
     /** What the top of the list means, so "first" is never ambiguous. */
     topLabel: string;
     bottomLabel: string;
