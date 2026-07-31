@@ -58,3 +58,34 @@ export function toVolumeData(
   }
   return out;
 }
+
+/**
+ * An indicator's values, timestamped against the bars they belong to.
+ *
+ * `values` is parallel to the whole series, so index i is bar i — the same
+ * addressing everything else uses. Bars where the indicator is undefined are
+ * omitted rather than plotted as zero, which would draw a line to the floor for
+ * the first `period` bars of every chart.
+ */
+export function toLineData(
+  series: Series<string>,
+  values: readonly (number | null)[],
+  range?: BarRange,
+): { time: UTCTimestamp; value: number }[] {
+  const { from, to } = clampRange(series, range);
+  const out: { time: UTCTimestamp; value: number }[] = [];
+  for (let i = from; i < to; i += 1) {
+    const value = values[i];
+    const bar = barAt(series, i);
+    if (
+      !bar ||
+      value === null ||
+      value === undefined ||
+      !Number.isFinite(value)
+    ) {
+      continue;
+    }
+    out.push({ time: toTimestamp(bar.t), value });
+  }
+  return out;
+}

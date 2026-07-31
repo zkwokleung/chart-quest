@@ -5,6 +5,7 @@ import type { Series } from "@/lib/chart/types";
 import { KINDS, primedBarsFor, revealHorizonFor } from "@/lib/levels/kinds";
 import { ALL_LEVELS } from "@/lib/levels/content/all";
 import type { AnyLevel } from "@/lib/levels/schema";
+import { smaSeries } from "@/lib/ta/moving-average";
 import { createLevelFeed, type ReplayFeed } from "./feed";
 
 /**
@@ -176,6 +177,31 @@ describe("the look-ahead seal", () => {
         expect(feed.at, `${level.id} slice ${i}`).toBe(slice.to - 1 + horizon);
       });
     }
+  });
+
+  it("computes indicators from revealed bars only", () => {
+    // Derived data has to be sealed too, and it is sealed for a structural reason
+    // rather than a careful one: indicators are computed *from* `visible()` rather
+    // than alongside it, so an average cannot reach a bar the player has not been
+    // shown. This pins that down, because "compute it once up front and slice
+    // later" is exactly the optimisation someone would reach for.
+    const spy = series("SPY-1d");
+    const feed = createLevelFeed(
+      spy,
+      { from: 100, to: 200 },
+      { primedBars: 40 },
+    );
+
+    const partial = smaSeries(feed.visible(), 10);
+    expect(partial).toHaveLength(feed.at + 1);
+    expect(partial[feed.at + 1]).toBeUndefined();
+
+    // The last revealed value must not shift once more bars arrive: an SMA over
+    // bars 130..139 is the same number whether or not bar 140 exists yet.
+    const before = partial[feed.at];
+    feed.step(20);
+    const after = smaSeries(feed.visible(), 10)[feed.at - 20];
+    expect(after).toBe(before);
   });
 
   it("gives truth to the composite and to nothing else", () => {

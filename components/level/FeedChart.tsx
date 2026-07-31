@@ -3,6 +3,7 @@
 import type { Ref } from "react";
 import type { ChartHandle } from "@/components/chart/Chart";
 import type { RenderableDrawing } from "@/components/chart/DrawingPrimitive";
+import type { IndicatorSpec } from "@/lib/chart/indicator-data";
 import { SliceChart } from "@/components/level/SliceChart";
 import type { LevelSlice } from "@/lib/levels/schema";
 import type { ReplayFeed } from "@/lib/replay/feed";
@@ -15,6 +16,7 @@ type FeedChartProps = {
   showVolume?: boolean;
   scaleToggle?: boolean;
   drawings?: RenderableDrawing[];
+  indicators?: readonly IndicatorSpec[];
   ref?: Ref<ChartHandle | null>;
 };
 
@@ -33,6 +35,7 @@ export function FeedChart({
   showVolume,
   scaleToggle,
   drawings,
+  indicators,
   ref,
 }: FeedChartProps) {
   const { at, series } = useFeed(feed);
@@ -48,6 +51,7 @@ export function FeedChart({
       showVolume={showVolume}
       scaleToggle={scaleToggle}
       drawings={drawings}
+      indicators={indicators}
       ref={ref}
     />
   );

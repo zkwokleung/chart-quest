@@ -4,16 +4,34 @@ import {
   CandlestickSeries,
   createChart,
   HistogramSeries,
+  LineSeries,
   PriceScaleMode,
   type IChartApi,
   type ISeriesApi,
   type Logical,
   type UTCTimestamp,
 } from "lightweight-charts";
-import { useEffect, useImperativeHandle, useRef, type Ref } from "react";
+import {
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  type Ref,
+} from "react";
 import type { LogicalBounds, ScaleAdapter } from "@/lib/chart/coords";
 import { barIndexToX, priceToY } from "@/lib/chart/coords";
-import { clampRange, toCandlestickData, toVolumeData } from "@/lib/chart/to-lwc";
+import {
+  computeIndicator,
+  indicatorLayoutKey,
+  indicatorShape,
+  type IndicatorSpec,
+} from "@/lib/chart/indicator-data";
+import {
+  clampRange,
+  toCandlestickData,
+  toLineData,
+  toVolumeData,
+} from "@/lib/chart/to-lwc";
 import type { BarRange, Series } from "@/lib/chart/types";
 import { DrawingsPrimitive, type RenderableDrawing } from "./DrawingPrimitive";
 
@@ -43,6 +61,14 @@ type ChartProps = {
    * frame, so mutating the returned array between renders is enough to repaint.
    */
   drawings?: RenderableDrawing[];
+  /**
+   * Indicators to draw. Overlays share the price pane; oscillators take their own.
+   *
+   * Changing a *parameter* re-pushes data; changing the *set* rebuilds the chart.
+   * That split is what lets a tune-param slider redraw a moving average as fast as
+   * it is dragged without tearing down and recreating the whole chart each frame.
+   */
+  indicators?: readonly IndicatorSpec[];
   ref?: Ref<ChartHandle | null>;
 };
 
@@ -78,6 +104,7 @@ export function Chart({
   height = 420,
   className,
   drawings,
+  indicators,
   ref,
 }: ChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -86,6 +113,15 @@ export function Chart({
   const volumeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
 
   const { from, to } = clampRange(series, range);
+
+  // One entry per indicator, each holding that indicator's line series in the
+  // order computeIndicator returned them, plus an optional histogram.
+  const indicatorRef = useRef<
+    { lines: ISeriesApi<"Line">[]; histogram?: ISeriesApi<"Histogram"> }[]
+  >([]);
+
+  const specs = useMemo(() => indicators ?? [], [indicators]);
+  const layoutKey = indicatorLayoutKey(specs);
 
   const primitiveRef = useRef<DrawingsPrimitive | null>(null);
   // The primitive is created once with the chart but must know the current window
@@ -99,8 +135,11 @@ export function Chart({
         coordinateToLogical: (x) =>
           chartRef.current?.timeScale().coordinateToLogical(x) ?? null,
         logicalToCoordinate: (logical) =>
-          chartRef.current?.timeScale().logicalToCoordinate(logical as Logical) ?? null,
-        coordinateToPrice: (y) => candlesRef.current?.coordinateToPrice(y) ?? null,
+          chartRef.current
+            ?.timeScale()
+            .logicalToCoordinate(logical as Logical) ?? null,
+        coordinateToPrice: (y) =>
+          candlesRef.current?.coordinateToPrice(y) ?? null,
         priceToCoordinate: (price) =>
           candlesRef.current?.priceToCoordinate(price) ?? null,
       },
@@ -159,12 +198,69 @@ export function Chart({
       // price-scale trick v4 required.
       const volume = chart.addSeries(
         HistogramSeries,
-        { priceFormat: { type: "volume" }, color: "#39424f", priceLineVisible: false },
+        {
+          priceFormat: { type: "volume" },
+          color: "#39424f",
+          priceLineVisible: false,
+        },
         1,
       );
       volumeRef.current = volume;
       chart.panes()[1]?.setStretchFactor(0.25);
     }
+
+    // Indicator series, created here for the same reason as volume: their lifetime
+    // is the chart's. Oscillators take panes after volume's, one each, so an RSI and
+    // a MACD on the same level do not fight over one scale.
+    let nextPane = showVolume ? 2 : 1;
+    indicatorRef.current = specs.map((spec, index) => {
+      const shape = indicatorShape(spec, index);
+      const pane = shape.overlay ? 0 : nextPane;
+      if (!shape.overlay) nextPane += 1;
+
+      const lines = shape.lines.map((line) =>
+        chart.addSeries(
+          LineSeries,
+          {
+            color: line.color,
+            lineWidth: 2,
+            priceLineVisible: false,
+            lastValueVisible: false,
+            crosshairMarkerVisible: false,
+            title: line.label,
+          },
+          pane,
+        ),
+      );
+
+      const histogram = shape.histogram
+        ? chart.addSeries(
+            HistogramSeries,
+            {
+              color: "#39424f",
+              priceLineVisible: false,
+              lastValueVisible: false,
+            },
+            pane,
+          )
+        : undefined;
+
+      // Reference lines belong to the pane rather than to a series, but the library
+      // hangs them off one — so the first line carries them.
+      for (const guide of shape.guides) {
+        lines[0]?.createPriceLine({
+          price: guide,
+          color: "#2a3140",
+          lineWidth: 1,
+          lineStyle: 2,
+          axisLabelVisible: true,
+          title: "",
+        });
+      }
+
+      if (pane > 0) chart.panes()[pane]?.setStretchFactor(0.3);
+      return histogram ? { lines, histogram } : { lines };
+    });
 
     // Attached here for the same reason as the volume series: the primitive's
     // lifetime is the chart's. chart.remove() below tears it down, and nothing may
@@ -203,8 +299,13 @@ export function Chart({
       candlesRef.current = null;
       volumeRef.current = null;
       primitiveRef.current = null;
+      indicatorRef.current = [];
     };
-  }, [height, showVolume]);
+    // `layoutKey` rather than `specs`: the chart is rebuilt when the *set* of
+    // indicators changes, not when one of their parameters does. Creating the
+    // series needs only `indicatorShape`, which is why nothing here touches the
+    // data — a tune-param slider re-pushes values without rebuilding anything.
+  }, [height, showVolume, layoutKey, specs]);
 
   // Pushed rather than pulled: setItems calls the library's requestUpdate, which
   // is how a primitive asks for a repaint. Writing a ref during render would work
@@ -221,8 +322,31 @@ export function Chart({
 
     candles.setData(toCandlestickData(series, { from, to }));
     volumeRef.current?.setData(toVolumeData(series, { from, to }));
+
+    // Indicator values come from the same `series` the candles do — which on a
+    // replay level is `feed.visible()`, so an average cannot include bars the
+    // player has not been shown. The seal covers derived data because the data is
+    // derived from the sealed thing, not alongside it.
+    specs.forEach((spec, i) => {
+      const target = indicatorRef.current[i];
+      if (!target) return;
+      const render = computeIndicator(spec, series, i);
+      render.lines.forEach((line, k) => {
+        target.lines[k]?.setData(toLineData(series, line.values, { from, to }));
+      });
+      if (render.histogram && target.histogram) {
+        target.histogram.setData(
+          toLineData(series, render.histogram, { from, to }).map((point) => ({
+            time: point.time,
+            value: point.value,
+            color: point.value >= 0 ? "#2f6f5a" : "#7a3a2a",
+          })),
+        );
+      }
+    });
+
     chart.timeScale().fitContent();
-  }, [series, from, to]);
+  }, [series, from, to, specs]);
 
   useEffect(() => {
     candlesRef.current?.priceScale().applyOptions({
