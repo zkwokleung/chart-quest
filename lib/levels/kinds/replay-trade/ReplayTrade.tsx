@@ -157,19 +157,17 @@ function TradeOnChart({
     <div className="flex flex-col gap-4">
       <p className="text-sm font-medium">{level.config.prompt}</p>
 
+      {/* `SliceChart` renders the slice's own label, so this pane adds none of its own —
+          an earlier version printed a heading here and the label appeared twice. What the
+          pane is *for* belongs in the level's label text, where an author controls it. */}
       {context ? (
-        <div>
-          <p className="pb-1 font-mono text-xs text-muted">
-            {context.slice.label ?? "higher timeframe"} · context, not the trade
-          </p>
-          <FeedChart
-            slice={context.slice}
-            feed={context.feed}
-            height={180}
-            showVolume={false}
-            yAxis={level.yAxis}
-          />
-        </div>
+        <FeedChart
+          slice={context.slice}
+          feed={context.feed}
+          height={180}
+          showVolume={false}
+          yAxis={level.yAxis}
+        />
       ) : null}
 
       <div

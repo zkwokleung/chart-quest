@@ -44,7 +44,7 @@ export const level: Level<"replay-trade"> = {
     "Two panes, both running. The hourly chart above is where price turned before; the fifteen-minute chart below is where you act. Play forward, and when price comes back to that hourly high and rejects it, take the short.",
   data: [
     { series: "SPY-15m", from: 758, to: 840, label: "SPY · 15m — the trade" },
-    { series: "SPY-1h", from: 160, to: 194, label: "SPY · 1h — the level" },
+    { series: "SPY-1h", from: 160, to: 194, label: "SPY · 1h — the level, for context only" },
   ],
   config: {
     prompt:

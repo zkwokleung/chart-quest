@@ -56,7 +56,7 @@ export const level: Level<"composite"> = {
     "The euro against the dollar, hourly, with the four-hour above it — a market no level in this chapter has used. Find where the slow chart turned, say what the fast one has to do, then trade it.",
   data: [
     { series: "EURUSD-1h", from: 694, to: 786, label: "EURUSD · 1h — the trade" },
-    { series: "EURUSD-4h", from: 155, to: 193, label: "EURUSD · 4h — the level" },
+    { series: "EURUSD-4h", from: 155, to: 193, label: "EURUSD · 4h — the level, for context only" },
   ],
   config: {
     steps: [
