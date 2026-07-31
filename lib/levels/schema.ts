@@ -18,6 +18,7 @@ export type LevelKind =
   | "annotate"
   | "replay-trade"
   | "tune-param"
+  | "sort-rank"
   | "composite";
 
 /** Every kind a composite step may use. Nesting is excluded by construction. */
@@ -97,6 +98,12 @@ export type Attempt = {
      * scoring is whether the player actually looked.
      */
     visited: number[];
+    hintsUsed: number;
+  };
+  "sort-rank": {
+    kind: "sort-rank";
+    /** Item ids in the order the player left them, best-first. */
+    order: string[];
     hintsUsed: number;
   };
   composite: {
@@ -224,6 +231,14 @@ export type KindConfig = {
     /** Share of the range that must be covered, for `exploration`. Default 0.6. */
     exploreFraction?: number;
   };
+  "sort-rank": {
+    prompt: string;
+    /** The rows to be ordered, in the order they are first shown. */
+    items: { id: string; label: string; note?: string }[];
+    /** What the top of the list means, so "first" is never ambiguous. */
+    topLabel: string;
+    bottomLabel: string;
+  };
   "replay-trade": {
     prompt: string;
     side: TradeSide;
@@ -264,6 +279,14 @@ export type KindTarget = {
   "replay-trade": { structure: Drawing; triggerBar: number };
   /** The measured answer. Ignored entirely when scoring is `exploration`. */
   "tune-param": { value: number };
+  /**
+   * The measured ordering, best-first.
+   *
+   * Must be derivable from data rather than from taste, and the quantity ranked has
+   * to actually separate — 4.5 ranks by sample size for exactly that reason, since
+   * the win rates it also shows are 2.5 points apart and rank to nothing.
+   */
+  "sort-rank": { order: string[] };
   /** A composite's answers live on its steps. */
   composite: Record<string, never>;
   /**
@@ -290,6 +313,18 @@ export type KindTolerance = {
   "tune-param": {
     /** Distance from the target that still earns full marks. */
     slop: number;
+  };
+  "sort-rank": {
+    /**
+     * Adjacent transpositions that still earn full marks.
+     *
+     * Some neighbours in a measured ordering are not distinguishable by reasoning —
+     * 4.5's three candlestick patterns differ in frequency by well under 2× and no
+     * player could order them from first principles. Forgiving a swap or two keeps
+     * the level about the part that *is* inferable, which is the gap between the
+     * common candles and the rare chart patterns.
+     */
+    swaps: number;
   };
   "replay-trade": {
     /**
@@ -358,6 +393,16 @@ export type OverlaySpec =
       /** Absent when the level has no right answer. */
       target: number | null;
       explored: number;
+    }
+  | {
+      kind: "ranking";
+      submitted: string[];
+      /** The measured ordering, best-first. */
+      correct: string[];
+      /** Ids the player placed at the right index, for a per-row mark. */
+      inPlace: string[];
+      /** Adjacent transpositions between the two orderings. */
+      swaps: number;
     }
   | {
       kind: "trade";

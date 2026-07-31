@@ -8,6 +8,7 @@ import { Classify } from "../classify/Classify";
 import { MarkBars } from "../mark-bars/MarkBars";
 import { PredictNext } from "../predict-next/PredictNext";
 import { ReplayTrade } from "../replay-trade/ReplayTrade";
+import { SortRank } from "../sort-rank/SortRank";
 import { TuneParam } from "../tune-param/TuneParam";
 
 /**
@@ -20,6 +21,7 @@ const COMPONENTS = {
   "mark-bars": MarkBars,
   "predict-next": PredictNext,
   "replay-trade": ReplayTrade,
+  "sort-rank": SortRank,
   "tune-param": TuneParam,
 } as const;
 

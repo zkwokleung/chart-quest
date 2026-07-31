@@ -6,6 +6,7 @@ import { gradeClassify, perfectClassify } from "../classify/grade";
 import { gradeMarkBars, perfectMarkBars } from "../mark-bars/grade";
 import { gradePredictNext, perfectPredictNext } from "../predict-next/grade";
 import { gradeReplayTrade, perfectReplayTrade } from "../replay-trade/grade";
+import { gradeSortRank, perfectSortRank } from "../sort-rank/grade";
 import { gradeTuneParam, perfectTuneParam } from "../tune-param/grade";
 
 /**
@@ -23,6 +24,7 @@ const GRADERS = {
   "mark-bars": gradeMarkBars,
   "predict-next": gradePredictNext,
   "replay-trade": gradeReplayTrade,
+  "sort-rank": gradeSortRank,
   "tune-param": gradeTuneParam,
 } as const;
 
@@ -32,6 +34,7 @@ const PERFECT = {
   "mark-bars": perfectMarkBars,
   "predict-next": perfectPredictNext,
   "replay-trade": perfectReplayTrade,
+  "sort-rank": perfectSortRank,
   "tune-param": perfectTuneParam,
 } as const;
 
