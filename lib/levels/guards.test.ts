@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Series } from "@/lib/chart/types";
 import type { SeriesManifest } from "@/lib/data/manifest-types";
-import { allLevels } from "./registry";
+import { AUTHORED_IDS } from "./content";
+import { ALL_LEVELS } from "./content/all";
 import { gradeAny, perfectAttemptFor } from "./kinds";
 import type { AnyLevel } from "./schema";
 
@@ -34,7 +35,7 @@ function loadCommitted(id: string): Series<string> {
   return series;
 }
 
-const LEVELS = allLevels();
+const LEVELS = ALL_LEVELS;
 
 /**
  * Chapter 1 is deliberately exempt from the boss-asset rule.
@@ -49,6 +50,25 @@ const BOSS_ASSET_RULE_FROM_CHAPTER = 2;
 describe("authored levels", () => {
   it("there is at least one, or these guards are vacuous", () => {
     expect(LEVELS.length).toBeGreaterThan(0);
+  });
+
+  it("the eager list and the dynamic loaders name the same levels", () => {
+    // The two can drift now that content loads per level: `all.ts` feeds these
+    // guards and `index.ts` feeds the app, so a level added to one and not the
+    // other is either untested or unreachable — and each failure is silent in the
+    // opposite place from the one that caused it.
+    expect([...AUTHORED_IDS].sort()).toEqual(LEVELS.map((l) => l.id).sort());
+  });
+
+  it("declares each level id exactly once", () => {
+    // Moved here from the registry, which checked it at module load. There is no
+    // longer a moment when every level is in memory, and an authoring mistake
+    // belongs in CI rather than in a player's first render.
+    const seen = new Set<string>();
+    for (const level of LEVELS) {
+      expect(seen.has(level.id), `${level.id} is declared twice`).toBe(false);
+      seen.add(level.id);
+    }
   });
 });
 
@@ -177,7 +197,12 @@ describe.each(LEVELS.map((l) => [l.id, l] as const))("%s", (_id, level) => {
           const h = series.h[i];
           const l = series.l[i];
           const c = series.c[i];
-          if (o === undefined || h === undefined || l === undefined || c === undefined) {
+          if (
+            o === undefined ||
+            h === undefined ||
+            l === undefined ||
+            c === undefined
+          ) {
             continue;
           }
           const previousClose = i > 0 ? series.c[i - 1] : undefined;
@@ -196,7 +221,8 @@ describe.each(LEVELS.map((l) => [l.id, l] as const))("%s", (_id, level) => {
                 ]),
           ];
 
-          if (candidates.some((value) => Math.abs(value - claimed) < 1)) return true;
+          if (candidates.some((value) => Math.abs(value - claimed) < 1))
+            return true;
         }
         return false;
       });
@@ -211,7 +237,10 @@ describe.each(LEVELS.map((l) => [l.id, l] as const))("%s", (_id, level) => {
 describe("chapter-level rules", () => {
   const byChapter = new Map<number, AnyLevel[]>();
   for (const level of LEVELS) {
-    byChapter.set(level.chapter, [...(byChapter.get(level.chapter) ?? []), level]);
+    byChapter.set(level.chapter, [
+      ...(byChapter.get(level.chapter) ?? []),
+      level,
+    ]);
   }
 
   it("runs each boss on an asset its chapter did not teach on", () => {

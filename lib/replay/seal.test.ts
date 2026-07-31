@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Series } from "@/lib/chart/types";
 import { KINDS, primedBarsFor, revealHorizonFor } from "@/lib/levels/kinds";
-import { ALL_LEVELS } from "@/lib/levels/content";
+import { ALL_LEVELS } from "@/lib/levels/content/all";
 import type { AnyLevel } from "@/lib/levels/schema";
 import { createLevelFeed, type ReplayFeed } from "./feed";
 

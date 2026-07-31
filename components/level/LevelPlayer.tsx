@@ -15,7 +15,7 @@ import {
   primedBarsFor,
   revealHorizonFor,
 } from "@/lib/levels/kinds";
-import { getLevel, isAuthored } from "@/lib/levels/registry";
+import { isAuthored, loadLevel } from "@/lib/levels/registry";
 import type { AnyLevel, Attempt, LevelKind } from "@/lib/levels/schema";
 import { createLevelFeed, type ReplayFeed } from "@/lib/replay/feed";
 import { useGameStore } from "@/lib/store/game";
@@ -34,10 +34,56 @@ import { useHydrated } from "@/lib/store/use-hydrated";
  * `level.kind` ever appears here, the abstraction has failed.
  */
 export function LevelPlayer({ levelId }: { levelId: string }) {
-  const level = getLevel(levelId);
-  if (!level) return <NotAuthored levelId={levelId} />;
-  return <Player level={level} />;
+  // Two stages rather than one: the level's own chunk, then the series it names.
+  // They cannot be parallelised, because which series to fetch is a fact inside the
+  // level — and the alternative, duplicating the series ids into the static index,
+  // would mean two places to keep in step for one saved round trip on a file the
+  // CDN is already serving.
+  // The loaded id travels with the result rather than being reset in the effect
+  // body. Clearing state synchronously there would work and is disallowed for a
+  // reason — it cascades an extra render — so a result for the wrong id is simply
+  // read as "still loading".
+  const [result, setResult] = useState<LoadResult | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadLevel(levelId)
+      .then((level) => {
+        if (!cancelled) setResult({ id: levelId, level });
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setResult({
+            id: levelId,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [levelId]);
+
+  const current = result?.id === levelId ? result : null;
+
+  if (!current)
+    return <p className="text-sm text-muted">Loading level&hellip;</p>;
+  if (current.error) {
+    return (
+      <p className="rounded border border-down/50 bg-surface p-4 text-sm">
+        Could not load this level: {current.error}
+      </p>
+    );
+  }
+  if (!current.level) return <NotAuthored levelId={levelId} />;
+  return <Player level={current.level} />;
 }
+
+type LoadResult = {
+  id: string;
+  level?: AnyLevel | undefined;
+  error?: string;
+};
 
 function NotAuthored({ levelId }: { levelId: string }) {
   const chapter = levelId.split("-")[0] ?? "1";

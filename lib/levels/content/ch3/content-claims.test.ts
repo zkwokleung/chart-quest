@@ -8,7 +8,7 @@ import { simulate } from "@/lib/trade/simulate";
 import { gradeAnnotate } from "../../kinds/annotate/grade";
 import { measurePlan } from "../../kinds/replay-trade/grade";
 import { barIndexOf } from "../../mark";
-import { getLevel } from "../../registry";
+import { getAuthoredLevel as getLevel } from "../all";
 import type { AnyLevel, Level } from "../../schema";
 
 /**

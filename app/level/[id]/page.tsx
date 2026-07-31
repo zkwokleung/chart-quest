@@ -1,6 +1,6 @@
 import { LevelPlayer } from "@/components/level/LevelPlayer";
 import { CHAPTERS, levelIds } from "@/lib/levels/chapters";
-import { getLevel } from "@/lib/levels/registry";
+import { loadLevel } from "@/lib/levels/registry";
 
 export function generateStaticParams() {
   return CHAPTERS.flatMap((c) => levelIds(c).map((id) => ({ id })));
@@ -19,7 +19,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const level = getLevel(id);
+  const level = await loadLevel(id);
   return { title: level ? `${level.id} · ${level.title}` : `Level ${id}` };
 }
 

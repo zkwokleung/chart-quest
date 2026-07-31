@@ -1,56 +1,41 @@
 import type { LevelId } from "@/lib/store/schema";
 import { CHAPTERS, levelIds } from "./chapters";
-import { ALL_LEVELS } from "./content";
+import { AUTHORED_IDS, isAuthoredId, loadLevelContent } from "./content";
 import type { AnyLevel } from "./schema";
 
 /**
- * Indexes the authored levels and checks them against the chapter definitions.
+ * What the app knows about levels without loading any of them.
  *
- * Validation happens at module load rather than at render: a duplicate or
- * mis-numbered id is an authoring mistake, and it is far cheaper to find it when
- * the app boots than when a player opens the one level that is broken.
+ * Everything here is either an id or derived from one, so this module is small
+ * enough to ship on every route. Content arrives through `loadLevel`, one chunk per
+ * level — see `./content/index.ts` for why.
+ *
+ * The duplicate-id and id-matches-chapter checks used to run here at module load,
+ * over the whole set. They now live in `guards.test.ts`, which is the better home
+ * anyway: an authoring mistake should fail CI rather than a player's first render,
+ * and there is no longer a moment when every level is in memory to check.
  */
 
-function build(): Map<LevelId, AnyLevel> {
-  const byId = new Map<LevelId, AnyLevel>();
+const AUTHORED = new Set<string>(AUTHORED_IDS);
 
-  for (const level of ALL_LEVELS) {
-    if (byId.has(level.id)) {
-      throw new Error(`level ${level.id} is declared twice`);
-    }
-    const expectedChapter = Number(level.id.split("-")[0]);
-    if (level.chapter !== expectedChapter) {
-      throw new Error(
-        `level ${level.id} declares chapter ${level.chapter}, expected ${expectedChapter}`,
-      );
-    }
-    byId.set(level.id, level);
-  }
-
-  return byId;
+/** Loads one level's content. Rejects only if the level file itself is malformed. */
+export async function loadLevel(id: string): Promise<AnyLevel | undefined> {
+  return loadLevelContent(id);
 }
 
-const LEVELS = build();
-
-export function getLevel(id: string): AnyLevel | undefined {
-  return LEVELS.get(id as LevelId);
+export function isAuthored(id: string): boolean {
+  return isAuthoredId(id);
 }
 
-export function allLevels(): AnyLevel[] {
-  return [...LEVELS.values()];
-}
-
-export function levelsInChapter(chapter: number): AnyLevel[] {
-  return allLevels().filter((l) => l.chapter === chapter);
+export function authoredInChapter(chapter: number): LevelId[] {
+  return AUTHORED_IDS.filter(
+    (id) => Number(id.split("-")[0]) === chapter,
+  ) as LevelId[];
 }
 
 /** Ids a chapter defines that have no authored level yet. */
 export function missingInChapter(chapter: number): LevelId[] {
   const meta = CHAPTERS.find((c) => c.n === chapter);
   if (!meta) return [];
-  return levelIds(meta).filter((id) => !LEVELS.has(id));
-}
-
-export function isAuthored(id: string): boolean {
-  return LEVELS.has(id as LevelId);
+  return levelIds(meta).filter((id) => !AUTHORED.has(id));
 }

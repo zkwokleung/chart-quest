@@ -3,18 +3,21 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * Fails the build when a route's client JavaScript outgrows its budget.
+ * Fails the build when a route's initial client JavaScript outgrows its budget.
  *
- * The concern this exists for is specific: every authored level is imported by
- * the level registry, and the registry is a client module, so *all* level
- * content ships to *every* level route. That cost grows with the curriculum
- * rather than with the page, and at ~73 levels it is the one number that can get
- * away from us quietly. A budget in CI turns "keep an eye on it" into a number
- * that has to be argued with.
+ * The concern this was written for has since been fixed. Every authored level used
+ * to be statically imported by the level registry, which is a client module, so all
+ * content shipped to every level route — a cost that grew with the curriculum
+ * rather than with the page. Level content now loads per level through `import()`.
  *
- * Measures what a browser actually downloads for a route: the scripts the
- * prerendered HTML references, gzipped, deduplicated. Not `.next/static` in
- * total, which counts chunks no single route loads.
+ * **What this measures, and what it does not.** It sums the scripts the prerendered
+ * HTML references, gzipped and deduplicated — the payload a browser fetches before
+ * the page is interactive. It does **not** include the level's own content chunk,
+ * because a dynamic import is resolved at runtime and appears nowhere in the HTML.
+ * That chunk is around 1 KB gzipped, it is fetched only by the route that needs it,
+ * and it no longer grows the shared payload. So the number below is the shared cost,
+ * which is the one that could quietly run away; the per-level cost is bounded by the
+ * size of a single level file.
  */
 
 const BUDGETS: Record<string, number> = {

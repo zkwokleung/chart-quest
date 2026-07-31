@@ -5,7 +5,7 @@ import type { Series } from "@/lib/chart/types";
 import { findSwings, readStructure, swingHighs } from "@/lib/ta/swings";
 import { gradeAnnotate } from "../../kinds/annotate/grade";
 import { barIndexOf } from "../../mark";
-import { getLevel } from "../../registry";
+import { getAuthoredLevel as getLevel } from "../all";
 import type { AnyLevel, Level } from "../../schema";
 
 /**
@@ -25,7 +25,8 @@ function load(id: string): Series<string> {
 
 function need<K extends AnyLevel["kind"]>(id: string, kind: K): Level<K> {
   const level = getLevel(id);
-  if (!level || level.kind !== kind) throw new Error(`${id} is not a ${kind} level`);
+  if (!level || level.kind !== kind)
+    throw new Error(`${id} is not a ${kind} level`);
   return level as unknown as Level<K>;
 }
 
@@ -44,7 +45,9 @@ describe("2-1 swing highs", () => {
     for (const mark of level.target.marks) {
       const bar = barIndexOf(mark);
       expect(bar).not.toBeNull();
-      expect(detected.has(bar ?? -1), `bar ${bar} is not a swing high`).toBe(true);
+      expect(detected.has(bar ?? -1), `bar ${bar} is not a swing high`).toBe(
+        true,
+      );
     }
   });
 
@@ -116,9 +119,9 @@ describe("2-3 the trendline window", () => {
     // The floor lifts while the ceiling does not, which is why the support line is
     // worth drawing at all.
     const slice = level.data[0]!;
-    expect(readStructure(findSwings(btc, { from: slice.from, to: slice.to }, 3))).toBe(
-      "range",
-    );
+    expect(
+      readStructure(findSwings(btc, { from: slice.from, to: slice.to }, 3)),
+    ).toBe("range");
     expect(level.brief.toLowerCase()).not.toContain("uptrend");
   });
 });
@@ -190,7 +193,9 @@ describe("2-5 break versus deviation", () => {
     const dramatic = 152;
     const priorLow = 11400;
     expect(btc.c[dramatic] ?? 0).toBeLessThan(priorLow);
-    const recovered = [153, 154, 155, 156].some((i) => (btc.c[i] ?? 0) > priorLow);
+    const recovered = [153, 154, 155, 156].some(
+      (i) => (btc.c[i] ?? 0) > priorLow,
+    );
     expect(recovered).toBe(true);
     // And it is the bigger move of the two, so it is genuinely the tempting answer.
     const target = barIndexOf(level.target.marks[0]!) ?? 0;
@@ -291,9 +296,9 @@ describe("2-B the boss", () => {
 
   it("really is the uptrend its classify stage claims", () => {
     const slice = level.data[0]!;
-    expect(readStructure(findSwings(eur, { from: slice.from, to: slice.to }, 3))).toBe(
-      "uptrend",
-    );
+    expect(
+      readStructure(findSwings(eur, { from: slice.from, to: slice.to }, 3)),
+    ).toBe("uptrend");
   });
 
   it("leaves room for the predict stage's horizon", () => {

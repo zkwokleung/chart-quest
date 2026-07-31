@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Series } from "@/lib/chart/types";
 import { barIndexOf } from "../../mark";
-import { getLevel } from "../../registry";
+import { getAuthoredLevel as getLevel } from "../all";
 import type { AnyLevel, Level } from "../../schema";
 
 /**
@@ -27,7 +27,8 @@ function load(id: string): Series<string> {
 
 function need<K extends AnyLevel["kind"]>(id: string, kind: K): Level<K> {
   const level = getLevel(id);
-  if (!level || level.kind !== kind) throw new Error(`${id} is not a ${kind} level`);
+  if (!level || level.kind !== kind)
+    throw new Error(`${id} is not a ${kind} level`);
   return level as unknown as Level<K>;
 }
 
@@ -115,7 +116,9 @@ describe("1-3 the timeframe illusion", () => {
     const h4 = load(fourHour!.series);
     const d1 = load(daily!.series);
     const day = (ms: number) => new Date(ms).toISOString().slice(0, 10);
-    expect(day(h4.t[fourHour!.to - 1] ?? 0)).toBe(day(d1.t[daily!.to - 1] ?? 0));
+    expect(day(h4.t[fourHour!.to - 1] ?? 0)).toBe(
+      day(d1.t[daily!.to - 1] ?? 0),
+    );
   });
 });
 
