@@ -22,6 +22,7 @@ export type LevelKind =
   | "sort-rank"
   | "spot-the-flaw"
   | "sizing-calc"
+  | "trade-sequence"
   | "composite";
 
 /** Every kind a composite step may use. Nesting is excluded by construction. */
@@ -119,6 +120,12 @@ export type Attempt = {
     kind: "sizing-calc";
     /** One entry per position asked about, in order. `null` means left blank. */
     values: (number | null)[];
+    hintsUsed: number;
+  };
+  "trade-sequence": {
+    kind: "trade-sequence";
+    /** Fraction of the account risked on each trade, in order. */
+    risks: number[];
     hintsUsed: number;
   };
   composite: {
@@ -246,6 +253,23 @@ export type KindConfig = {
     /** Share of the range that must be covered, for `exploration`. Default 0.6. */
     exploreFraction?: number;
   };
+  "trade-sequence": {
+    prompt: string;
+    /** Starting account, in the series' quote currency. */
+    equity: number;
+    /**
+     * The trades, already identified, in the order they occurred.
+     *
+     * Pre-identified on purpose. Four bosses already test finding a setup and placing a stop;
+     * what no level has tested is deciding *how much* to risk, ten times, while the account
+     * moves underneath you — and that is the whole of Chapter 7.
+     */
+    trades: { bar: number; stop: number; targetR: number; label?: string }[];
+    /** The risk levels the player may pick from, as decimals. */
+    riskChoices: number[];
+    /** Bars each trade may run before it is closed at the market. */
+    maxBars: number;
+  };
   "sizing-calc": {
     prompt: string;
     /** The account, in the quote currency of every instrument listed. */
@@ -340,6 +364,12 @@ export type KindTarget = {
   /** The measured answer. Ignored entirely when scoring is `exploration`. */
   "tune-param": { value: number };
   /**
+   * No authored target either: each trade's outcome comes from `simulate` over the committed
+   * series, so the sequence cannot drift from what the data did. What the player is scored on
+   * is their sizing, and that is judged against `tolerance` rather than against an answer.
+   */
+  "trade-sequence": Record<string, never>;
+  /**
    * No authored target: the answer is whatever the sizing formula gives for the instrument,
    * so the grader derives it from `config` and the `InstrumentSpec`. Authoring the numbers
    * as well would create two sources for one fact and a way for them to disagree — which is
@@ -393,6 +423,12 @@ export type KindTolerance = {
    * partial credit that matters comes from `f1` over the set the player marked.
    */
   "spot-the-flaw": Record<string, never>;
+  "trade-sequence": {
+    /** The largest per-trade risk still counted as defensible. */
+    maxRiskPct: number;
+    /** Ending below this fraction of the starting account counts as ruin. */
+    ruinBelow: number;
+  };
   "sizing-calc": {
     /**
      * Accepted error as a *fraction* of the correct answer.
@@ -483,6 +519,16 @@ export type OverlaySpec =
       explored: number;
     }
   | {
+      kind: "sequence";
+      /** Per trade: the R it returned and the account after it. */
+      steps: { r: number; risk: number; equity: number }[];
+      startingEquity: number;
+      /** True once the account fell through the ruin line. */
+      ruined: boolean;
+      /** Trades where the player raised their risk after a loss. */
+      escalations: number[];
+    }
+  | {
       kind: "sizing";
       submitted: (number | null)[];
       /** What the formula gives, per position. */
@@ -557,6 +603,7 @@ export type AnyLevel =
   | Level<"sort-rank">
   | Level<"spot-the-flaw">
   | Level<"sizing-calc">
+  | Level<"trade-sequence">
   | Level<"composite">;
 
 export function isKind<K extends LevelKind>(

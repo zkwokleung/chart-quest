@@ -20,6 +20,10 @@ import {
 import { gradeSizingCalc, perfectSizingCalc } from "./sizing-calc/grade";
 import { gradeSortRank, perfectSortRank } from "./sort-rank/grade";
 import { gradeSpotTheFlaw, perfectSpotTheFlaw } from "./spot-the-flaw/grade";
+import {
+  gradeTradeSequence,
+  perfectTradeSequence,
+} from "./trade-sequence/grade";
 import { gradeTuneParam, perfectTuneParam } from "./tune-param/grade";
 
 /**
@@ -117,6 +121,11 @@ export const KIND_BEHAVIOUR: { [K in LevelKind]: KindBehaviour<K> } = {
     kind: "spot-the-flaw",
     grade: gradeSpotTheFlaw,
     perfectAttempt: perfectSpotTheFlaw,
+  },
+  "trade-sequence": {
+    kind: "trade-sequence",
+    grade: gradeTradeSequence,
+    perfectAttempt: perfectTradeSequence,
   },
   "tune-param": {
     kind: "tune-param",

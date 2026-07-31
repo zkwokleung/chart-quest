@@ -55,6 +55,11 @@ const KIND_COMPONENTS: { [K in LevelKind]: ComponentType<KindProps<K>> } = {
   "spot-the-flaw": lazy(() =>
     import("./spot-the-flaw/SpotTheFlaw").then((m) => ({ default: m.SpotTheFlaw })),
   ),
+  "trade-sequence": lazy(() =>
+    import("./trade-sequence/TradeSequence").then((m) => ({
+      default: m.TradeSequence,
+    })),
+  ),
   "tune-param": lazy(() =>
     import("./tune-param/TuneParam").then((m) => ({ default: m.TuneParam })),
   ),

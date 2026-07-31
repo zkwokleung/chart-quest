@@ -11,6 +11,7 @@ import { ReplayTrade } from "../replay-trade/ReplayTrade";
 import { SortRank } from "../sort-rank/SortRank";
 import { SizingCalc } from "../sizing-calc/SizingCalc";
 import { SpotTheFlaw } from "../spot-the-flaw/SpotTheFlaw";
+import { TradeSequence } from "../trade-sequence/TradeSequence";
 import { TuneParam } from "../tune-param/TuneParam";
 
 /**
@@ -26,6 +27,7 @@ const COMPONENTS = {
   "sort-rank": SortRank,
   "sizing-calc": SizingCalc,
   "spot-the-flaw": SpotTheFlaw,
+  "trade-sequence": TradeSequence,
   "tune-param": TuneParam,
 } as const;
 
