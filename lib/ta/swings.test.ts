@@ -35,7 +35,9 @@ describe("findSwings", () => {
     // Bar 0 is the highest, but with only k=2 lookback there is no evidence it is
     // a swing — guessing would invent structure.
     const s = series([9, 3, 2, 1, 2], [8, 2, 1, 0, 1]);
-    expect(swingHighs(s, { from: 0, to: 5 }, 2).map((h) => h.bar)).not.toContain(0);
+    expect(
+      swingHighs(s, { from: 0, to: 5 }, 2).map((h) => h.bar),
+    ).not.toContain(0);
   });
 
   it("accepts a tie, since an equal high is still not exceeded", () => {
@@ -55,13 +57,18 @@ describe("findSwings", () => {
 
   it("respects the range rather than scanning the whole series", () => {
     const highs = [1, 2, 9, 2, 1, 1, 2, 9, 2, 1];
-    const s = series(highs, highs.map((h) => h - 1));
+    const s = series(
+      highs,
+      highs.map((h) => h - 1),
+    );
     expect(swingHighs(s, { from: 0, to: 5 }, 2).map((h) => h.bar)).toEqual([2]);
   });
 
   it("returns both kinds from one pass", () => {
     const s = series([1, 2, 9, 2, 1, 2, 3], [0, 1, 8, 1, 0, 1, 2]);
-    const kinds = new Set(findSwings(s, { from: 0, to: 7 }, 2).map((x) => x.kind));
+    const kinds = new Set(
+      findSwings(s, { from: 0, to: 7 }, 2).map((x) => x.kind),
+    );
     expect(kinds.size).toBeGreaterThan(0);
   });
 });
@@ -154,7 +161,9 @@ describe("against the committed data", () => {
     // for level 2.3 than a clean uptrend, because the support line is doing the work
     // precisely while the highs make no progress. Level 2.3's brief must not call it
     // an uptrend, and level 2.2 needs a different window for HH/HL.
-    expect(readStructure(findSwings(btc, { from: 1000, to: 1090 }, 3))).toBe("range");
+    expect(readStructure(findSwings(btc, { from: 1000, to: 1090 }, 3))).toBe(
+      "range",
+    );
   });
 
   it("finds the rising floor that makes a support line the right tool there", () => {
