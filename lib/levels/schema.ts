@@ -21,6 +21,7 @@ export type LevelKind =
   | "tune-param"
   | "sort-rank"
   | "spot-the-flaw"
+  | "sizing-calc"
   | "composite";
 
 /** Every kind a composite step may use. Nesting is excluded by construction. */
@@ -112,6 +113,12 @@ export type Attempt = {
     kind: "spot-the-flaw";
     /** Claim ids the player marked as faulty. */
     flagged: string[];
+    hintsUsed: number;
+  };
+  "sizing-calc": {
+    kind: "sizing-calc";
+    /** One entry per position asked about, in order. `null` means left blank. */
+    values: (number | null)[];
     hintsUsed: number;
   };
   composite: {
@@ -239,6 +246,22 @@ export type KindConfig = {
     /** Share of the range that must be covered, for `exploration`. Default 0.6. */
     exploreFraction?: number;
   };
+  "sizing-calc": {
+    prompt: string;
+    /** The account, in the quote currency of every instrument listed. */
+    equity: number;
+    /** Fraction of the account to risk, as a decimal. 0.01 is one percent. */
+    riskPct: number;
+    /**
+     * The positions to size, one row each.
+     *
+     * 7.2 lists one and 7.3 lists four — and four is the point of 7.3, since splitting it
+     * into four levels would lose the comparison it exists to make.
+     */
+    positions: { instrument: SeriesId; entry: number; stop: number; label?: string }[];
+    /** Whether the player is asked for a position size or for the money at risk. */
+    answer: "units" | "riskCurrency";
+  };
   "spot-the-flaw": {
     prompt: string;
     /**
@@ -317,6 +340,13 @@ export type KindTarget = {
   /** The measured answer. Ignored entirely when scoring is `exploration`. */
   "tune-param": { value: number };
   /**
+   * No authored target: the answer is whatever the sizing formula gives for the instrument,
+   * so the grader derives it from `config` and the `InstrumentSpec`. Authoring the numbers
+   * as well would create two sources for one fact and a way for them to disagree — which is
+   * the same reasoning `predict-next` uses.
+   */
+  "sizing-calc": Record<string, never>;
+  /**
    * The claims that add nothing, because another claim already says them.
    *
    * Measured, not asserted: a claim counts as flawed when it correlates above
@@ -363,6 +393,15 @@ export type KindTolerance = {
    * partial credit that matters comes from `f1` over the set the player marked.
    */
   "spot-the-flaw": Record<string, never>;
+  "sizing-calc": {
+    /**
+     * Accepted error as a *fraction* of the correct answer.
+     *
+     * Relative rather than absolute, and it has to be: the right answer is 0.0043 BTC on one
+     * row and 340 shares on the next, and no flat tolerance serves both.
+     */
+    relative: number;
+  };
   "sort-rank": {
     /**
      * Adjacent transpositions that still earn full marks.
@@ -444,6 +483,14 @@ export type OverlaySpec =
       explored: number;
     }
   | {
+      kind: "sizing";
+      submitted: (number | null)[];
+      /** What the formula gives, per position. */
+      correct: number[];
+      /** Money at risk per position, once rounded to a tradeable size. */
+      risked: number[];
+    }
+  | {
       kind: "claims";
       flagged: string[];
       /** The claims that really do duplicate another. */
@@ -509,6 +556,7 @@ export type AnyLevel =
   | Level<"tune-param">
   | Level<"sort-rank">
   | Level<"spot-the-flaw">
+  | Level<"sizing-calc">
   | Level<"composite">;
 
 export function isKind<K extends LevelKind>(

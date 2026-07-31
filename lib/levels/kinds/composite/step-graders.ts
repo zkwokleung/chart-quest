@@ -7,6 +7,7 @@ import { gradeMarkBars, perfectMarkBars } from "../mark-bars/grade";
 import { gradePredictNext, perfectPredictNext } from "../predict-next/grade";
 import { gradeReplayTrade, perfectReplayTrade } from "../replay-trade/grade";
 import { gradeSortRank, perfectSortRank } from "../sort-rank/grade";
+import { gradeSizingCalc, perfectSizingCalc } from "../sizing-calc/grade";
 import { gradeSpotTheFlaw, perfectSpotTheFlaw } from "../spot-the-flaw/grade";
 import { gradeTuneParam, perfectTuneParam } from "../tune-param/grade";
 
@@ -26,6 +27,7 @@ const GRADERS = {
   "predict-next": gradePredictNext,
   "replay-trade": gradeReplayTrade,
   "sort-rank": gradeSortRank,
+  "sizing-calc": gradeSizingCalc,
   "spot-the-flaw": gradeSpotTheFlaw,
   "tune-param": gradeTuneParam,
 } as const;
@@ -37,6 +39,7 @@ const PERFECT = {
   "predict-next": perfectPredictNext,
   "replay-trade": perfectReplayTrade,
   "sort-rank": perfectSortRank,
+  "sizing-calc": perfectSizingCalc,
   "spot-the-flaw": perfectSpotTheFlaw,
   "tune-param": perfectTuneParam,
 } as const;
