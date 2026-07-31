@@ -59,6 +59,7 @@ export function Classify({
               feed={feed}
               height={level.data.length > 1 ? 260 : 360}
               scaleToggle={level.unlocks?.includes("log-scale") ?? false}
+              yAxis={level.yAxis}
             />
           );
         })}

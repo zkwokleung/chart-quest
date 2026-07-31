@@ -33,6 +33,7 @@ import {
   toVolumeData,
 } from "@/lib/chart/to-lwc";
 import type { BarRange, Series } from "@/lib/chart/types";
+import { formatMode, toMode, type YAxisMode } from "@/lib/ta/normalize";
 import { DrawingsPrimitive, type RenderableDrawing } from "./DrawingPrimitive";
 
 export type PriceScale = "linear" | "logarithmic";
@@ -69,6 +70,10 @@ type ChartProps = {
    * it is dragged without tearing down and recreating the whole chart each frame.
    */
   indicators?: readonly IndicatorSpec[];
+  /**
+   * What the y-axis measures. Presentation only — see the effect that applies it.
+   */
+  yAxisMode?: YAxisMode;
   ref?: Ref<ChartHandle | null>;
 };
 
@@ -105,6 +110,7 @@ export function Chart({
   className,
   drawings,
   indicators,
+  yAxisMode = "price",
   ref,
 }: ChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -347,6 +353,35 @@ export function Chart({
 
     chart.timeScale().fitContent();
   }, [series, from, to, specs]);
+
+  /**
+   * The y-axis mode, applied as a *label formatter* and nothing else.
+   *
+   * This is what makes "normalization never changes grading" structural rather than
+   * a convention anyone has to remember. The series keeps raw prices, so drawings,
+   * hit-testing, the pane primitive and every grader carry on in the units they
+   * were written for; only the axis labels are rewritten.
+   *
+   * It is also exact rather than approximate. Percent-from-anchor and ATR-multiples
+   * are both affine in price — subtract a fixed anchor, divide by a fixed unit — so
+   * a linear axis relabelled by an affine function is still a correct axis. A
+   * transform that were not affine could not be done this way and would have to
+   * move the data, which is precisely where a grading discrepancy would creep in.
+   */
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    chart.applyOptions({
+      localization: {
+        priceFormatter: (price: number) => {
+          const converted = toMode(price, yAxisMode, series, from);
+          return converted === null
+            ? price.toFixed(2)
+            : formatMode(converted, yAxisMode);
+        },
+      },
+    });
+  }, [yAxisMode, series, from]);
 
   useEffect(() => {
     candlesRef.current?.priceScale().applyOptions({

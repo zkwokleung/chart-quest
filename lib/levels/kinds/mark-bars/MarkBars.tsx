@@ -122,7 +122,13 @@ function MarkBarsOnChart({
         onKeyDown={onKeyDown}
         className="cursor-crosshair rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
-        <FeedChart slice={slice} feed={feed} ref={handleRef} height={360} />
+        <FeedChart
+          slice={slice}
+          feed={feed}
+          ref={handleRef}
+          height={360}
+          yAxis={level.yAxis}
+        />
       </div>
 
       {/* The keyboard cursor's position, announced rather than only drawn, so the

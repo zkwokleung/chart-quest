@@ -143,6 +143,7 @@ function TradeOnChart({
           height={400}
           showVolume={false}
           drawings={drawings}
+          yAxis={level.yAxis}
         />
       </div>
 

@@ -7,6 +7,7 @@ import type { IndicatorSpec } from "@/lib/chart/indicator-data";
 import { SliceChart } from "@/components/level/SliceChart";
 import type { LevelSlice } from "@/lib/levels/schema";
 import type { ReplayFeed } from "@/lib/replay/feed";
+import type { YAxisMode } from "@/lib/ta/normalize";
 import { useFeed } from "@/lib/replay/use-feed";
 
 type FeedChartProps = {
@@ -17,6 +18,7 @@ type FeedChartProps = {
   scaleToggle?: boolean;
   drawings?: RenderableDrawing[];
   indicators?: readonly IndicatorSpec[];
+  yAxis?: YAxisMode;
   ref?: Ref<ChartHandle | null>;
 };
 
@@ -36,6 +38,7 @@ export function FeedChart({
   scaleToggle,
   drawings,
   indicators,
+  yAxis,
   ref,
 }: FeedChartProps) {
   const { at, series } = useFeed(feed);
@@ -52,6 +55,7 @@ export function FeedChart({
       scaleToggle={scaleToggle}
       drawings={drawings}
       indicators={indicators}
+      yAxis={yAxis}
       ref={ref}
     />
   );

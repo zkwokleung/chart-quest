@@ -170,6 +170,7 @@ export function Annotate({
           height={380}
           showVolume={false}
           drawings={drawings}
+          yAxis={level.yAxis}
         />
       </div>
 

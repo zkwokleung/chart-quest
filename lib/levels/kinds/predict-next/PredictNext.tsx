@@ -69,7 +69,13 @@ export function PredictNext({
       </div>
 
       {/* The window follows the feed, which only advances once the call is in. */}
-      <FeedChart slice={slice} feed={feed} height={360} showVolume={false} />
+      <FeedChart
+        slice={slice}
+        feed={feed}
+        height={360}
+        showVolume={false}
+        yAxis={level.yAxis}
+      />
 
       {revealed ? (
         <div className="flex flex-wrap items-center gap-3 text-sm">
