@@ -5,6 +5,7 @@ import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import type { OosSeriesId, Series, SeriesId } from "@/lib/chart/types";
 import type { SeriesManifest } from "@/lib/data/manifest-types";
+import { ALL_LEVELS } from "@/lib/levels/content/all";
 
 /**
  * Guards the committed data against drift.
@@ -227,5 +228,66 @@ describe("AAPL-1d-raw", () => {
       worstAdjusted = Math.min(worstAdjusted, now / prev - 1);
     }
     expect(worstAdjusted).toBeGreaterThan(-0.2);
+  });
+});
+
+/**
+ * Whether each series' `open` field carries information the other three do not.
+ *
+ * Found in M7 while measuring candlestick base rates. Yahoo's `EURUSD=X` daily feed
+ * reports an open within a pip or two of the *same bar's* close from 2010 onward, so
+ * every bar arrives as a textbook doji and any body- or gap-based reading of it is an
+ * artefact rather than a measurement. It is upstream — 64 of the last 67 bars Yahoo
+ * serves have the same shape — so refetching cannot fix it and the series is kept for
+ * its closes, which are sound.
+ *
+ * The guard exists so the next series with this shape fails CI instead of quietly
+ * becoming the basis of a level. It is deliberately an allow-list of one.
+ */
+describe("open-price health", () => {
+  /** Series whose open is known to be unusable, with the reason recorded above. */
+  const OPEN_UNRELIABLE: SeriesId[] = ["EURUSD-1d"];
+
+  function degenerateBodyShare(id: string): number {
+    const series = JSON.parse(readRaw(SERIES_DIR, id)) as Series<string>;
+    let degenerate = 0;
+    let counted = 0;
+    for (let i = 0; i < series.t.length; i += 1) {
+      const range = (series.h[i] ?? 0) - (series.l[i] ?? 0);
+      if (range <= 0) continue;
+      counted += 1;
+      if (Math.abs((series.c[i] ?? 0) - (series.o[i] ?? 0)) / range < 0.1) {
+        degenerate += 1;
+      }
+    }
+    return counted === 0 ? 0 : degenerate / counted;
+  }
+
+  it.each(EXPECTED_SERIES.filter((id) => !OPEN_UNRELIABLE.includes(id)))(
+    "%s has real bodies, so its open means something",
+    (id) => {
+      // Every sound series we hold sits near 0.11. Half would mean the open is
+      // tracking the close rather than the session's first trade.
+      expect(degenerateBodyShare(id)).toBeLessThan(0.35);
+    },
+  );
+
+  it.each(OPEN_UNRELIABLE)(
+    "%s is still the broken series this allow-list was written for",
+    (id) => {
+      // If this ever fails, upstream fixed the feed: drop the entry, and 1.6 can go
+      // back to showing FX as its middle market.
+      expect(degenerateBodyShare(id)).toBeGreaterThan(0.5);
+    },
+  );
+
+  it("keeps no level's body- or gap-based claim pointed at an unreliable open", () => {
+    // 1.6 is the level that reads opens directly; it used to read this one.
+    const usesUnreliableOpen = ALL_LEVELS.filter(
+      (level) =>
+        level.id === "1-6" &&
+        level.data.some((slice) => OPEN_UNRELIABLE.includes(slice.series)),
+    );
+    expect(usesUnreliableOpen).toEqual([]);
   });
 });

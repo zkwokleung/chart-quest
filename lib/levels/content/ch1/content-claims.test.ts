@@ -170,7 +170,8 @@ describe("1-6 four clocks", () => {
 
   it("shows a session market gapping on most days", () => {
     const spy = gapStats(0);
-    expect(spy.gapped / spy.bars).toBeGreaterThan(0.6);
+    expect(spy.gapped).toBe(15);
+    expect(spy.bars).toBe(17);
   });
 
   it("shows the 10.4% gap the prompt quotes", () => {
@@ -180,9 +181,30 @@ describe("1-6 four clocks", () => {
   it("shows a continuous market barely gapping at all", () => {
     // The contrast is the lesson. If crypto gapped here too, the level would be
     // teaching something false.
-    const btc = gapStats(1);
+    const btc = gapStats(2);
     expect(btc.gapped).toBe(0);
     expect(btc.biggest).toBeLessThan(0.005);
+  });
+
+  it("orders the three markets by the size of their worst gap", () => {
+    // The middle chart went unasserted until M7, and what it used to hold was
+    // EURUSD-1d — whose open is within a pip of its own close, so its "gaps" were
+    // each bar's own move. Frequencies overlap between these markets; the worst-gap
+    // magnitudes are what separate them, and they are what the prompt quotes.
+    const [session, nearlyContinuous, continuous] = [0, 1, 2].map(gapStats);
+    expect(session!.biggest).toBeGreaterThan(nearlyContinuous!.biggest);
+    expect(nearlyContinuous!.biggest).toBeGreaterThan(continuous!.biggest);
+    expect(nearlyContinuous!.biggest * 100).toBeCloseTo(3.5, 0);
+  });
+
+  it("puts the three windows in the same few weeks", () => {
+    // "The same weeks of March 2020" is a claim the level makes on its face.
+    for (const index of [0, 1, 2]) {
+      const slice = level.data[index]!;
+      const series = load(slice.series);
+      const start = new Date(series.t[slice.from]!).toISOString().slice(0, 7);
+      expect(start).toBe("2020-03");
+    }
   });
 });
 
