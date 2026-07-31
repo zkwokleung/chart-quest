@@ -6,6 +6,7 @@ import { gradeClassify, perfectClassify } from "../classify/grade";
 import { gradeMarkBars, perfectMarkBars } from "../mark-bars/grade";
 import { gradePredictNext, perfectPredictNext } from "../predict-next/grade";
 import { gradeReplayTrade, perfectReplayTrade } from "../replay-trade/grade";
+import { gradeTuneParam, perfectTuneParam } from "../tune-param/grade";
 
 /**
  * Step graders, imported directly rather than through the kind registry.
@@ -22,6 +23,7 @@ const GRADERS = {
   "mark-bars": gradeMarkBars,
   "predict-next": gradePredictNext,
   "replay-trade": gradeReplayTrade,
+  "tune-param": gradeTuneParam,
 } as const;
 
 const PERFECT = {
@@ -30,6 +32,7 @@ const PERFECT = {
   "mark-bars": perfectMarkBars,
   "predict-next": perfectPredictNext,
   "replay-trade": perfectReplayTrade,
+  "tune-param": perfectTuneParam,
 } as const;
 
 type ErasedGrader = (

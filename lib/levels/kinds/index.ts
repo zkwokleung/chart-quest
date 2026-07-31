@@ -10,6 +10,7 @@ import { classifyKind } from "./classify";
 import { markBarsKind } from "./mark-bars";
 import { predictNextKind } from "./predict-next";
 import { replayTradeKind } from "./replay-trade";
+import { tuneParamKind } from "./tune-param";
 
 /**
  * Every kind, keyed by name.
@@ -25,6 +26,7 @@ export const KINDS = {
   "mark-bars": markBarsKind,
   "predict-next": predictNextKind,
   "replay-trade": replayTradeKind,
+  "tune-param": tuneParamKind,
 } satisfies { [K in LevelKind]: KindModule<K> };
 
 export function kindFor<K extends LevelKind>(kind: K): KindModule<K> {

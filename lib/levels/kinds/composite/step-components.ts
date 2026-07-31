@@ -8,6 +8,7 @@ import { Classify } from "../classify/Classify";
 import { MarkBars } from "../mark-bars/MarkBars";
 import { PredictNext } from "../predict-next/PredictNext";
 import { ReplayTrade } from "../replay-trade/ReplayTrade";
+import { TuneParam } from "../tune-param/TuneParam";
 
 /**
  * Step components, imported directly for the same reason as their graders: the
@@ -19,6 +20,7 @@ const COMPONENTS = {
   "mark-bars": MarkBars,
   "predict-next": PredictNext,
   "replay-trade": ReplayTrade,
+  "tune-param": TuneParam,
 } as const;
 
 export function componentForStep(

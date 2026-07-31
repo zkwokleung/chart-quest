@@ -1,4 +1,5 @@
 import type { Drawing, Side } from "@/lib/chart/geometry";
+import type { IndicatorSpec } from "@/lib/chart/indicator-data";
 import type { Series, SeriesId } from "@/lib/chart/types";
 import type { TradeSide } from "@/lib/trade/simulate";
 import type { LevelId, YAxisMode } from "@/lib/store/schema";
@@ -16,6 +17,7 @@ export type LevelKind =
   | "predict-next"
   | "annotate"
   | "replay-trade"
+  | "tune-param"
   | "composite";
 
 /** Every kind a composite step may use. Nesting is excluded by construction. */
@@ -83,6 +85,20 @@ export type Attempt = {
     reason: string;
     hintsUsed: number;
   };
+  "tune-param": {
+    kind: "tune-param";
+    /** Where the slider was left. */
+    value: number;
+    /**
+     * Every value the slider rested on, in order.
+     *
+     * Kept because some of these levels have no right answer — 5.1 is about the
+     * lag trade-off, not about a correct period — and for those the thing worth
+     * scoring is whether the player actually looked.
+     */
+    visited: number[];
+    hintsUsed: number;
+  };
   composite: {
     kind: "composite";
     /** One entry per step, in order. `null` until that step is committed. */
@@ -123,7 +139,8 @@ export type AnyStep =
   // Boss 4.B scans an unseen chart and then trades it, and 5.B and 6.B do the
   // same with indicators and two timeframes. Including it here is what makes
   // those levels authoring rather than building.
-  | CompositeStep<"replay-trade">;
+  | CompositeStep<"replay-trade">
+  | CompositeStep<"tune-param">;
 
 export type Direction = "up" | "down";
 
@@ -181,6 +198,32 @@ export type KindConfig = {
      */
     horizon: number;
   };
+  "tune-param": {
+    prompt: string;
+    /** What the slider controls, for the label and the live readout. */
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+    initial: number;
+    /** The indicator drawn at a given slider value. */
+    indicator: (value: number) => IndicatorSpec;
+    /**
+     * How the level is scored.
+     *
+     * `target` means there is a measured right answer and the slider should find
+     * it. `exploration` means there is not — 5.1 teaches that a shorter average
+     * lags less and whips more, a trade-off with no winning period — and the score
+     * is whether the player moved across enough of the range to have seen it.
+     *
+     * This is the same call `predict-next` makes in scoring participation rather
+     * than accuracy, and for the same reason: a level with no right answer must not
+     * pretend to have one, because the player will believe it.
+     */
+    scoring: "target" | "exploration";
+    /** Share of the range that must be covered, for `exploration`. Default 0.6. */
+    exploreFraction?: number;
+  };
   "replay-trade": {
     prompt: string;
     side: TradeSide;
@@ -219,6 +262,8 @@ export type KindTarget = {
    * number. Same reasoning as the trendline reference in `annotate`.
    */
   "replay-trade": { structure: Drawing; triggerBar: number };
+  /** The measured answer. Ignored entirely when scoring is `exploration`. */
+  "tune-param": { value: number };
   /** A composite's answers live on its steps. */
   composite: Record<string, never>;
   /**
@@ -242,6 +287,10 @@ export type KindTolerance = {
   };
   composite: Record<string, never>;
   "predict-next": Record<string, never>;
+  "tune-param": {
+    /** Distance from the target that still earns full marks. */
+    slop: number;
+  };
   "replay-trade": {
     /**
      * How much room a stop needs beyond the structure, and how much is too much,
@@ -304,6 +353,13 @@ export type OverlaySpec =
       cuts: number[];
     }
   | {
+      kind: "param";
+      chosen: number;
+      /** Absent when the level has no right answer. */
+      target: number | null;
+      explored: number;
+    }
+  | {
       kind: "trade";
       structure: Drawing;
       entryPrice: number;
@@ -348,6 +404,7 @@ export type AnyLevel =
   | Level<"predict-next">
   | Level<"annotate">
   | Level<"replay-trade">
+  | Level<"tune-param">
   | Level<"composite">;
 
 export function isKind<K extends LevelKind>(
