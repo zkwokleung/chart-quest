@@ -297,6 +297,63 @@ moving a chart pattern above all three candlesticks costs three.
 
 ---
 
+## Reviewing an argument (`spot-the-flaw`)
+
+```ts
+kind: 'spot-the-flaw',
+config: {
+  prompt: '...',
+  claims: [
+    { id: 'rsi', label: 'RSI is above 50 and rising.', signal: 'rsi' },
+    { id: 'round-number', label: 'Price has held a round number.' },
+  ],
+  reveal: 'signal-correlation',
+},
+target: { flawed: ['rsi', 'price-vs-sma20', 'return-10'] },
+tolerance: {},
+```
+
+For an artefact that is **not a chart**. It was specified for 1.7, 5.6 and 4.6 and deferred
+all three times, because a chart plus a choice is a `classify`; 6.5 is the case it waited
+for, where the thing under review is a written argument.
+
+Scored with `f1`, the same measure `mark-bars` uses, so finding two of three flaws with one
+false positive scores sensibly. Marking everything is scored, and scored badly — which
+matters for a level about over-confluence.
+
+**Give every flawed claim a `signal`.** That is what makes the answer measurable rather than
+a matter of taste: `lib/ta/correlation.ts` computes which claims duplicate another, and the
+content-claims test recomputes it. A claim with no signal can be shown but must not be in
+`target.flawed`.
+
+**Leave out anything whose verdict depends on the market.** MACD's histogram runs 0.42 against
+RSI on Bitcoin and 0.80 against the ten-bar return on SPY, so whether it is redundant is not a
+fact — it is an argument, and a graded answer cannot rest on one.
+
+---
+
+## Multi-timeframe levels
+
+Two slices of the **same instrument** at different bar sizes. `LevelPlayer` links them from
+the data alone, the finer timeframe driving, so the coarse pane never shows a bar that has not
+closed.
+
+- **Slice 0 is the lower timeframe.** `ReplayTrade` trades slice 0 and `simulate` scores it
+  there, so listing the higher one first grades the trade on the wrong bars.
+- **Both panes must cover the same period.** Only three pairings do: BTCUSDT 4h+1d, EURUSD
+  1h+4h, SPY 15m+1h. EURUSD's daily and SPY's daily stop in 2023 while their intraday series
+  are recent snapshots, so pairing those shows two periods that never met.
+- **A level the trade rests on must be a swing inside the pane that displays it**, and not on
+  its first bars. 6.2 and 6.B both shipped drafts whose level sat off the left edge, found by
+  a search that looked further back than the pane showed.
+- **A structure reading needs enough structure, and corroboration.** `readStructure` answers
+  "what have the recent swings done", which on a short window is its tail: daily 1752-1782 of
+  BTCUSDT fell 35.3% and reads as an *uptrend*, because its only four swings sit in the
+  closing bounce. Require three swing highs and three swing lows, and check the label against
+  the window's own net move.
+
+---
+
 ## Content review bar
 
 Before marking a level done, ask what a skeptical trader would object to:

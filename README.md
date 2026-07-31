@@ -6,7 +6,7 @@ An interactive game that teaches technical analysis, from "what is a candle" to 
 
 **Live:** <https://chart-quest.vercel.app>
 
-**Status:** pre-alpha. **Chapters 1 through 5 are playable end to end** — 36 levels across eight interaction kinds, including draw tools, a replay engine, a graded first trade with a journal, indicators with a price/percent/ATR y-axis, and pattern base rates measured per asset with sample sizes and confidence intervals. Confluence and multi-timeframe are next. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
+**Status:** pre-alpha. **Chapters 1 through 6 are playable end to end** — 43 levels across nine interaction kinds, including draw tools, a replay engine, a graded first trade with a journal, indicators with a price/percent/ATR y-axis, pattern base rates measured per asset with sample sizes and confidence intervals, and multi-timeframe levels running two live panes from one clock. Risk and position sizing are next. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
 
 ---
 
@@ -85,15 +85,17 @@ npm run test:e2e     # playwright test (runs against a production build)
 npm run build        # production build
 npm run check:bundle # per-route client JS budget (needs a build first)
 npm run data:fetch   # rebuild public/data from upstream sources
+npm run data:rates   # recompute pattern base rates
+npm run data:resample # rebuild the derived higher-timeframe series
 ```
 
 ### Data
 
-Ten committed series spanning crypto, an index, a single stock, FX, gold and an illiquid small-cap — chosen so they disagree with each other. Daily history starts 2005, reaching four distinct market regimes. The app never calls a market API at runtime.
+Twelve committed series spanning crypto, an index, a single stock, FX, gold and an illiquid small-cap — chosen so they disagree with each other. Two of the twelve are aggregated from the others rather than fetched, because multi-timeframe levels need two views of one period and outside Bitcoin the fetched pairs do not overlap. Daily history starts 2005, reaching four distinct market regimes. The app never calls a market API at runtime.
 
 `npm run data:fetch` regenerates them, but **the committed JSON is the source of truth** — levels address it by bar index, so a series is immutable once committed. Two series are rolling-window snapshots that upstream cannot serve twice identically. Read [`docs/DATA.md`](docs/DATA.md) before touching anything under `public/data/`.
 
-`npm run data:rates` (per-asset base rates) arrives with Chapter 4, alongside the pattern detection it depends on.
+`npm run data:rates` regenerates the per-asset pattern base rates and `npm run data:resample` the derived higher-timeframe series. Both write committed artefacts that a test recomputes, so a stale file fails CI rather than quietly teaching last month's numbers.
 
 ### Version pinning
 

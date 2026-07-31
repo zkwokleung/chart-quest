@@ -164,15 +164,61 @@ _unlocks: indicator panel, one per level_
 
 _unlocks: MTF split view_
 
-| #       | Level                                                                        | Kind               |
-| ------- | ---------------------------------------------------------------------------- | ------------------ |
-| 6.1     | HTF bias, LTF entry                                                          | `classify` (split) |
-| 6.2     | HTF zone + LTF trigger, both panes live                                      | `replay-trade`     |
-| 6.3     | When timeframes disagree                                                     | `classify`         |
-| 6.4     | Rank 4 setups by confluence, then reveal outcomes — the top-ranked one loses | `sort-rank`        |
-| 6.5     | Over-confluence and analysis paralysis                                       | `spot-the-flaw`    |
-| 6.6     | Session context — the opening range exists on SPY and not on BTC             | `mark-bars`        |
-| **6.B** | **BOSS (AAPL + SPY):** full MTF replay trade                                 | `replay-trade`     |
+| #       | Level                                                              | Kind               |
+| ------- | ------------------------------------------------------------------ | ------------------ |
+| 6.1     | Two clocks, one market — HTF bias, LTF pause                       | `classify` (split) |
+| 6.2     | The level is upstairs — HTF level, LTF trigger, both panes live    | `replay-trade`     |
+| 6.3     | A fortnight against a quarter — when the timeframes disagree       | `classify` (split) |
+| 6.4     | **Stacking the deck** — rank four setups by confluence             | `sort-rank`        |
+| 6.5     | Seven reasons, three facts — over-confluence                       | `spot-the-flaw`    |
+| 6.6     | The first half hour — session context                              | `classify`         |
+| **6.B** | **BOSS (EURUSD 1h + 4h):** find the level, trade the trigger       | composite          |
+
+> **6.4 is the chapter's payload, and it says something stronger than planned.** The spec
+> asks for four setups ranked by confluence, revealing that the top-ranked one lost — one
+> anecdote. Measured instead across every 4h bar, with a stop below the last swing low and a
+> 2R target, confluence counted from **visible price** (at a prior level, a bullish reversal
+> candle, higher lows leading in) gives: 3 ticks 25% \[16–38\], 2 ticks 24% \[21–27\], 1
+> tick 28% \[26–30\], 0 ticks 25% \[22–27\]. **Flat** — every interval overlapping every
+> other across 4,223 setups. Stacking confirmations bought nothing at all, and 6.5 then shows
+> why: most of them are one fact in different units.
+>
+> Counted *with* indicators the gradient is monotone and dramatic (5 ticks 5%, 2 ticks 28%),
+> but two of those five conditions are not drawn on the charts, so the ranking would be
+> unanswerable by looking. The flat version is both fair and better evidence.
+
+### Where Chapter 6 diverged from this plan, and why
+
+Each is recorded in full in the level's own file.
+
+- **The data only supports three multi-timeframe pairings**, and two of them had to be
+  created. `EURUSD-4h` and `SPY-1h` are resampled from the committed intraday series,
+  because EURUSD's hourly begins two years after its daily ends and SPY's 15m three years
+  after — there is no period both cover. The resampler is exact, and provably so: aggregating
+  `BTCUSDT-4h` into UTC days reproduces the committed `BTCUSDT-1d` on all 931 shared days.
+- **6.3 nearly could not be authored.** Requiring three swing highs and three swing lows on
+  each pane, plus the structure label agreeing with the window's own net move, leaves fifteen
+  opposed windows in the whole 4h series — and zero once the lower window passes ninety bars.
+  A fortnight can oppose a quarter; a quarter cannot. The corroboration requirement is not
+  decoration: daily 1752-1782 fell 35.3% and reads as an *uptrend*, because its only four
+  swings sit in the closing bounce.
+- **6.1 teaches the pause, not the agreement.** Both timeframes trending together barely
+  occurs in the data; a trending higher timeframe with a *pausing* lower one is abundant — and
+  is what "HTF bias, LTF entry" describes anyway.
+- **6.6 is `classify`, not `mark-bars`.** The session's widest bar is one of its first two on
+  only 19 of 40 sessions, so asking the player to mark the widest would be wrong half the
+  time. What is reliable inverts the received idea: the opening thirty minutes really is ~1.7×
+  busier than the rest of the session, and the range it draws broke on **39 of 40** sessions.
+  So it is a volatility phenomenon and a poor level. The BTC half of the specified comparison
+  is absent because Bitcoin's finest committed timeframe is four-hourly and cannot resolve a
+  thirty-minute range; 1.6 already established that Bitcoin has no session, on measured gaps.
+- **6.B runs on EURUSD 1h+4h, not "AAPL + SPY".** That spec names two *instruments* rather
+  than two timeframes, and AAPL has no intraday series. It rests on a level and a trigger
+  rather than trend agreement, because the EURUSD pair yields zero windows with a readable
+  trend on both panes.
+
+> **Chapter 7 was unreachable until this chapter existed**, exactly as Chapter 5 was before
+> Chapter 4. `e2e/chapter6.spec.ts` asserts the chain in both directions.
 
 ## Ch 7 — Risk, R & Sizing
 

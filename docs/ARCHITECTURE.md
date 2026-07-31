@@ -20,7 +20,7 @@ Ten kinds cover the whole curriculum.
 | `tune-param`    | Live slider over a parameter. Find the value satisfying a condition.                | Indicator lag, parameter sensitivity, overfitting  |
 | `sort-rank`     | Reorder rows with up/down buttons, then reveal the measured ordering.                | Base rates, setup quality, confluence              |
 | `sizing-calc`   | Numeric input, graded with tolerance, parameterized by `InstrumentSpec`.            | R-multiples, sizing across instruments, expectancy |
-| `spot-the-flaw` | A finished bad trade or a backtest report; identify what's wrong.                   | Anti-patterns, critical reading                    |
+| `spot-the-flaw` | A list of claims about a trade; check the ones that add nothing. Scored with `f1`.  | Anti-patterns, critical reading                    |
 | `build-rules`   | Block composer → multi-asset backtest → hit an objective.                           | Chapter 10                                         |
 
 Some levels are **composite** — a boss may chain `mark-bars` → `annotate` → `classify` → `predict-next` and average the scores. Composites are expressed as a sequence of kinds, not a new kind.
@@ -438,3 +438,53 @@ What the table says is the argument of Chapter 4: every pooled win rate sits bet
 47.6% and 50.1%, every interval overlaps every other, and no mean forward return reaches
 a quarter of an ATR. Sample sizes run 66 to 3,733. There is nothing to rank by
 profitability and a great deal to rank by evidence.
+
+---
+
+## 16. Multi-timeframe: resampling, linked feeds, and one transport
+
+Chapter 6 needs two views of the same period. Only Bitcoin has that natively — EURUSD's
+hourly series begins two years after its daily ends, and SPY's 15m three years after — so
+`EURUSD-4h` and `SPY-1h` are **aggregated from the committed intraday series** rather than
+fetched. `npm run data:resample` regenerates them.
+
+`lib/data/resample.ts` takes the first bar's open, the last bar's close, the max high, the
+min low and the summed volume. **Whole buckets only**: a day holding four of its six bars
+still has a high and a low, and they describe two thirds of a day while reading as a daily
+range. Boundaries are stated per bucket — UTC calendar day, UTC clock hour, four-hour blocks
+from UTC midnight — which is Binance's convention and therefore why the proof below is exact.
+On a US equity session it costs the 09:30–10:00 stub, which is asserted rather than left to be
+discovered.
+
+**The correctness argument is a proof, not a fixture.** `BTCUSDT-4h` and `BTCUSDT-1d` are both
+committed and both describe the same 931 days, so resampling one into the other has a right
+answer nobody wrote down. It matches on open, high, low and close for all 931. Volume matches
+only to within 3 units and cannot do better: `columnar.ts` rounds each bar's volume at fetch
+time, so the daily figure is one rounding and the six 4h figures are six roundings summed.
+
+### One transport, and the leak it exists to prevent
+
+`lib/replay/linked.ts` makes the lower timeframe drive and derives the higher one's reveal
+point from the driver's current moment rather than counting alongside it, so drift is not
+representable — a scrub, a reset and a run of single steps all land in the same place.
+
+**The obvious rule leaks the future.** Revealing the follower bar *containing* the driver's
+timestamp puts a 4h bar on screen whose open is an hour behind and whose close is three hours
+ahead. It looks entirely normal. So a follower bar is revealed only once its whole window has
+elapsed, which means the higher pane lags by up to one of its own bars — correct, since the bar
+genuinely has not finished. `seal.test.ts` asserts it over all three pairs and over the
+authored windows.
+
+`barEnd` asks the series when a bar ends rather than assuming a duration, so an equity Friday
+ends when Monday opens. The nominal duration is a fallback for the final bar — and for the
+driver's own bar, where `visible()` is truncated and there is no successor to ask, which makes
+the conservative answer the only available one.
+
+`LevelPlayer` links a level's feeds when the data says to: two slices of the same instrument at
+different bar sizes. Decided from the data rather than the kind, so that file still contains no
+branch on `level.kind`. Different instruments are never linked — 1.6 shows three markets and
+5.5 shows three, and neither knows when the other's bar closed.
+
+**Slice 0 is the traded timeframe.** `ReplayTrade` places its trade on slice 0 and `simulate`
+scores it there, so a multi-timeframe trade level lists the lower timeframe first and renders
+the higher one as a context pane above it.
