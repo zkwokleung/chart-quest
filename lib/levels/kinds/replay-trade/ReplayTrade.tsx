@@ -32,8 +32,28 @@ export function ReplayTrade(props: KindProps<"replay-trade">) {
   // Guarded out here so the inner component can call hooks unconditionally, the
   // same split `mark-bars` uses.
   if (!slice || !feed) return null;
-  return <TradeOnChart {...props} slice={slice} feed={feed} />;
+
+  /**
+   * A second pane, when the level has one: the higher timeframe, for context.
+   *
+   * **Slice 0 is always the timeframe being traded.** The trade is placed on it, entry
+   * fills at its close, and `simulate` scores it — so a level that put the higher
+   * timeframe first would grade a trade on the wrong bars. Chapter 6's multi-timeframe
+   * levels list the lower timeframe first for that reason, and the label says which is
+   * which.
+   *
+   * The context feed is linked to this one by `LevelPlayer`, so it advances with the
+   * replay and cannot show a bar that has not closed.
+   */
+  const context =
+    props.level.data.length > 1 && props.feeds[1] && props.level.data[1]
+      ? { slice: props.level.data[1], feed: props.feeds[1] }
+      : null;
+
+  return <TradeOnChart {...props} slice={slice} feed={feed} context={context} />;
 }
+
+type ContextPane = { slice: LevelSlice; feed: ReplayFeed } | null;
 
 function TradeOnChart({
   level,
@@ -43,7 +63,12 @@ function TradeOnChart({
   grade,
   attempt,
   onCommit,
-}: KindProps<"replay-trade"> & { feed: ReplayFeed; slice: LevelSlice }) {
+  context,
+}: KindProps<"replay-trade"> & {
+  feed: ReplayFeed;
+  slice: LevelSlice;
+  context: ContextPane;
+}) {
   const handleRef = useRef<ChartHandle | null>(null);
   const { at, series } = useFeed(feed);
 
@@ -131,6 +156,21 @@ function TradeOnChart({
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm font-medium">{level.config.prompt}</p>
+
+      {context ? (
+        <div>
+          <p className="pb-1 font-mono text-xs text-muted">
+            {context.slice.label ?? "higher timeframe"} · context, not the trade
+          </p>
+          <FeedChart
+            slice={context.slice}
+            feed={context.feed}
+            height={180}
+            showVolume={false}
+            yAxis={level.yAxis}
+          />
+        </div>
+      ) : null}
 
       <div
         onPointerDown={place}

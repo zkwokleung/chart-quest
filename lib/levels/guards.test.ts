@@ -61,6 +61,10 @@ const NON_PRICE_FIGURES: Record<string, string[]> = {
   // disprove. The measured figure for this window is 88.8%, checked in
   // content/ch5/content-claims.test.ts.
   "5-2": ["95%"],
+  // Shares of each session's *whole* range that its opening thirty minutes produced —
+  // a ratio between two spans rather than a move a single bar made, so none of the four
+  // bar-derived forms below can match it. Recomputed in content/ch6/content-claims.test.ts.
+  "6-6": ["37%", "28%", "78%"],
 };
 
 describe("authored levels", () => {
