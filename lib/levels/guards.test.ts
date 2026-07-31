@@ -47,6 +47,22 @@ const LEVELS = ALL_LEVELS;
  */
 const BOSS_ASSET_RULE_FROM_CHAPTER = 2;
 
+/**
+ * Percentages in a brief that are not claims about this window's price action.
+ *
+ * The guard below verifies a figure by finding it in the data, which is the right
+ * check for "price fell 12%" and the wrong one for a statistic or a quoted
+ * convention. Rather than loosening it for everyone, the handful of exceptions are
+ * named here with the reason, and each is verified in that chapter's own
+ * content-claims test where the check can be specific.
+ */
+const NON_PRICE_FIGURES: Record<string, string[]> = {
+  // The textbook's claim about two standard deviations, which the level exists to
+  // disprove. The measured figure for this window is 88.8%, checked in
+  // content/ch5/content-claims.test.ts.
+  "5-2": ["95%"],
+};
+
 describe("authored levels", () => {
   it("there is at least one, or these guards are vacuous", () => {
     expect(LEVELS.length).toBeGreaterThan(0);
@@ -189,6 +205,7 @@ describe.each(LEVELS.map((l) => [l.id, l] as const))("%s", (_id, level) => {
     // percentage has to be checkable against the slice the level shows.
     const percentages = level.brief.match(/\d+(\.\d+)?%/g) ?? [];
     for (const raw of percentages) {
+      if (NON_PRICE_FIGURES[level.id]?.includes(raw)) continue;
       const claimed = Number(raw.replace("%", ""));
       const matches = level.data.some((slice) => {
         const series = loadCommitted(slice.series);
@@ -223,6 +240,24 @@ describe.each(LEVELS.map((l) => [l.id, l] as const))("%s", (_id, level) => {
 
           if (candidates.some((value) => Math.abs(value - claimed) < 1))
             return true;
+        }
+
+        // A cumulative move between any two bars of the slice. Briefs legitimately
+        // describe a stretch rather than a bar — 5.3's "55%" is 26 days of Bitcoin
+        // — and without this the guard would reject a properly measured figure and
+        // teach authors to round it until it matched some single candle.
+        for (let a = slice.from; a < slice.to; a += 1) {
+          const start = series.c[a];
+          if (start === undefined || start === 0) continue;
+          for (let b = a + 1; b < slice.to; b += 1) {
+            const end = series.c[b];
+            if (end === undefined) continue;
+            if (
+              Math.abs(Math.abs(((end - start) / start) * 100) - claimed) < 1
+            ) {
+              return true;
+            }
+          }
         }
         return false;
       });
