@@ -245,3 +245,208 @@ describe("rewardRisk", () => {
     expect(rewardRisk(long(105, 115), 100)).toBeNull();
   });
 });
+
+/**
+ * Trailing stops and partials, added in M7c for level 7.7.
+ *
+ * The interesting risk is not the arithmetic, it is the ordering. A trail that reads the
+ * current bar's high, moves the stop, and then tests that stop against the current bar's low
+ * has assumed price reached the high first — which OHLC cannot say. It would make almost every
+ * trade look protected, and it is the same ambiguity Rule 2 exists for.
+ */
+describe("trailing stops", () => {
+  /** Rises steadily, then collapses in one bar. */
+  const rally = build([
+    [100, 100, 100, 100],
+    [100, 104, 100, 104],
+    [104, 108, 104, 108],
+    [108, 112, 108, 112],
+    // The collapse: opens at 111 and trades down to 95.
+    [111, 111, 95, 96],
+  ]);
+
+  it("leaves an untrailed trade exactly as it was", () => {
+    // 1,518 tests depend on the default path being untouched.
+    const plain = simulate({ side: "long", stop: 90, target: null }, rally, 0, 10);
+    expect(plain?.finalStop).toBe(90);
+    expect(plain?.partial).toBeUndefined();
+  });
+
+  it("moves the stop up behind price once the trade is far enough ahead", () => {
+    // Entry 100, stop 90, so 1R is 10 points. Trail once 1R ahead, 0.5R behind the high.
+    const out = simulate(
+      { side: "long", stop: 90, target: null, trail: { afterR: 1, distanceR: 0.5 } },
+      rally,
+      0,
+      10,
+    );
+    // The high before the collapse is 112, so the stop should sit at 112 - 5 = 107.
+    expect(out?.finalStop).toBe(107);
+    expect(out?.reason).toBe("stop");
+    // And it exited at the trailed stop rather than the original one.
+    expect(out?.exitPrice).toBe(107);
+    expect(out?.r).toBeCloseTo(0.7, 6);
+  });
+
+  it("never uses a bar's own extreme to set the stop that bar is tested against", () => {
+    // The look-ahead trap, and the most valuable test here. This bar runs 100 → 130 → 100: an
+    // intra-bar trail 0.5R behind the high would claim a fill near 125 for **+2.5R**, having
+    // assumed the high arrived before the low. Six OHLC numbers cannot say that.
+    //
+    // What this returns instead: the stop was still 90 while the bar traded, so the bar did not
+    // stop the trade out. The trail then moves to 125 at the bar's end, and the next bar opens
+    // at 101 — under the stop, so it fills there as a gap. **+0.1R.**
+    //
+    // A 2.4R difference on a single trade, and the smaller number is the defensible one.
+    const spike = build([
+      [100, 100, 100, 100],
+      [100, 130, 100, 101],
+      [101, 101, 101, 101],
+    ]);
+    const out = simulate(
+      { side: "long", stop: 90, target: null, trail: { afterR: 1, distanceR: 0.5 } },
+      spike,
+      0,
+      5,
+    );
+    expect(out?.finalStop).toBe(125);
+    expect(out?.exitBar).toBe(2);
+    expect(out?.exitPrice).toBe(101);
+    expect(out?.gapped).toBe(true);
+    expect(out?.r).toBeCloseTo(0.1, 6);
+    // Emphatically not the 2.5R a peeking trail would have booked.
+    expect(out!.r).toBeLessThan(0.5);
+  });
+
+  it("does not move the stop before the trade has earned it", () => {
+    const out = simulate(
+      { side: "long", stop: 90, target: null, trail: { afterR: 3, distanceR: 0.5 } },
+      rally,
+      0,
+      10,
+    );
+    // The best this trade reached is +1.2R, short of the 3R the trail waits for.
+    expect(out?.finalStop).toBe(90);
+  });
+
+  it("only ever tightens", () => {
+    // A stop that can loosen is not a stop. Price rises, pulls back, and rises again: the stop
+    // must never retreat with the pullback.
+    const wobble = build([
+      [100, 100, 100, 100],
+      [100, 115, 100, 115],
+      [115, 115, 105, 106],
+      [106, 108, 105, 107],
+    ]);
+    const out = simulate(
+      { side: "long", stop: 90, target: null, trail: { afterR: 1, distanceR: 0.5 } },
+      wobble,
+      0,
+      10,
+    );
+    // 115 set the stop to 110, and nothing after it may take that back.
+    expect(out?.finalStop).toBe(110);
+  });
+
+  it("trails a short in the other direction", () => {
+    const fall = build([
+      [100, 100, 100, 100],
+      [100, 100, 92, 92],
+      [92, 93, 88, 88],
+      [88, 96, 88, 96],
+    ]);
+    const out = simulate(
+      { side: "short", stop: 110, target: null, trail: { afterR: 1, distanceR: 0.5 } },
+      fall,
+      0,
+      10,
+    );
+    // Entry 100, stop 110, 1R is 10. Low of 88 puts the stop at 88 + 5 = 93.
+    expect(out?.finalStop).toBe(93);
+    expect(out?.reason).toBe("stop");
+  });
+});
+
+describe("partial exits", () => {
+  const rally = build([
+    [100, 100, 100, 100],
+    [100, 110, 100, 110],
+    [110, 112, 108, 109],
+    [109, 109, 88, 89],
+  ]);
+
+  it("blends the two exits by the fraction each closed", () => {
+    // Half off at +1R, the rest stopped out at -1R: (1 * 0.5) + (-1 * 0.5) = 0.
+    const out = simulate(
+      { side: "long", stop: 90, target: null, partial: { atR: 1, fraction: 0.5 } },
+      rally,
+      0,
+      10,
+    );
+    expect(out?.partial?.r).toBeCloseTo(1, 6);
+    expect(out?.partial?.fraction).toBe(0.5);
+    expect(out?.r).toBeCloseTo(0, 6);
+  });
+
+  it("never credits a partial on a bar that also stopped the trade out", () => {
+    // Rule 2's logic carried into partials: one bar containing both the partial level and the
+    // stop is resolved as a stop, because OHLC cannot order them. Crediting the partial would
+    // be the optimistic reading, which is how a backtest quietly inflates every result.
+    const both = build([
+      [100, 100, 100, 100],
+      [100, 112, 88, 89],
+    ]);
+    const out = simulate(
+      { side: "long", stop: 90, target: null, partial: { atR: 1, fraction: 0.5 } },
+      both,
+      0,
+      10,
+    );
+    expect(out?.partial).toBeUndefined();
+    expect(out?.r).toBeCloseTo(-1, 6);
+  });
+
+  it("ignores a fraction that is not a fraction", () => {
+    for (const fraction of [0, 1, -0.5, 2]) {
+      const out = simulate(
+        { side: "long", stop: 90, target: null, partial: { atR: 1, fraction } },
+        rally,
+        0,
+        10,
+      );
+      expect(out?.partial, `fraction ${fraction}`).toBeUndefined();
+    }
+  });
+
+  it("takes the partial only once", () => {
+    const out = simulate(
+      { side: "long", stop: 90, target: null, partial: { atR: 1, fraction: 0.5 } },
+      rally,
+      0,
+      10,
+    );
+    expect(out?.partial?.bar).toBe(1);
+  });
+
+  it("combines with a trail", () => {
+    // Half off at +1R, the rest trailed out. Both mechanisms on one trade, which is what 7.7
+    // asks the player to compare against holding for the full target.
+    const out = simulate(
+      {
+        side: "long",
+        stop: 90,
+        target: null,
+        partial: { atR: 1, fraction: 0.5 },
+        trail: { afterR: 1, distanceR: 0.5 },
+      },
+      rally,
+      0,
+      10,
+    );
+    expect(out?.partial?.r).toBeCloseTo(1, 6);
+    // 112 was the best, so the stop trailed to 107 and the remainder exited there. Entry was
+    // 100 with 10 points of risk, so that leg is +0.7R, not +1.7R.
+    expect(out?.finalStop).toBe(107);
+    expect(out?.r).toBeCloseTo(1 * 0.5 + 0.7 * 0.5, 6);
+  });
+});
