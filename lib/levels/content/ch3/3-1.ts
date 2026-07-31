@@ -1,17 +1,25 @@
-import { countTouches, priceTolerance } from "@/lib/chart/geometry";
+import { priceTolerance } from "@/lib/chart/geometry";
+import { countRespect } from "../../kinds/annotate/grade";
 import type { Level } from "../../schema";
 
 /**
  * SPY-1d 1260-1520 (2010-01-05 to 2011-01-13).
  *
- * Measured: a horizontal band at 112.44 is visited seven separate times across the
- * window, touching 32 bars. That is the most-respected price in the year.
+ * Measured: **117.75 is where price actually turned**, catching 8 of the window's 44
+ * swing reversals inside the level's tolerance. The same line lifted 40% of the
+ * window's range catches none, so the answer is sharp.
  *
- * The brief deliberately does not claim a single price is *the* answer. Reversals
- * in this window spread across 2.85% of price, so no line can catch them all — what
- * makes this level winnable is its tolerance, which is already a band. Level 3.2
- * makes that band explicit and hands it to the player, and a content-claims test
- * checks the wording here so the two levels cannot end up contradicting each other.
+ * The first version of this level used 112.44, the price with the most *bar touches*
+ * — 32 bars across seven visits. That turned out to be a price price spent time at
+ * rather than one it reversed at: it catches 2 reversals. Worse, the level still
+ * scored three stars with its line lifted 40% of the range, because in a wide window
+ * almost any price is touched by plenty of bars. The perturbation sweep caught it,
+ * and the grader now counts reversals rather than touches for horizontal shapes.
+ *
+ * The brief still does not claim a single price is *the* answer. Reversals here
+ * spread across 2.85% of price, so no line catches them all — what makes this level
+ * winnable is its tolerance, which is already a band, and 3.2 is where that band
+ * becomes explicit and player-owned.
  */
 export const level: Level<"annotate"> = {
   id: "3-1",
@@ -19,7 +27,7 @@ export const level: Level<"annotate"> = {
   title: "A level worth the name",
   kind: "annotate",
   brief:
-    "One price mattered more than any other in 2010. Find it — not by the highest high or the lowest low, but by how often price came back to it.",
+    "One price mattered more than any other in 2010. Find it — not by the highest high or the lowest low, but by how often price turned around there.",
   data: [{ series: "SPY-1d", from: 1260, to: 1520, label: "SPY · daily" }],
   config: {
     prompt: "Place a horizontal level where price kept returning.",
@@ -28,7 +36,7 @@ export const level: Level<"annotate"> = {
     requiredTouches: 6,
     expectSlope: "flat",
   },
-  target: { reference: { shape: "level", price: 112.44 } },
+  target: { reference: { shape: "level", price: 117.75 } },
   tolerance: { priceFracOfRange: 0.02, barSlop: 0 },
   stars: [0.45, 0.7, 0.88],
   misconceptions: [
@@ -62,17 +70,19 @@ export const level: Level<"annotate"> = {
         if (!drawing || !series || !slice) return false;
         const window = { from: slice.from, to: slice.to };
         const tol = priceTolerance(series, window, lvl.tolerance);
+        // The same helper the score uses, so the marks and the explanation cannot
+        // drift apart — the mistake 2.3 made in M4.
         return (
-          countTouches(drawing, series, window, tol, lvl.config.side).length < 6
+          countRespect(drawing, series, window, tol, lvl.config.side).length < 6
         );
       },
       message:
-        "Price barely visited that price. Look for the height the chart keeps returning to from both sides — there is one here that catches more than thirty bars across seven separate visits.",
+        "Price passed through there without turning. A level is a price the market *reversed* at, not one it spent time near — there is a height in this window where eight separate swings stopped and turned around.",
     },
   ],
   unlocks: ["measure"],
   hints: [
-    "Ignore the extremes and look for the height price keeps crossing.",
-    "It is in the low 110s, and price came back to it seven times.",
+    "Ignore the extremes and look for the height where swings keep ending.",
+    "It is in the high 110s, and eight separate reversals happened there.",
   ],
 };

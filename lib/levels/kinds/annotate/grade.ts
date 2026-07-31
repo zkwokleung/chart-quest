@@ -8,6 +8,7 @@ import {
   type Drawing,
 } from "@/lib/chart/geometry";
 import type { Series } from "@/lib/chart/types";
+import { findSwings } from "@/lib/ta/swings";
 import { diagnose, starsFor, type Grade } from "../../grade";
 import type { Attempt, Level } from "../../schema";
 
@@ -74,6 +75,48 @@ export function drawnSpan(
   };
 }
 
+/**
+ * Bars that show the drawing was *respected*, which is not the same as bars near it.
+ *
+ * For a trendline this is the ordinary touch count: the line moves with price, so a
+ * bar reaching it is an event.
+ *
+ * For a horizontal level or a zone it is the count of **swing reversals** inside the
+ * tolerance instead, and the difference matters enormously. Price crosses most prices
+ * in a wide window sooner or later, so counting every bar within tolerance is nearly
+ * constant across the whole answer space — level 3.1 scored three stars with its line
+ * lifted 40% of the window's range, because the wrong price is still touched plenty.
+ * The perturbation sweep found that; no per-level test could, since each only ever
+ * checks the reference.
+ *
+ * A reversal is the thing a level is supposed to mark: somewhere price came, stopped
+ * and turned. It is also the metric 3.2's own content-claims test already used to
+ * establish that a zone beats a thin line, so the grader and the content now measure
+ * the same property.
+ */
+export function countRespect(
+  drawing: Drawing,
+  series: Series<string>,
+  range: { from: number; to: number },
+  tol: number,
+  side: Parameters<typeof countTouches>[4],
+): number[] {
+  if (drawing.shape !== "level" && drawing.shape !== "zone") {
+    return countTouches(drawing, series, range, tol, side);
+  }
+
+  const near = (price: number) => {
+    if (drawing.shape === "zone") {
+      return price >= drawing.bottom - tol && price <= drawing.top + tol;
+    }
+    return Math.abs(price - drawing.price) <= tol;
+  };
+
+  return findSwings(series, range, 3)
+    .filter((swing) => near(swing.price))
+    .map((swing) => swing.bar);
+}
+
 export function measure(
   drawing: Drawing,
   level: Level<"annotate">,
@@ -90,7 +133,7 @@ export function measure(
   const range = drawnSpan(drawing, slice);
   const { side, expectSlope } = level.config;
 
-  const touched = countTouches(drawing, series, range, tol, side);
+  const touched = countRespect(drawing, series, range, tol, side);
   const cuts = countBodyCuts(drawing, series, range, tol);
 
   const anchors = anchorsOf(drawing);
@@ -148,7 +191,7 @@ export function gradeAnnotate(
     { from: slice.from, to: slice.to },
     level.tolerance,
   );
-  const touched = countTouches(drawing, series, span, tol, level.config.side);
+  const touched = countRespect(drawing, series, span, tol, level.config.side);
   const cuts = countBodyCuts(drawing, series, span, tol);
 
   const overlay = {
