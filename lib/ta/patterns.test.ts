@@ -9,6 +9,7 @@ import {
   PIN_MAX_BODY,
   PIN_MIN_WICK,
   PATTERN_KINDS,
+  SWING_LOOKBACK,
 } from "./patterns";
 import { findSwings } from "./swings";
 
@@ -281,6 +282,34 @@ describe("against the committed data", () => {
       expect(hit.components, `${hit.kind} at ${hit.bar}`).toEqual(sorted);
       // And the completing bar is the last of them, since that is what a player clicks.
       expect(hit.components.at(-1)).toBe(hit.bar);
+    }
+  });
+
+  it("charges chart patterns for the hindsight they are built on", () => {
+    // The bug this field exists to prevent. A double top's second peak is not a swing
+    // high until four bars have failed to exceed it, and those four bars are exactly
+    // the ones where price falls away from the top — so measuring the forward return
+    // from `bar` credited the pattern with a 73% win rate and +1.36 ATR. From
+    // `confirmedAt` it is a coin flip. A candle owes nothing: it is a fact at its own
+    // close.
+    const spy = load("SPY-1d");
+    for (const hit of findPatterns(spy, "double-top")) {
+      expect(hit.confirmedAt).toBe(hit.bar + SWING_LOOKBACK);
+    }
+    for (const hit of findPatterns(spy, "head-and-shoulders")) {
+      expect(hit.confirmedAt).toBe(hit.bar + SWING_LOOKBACK);
+    }
+    for (const kind of ["pin-bar", "doji", "engulfing"] as const) {
+      for (const hit of findPatterns(spy, kind)) {
+        expect(hit.confirmedAt).toBe(hit.bar);
+      }
+    }
+  });
+
+  it("never confirms a pattern before its last component", () => {
+    const spy = load("SPY-1d");
+    for (const hit of findAllPatterns(spy, { from: 0, to: 1200 })) {
+      expect(hit.confirmedAt).toBeGreaterThanOrEqual(hit.components.at(-1)!);
     }
   });
 

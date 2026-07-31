@@ -105,6 +105,23 @@ These run on every level automatically. You don't write them; you satisfy them.
 | `from < to`, both within series bounds                             | Off-by-one and stale-index protection                                                                                   |
 | Star thresholds ascending, all in `(0, 1]`                         | Malformed scoring                                                                                                       |
 | `id` matches file path and chapter number                          | Registry integrity                                                                                                      |
+| No level reads opens from a series on the unreliable-open list     | See below                                                                                                               |
+
+### `EURUSD-1d` has no usable open
+
+Yahoo's `EURUSD=X` daily feed reports an open within a pip or two of the **same bar's**
+close for everything after November 2010. 72% of that series has a body under a tenth
+of its range, against ~11% for every other series we hold, and it is upstream —
+refetching reproduces it.
+
+So on `EURUSD-1d`, `h`/`l`/`c` are sound and `o` is not. Anything close-based (every
+moving average, RSI, MACD, Bollinger, ATR) is fine. Anything reading a body, a candle
+pattern or a gap is measuring an artefact. Level 1.6 taught gaps from this field until
+M7 and uses gold futures now; Chapter 4's base rates exclude the series for the same
+reason.
+
+`lib/data/integrity.test.ts` holds the allow-list and will say so if upstream ever
+fixes the feed. Issue #58 tracks the remaining cosmetic effect on Chapter 5.
 
 ---
 

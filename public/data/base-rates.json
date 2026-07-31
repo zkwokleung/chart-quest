@@ -1,0 +1,303 @@
+{
+  "definition": "A win is a close in the signalled direction 10 bars after the pattern could first be known — its own close for a candle, four bars later for a double top or head and shoulders, since the final peak is not a swing high until four bars have failed to exceed it. meanFwdAtr is that move in multiples of the 14-bar ATR at the same point, so markets of different volatility can be compared. The measure ignores the path taken, so a move that would have stopped a real trade out on the way still counts as a win — it measures the pattern, not a strategy built on it.",
+  "horizon": 10,
+  "assets": [
+    "BTCUSDT-1d",
+    "SPY-1d",
+    "AAPL-1d",
+    "GC-1d",
+    "LAKE-1d"
+  ],
+  "patterns": {
+    "pin-bar": {
+      "pooled": {
+        "n": 3733,
+        "winRate": 0.483793,
+        "meanFwdAtr": -0.072919,
+        "ci95": [
+          0.467787,
+          0.499833
+        ]
+      },
+      "byAsset": {
+        "BTCUSDT-1d": {
+          "n": 428,
+          "winRate": 0.509346,
+          "meanFwdAtr": 0.078865,
+          "ci95": [
+            0.462113,
+            0.556413
+          ]
+        },
+        "SPY-1d": {
+          "n": 740,
+          "winRate": 0.527027,
+          "meanFwdAtr": -0.001513,
+          "ci95": [
+            0.491008,
+            0.562767
+          ]
+        },
+        "AAPL-1d": {
+          "n": 732,
+          "winRate": 0.476776,
+          "meanFwdAtr": -0.095597,
+          "ci95": [
+            0.440809,
+            0.512985
+          ]
+        },
+        "GC-1d": {
+          "n": 728,
+          "winRate": 0.479396,
+          "meanFwdAtr": -0.194623,
+          "ci95": [
+            0.443309,
+            0.515698
+          ]
+        },
+        "LAKE-1d": {
+          "n": 1105,
+          "winRate": 0.452489,
+          "meanFwdAtr": -0.084326,
+          "ci95": [
+            0.423356,
+            0.48195
+          ]
+        }
+      }
+    },
+    "doji": {
+      "pooled": {
+        "n": 2309,
+        "winRate": 0.50065,
+        "meanFwdAtr": 0.090624,
+        "ci95": [
+          0.480271,
+          0.521026
+        ]
+      },
+      "byAsset": {
+        "BTCUSDT-1d": {
+          "n": 329,
+          "winRate": 0.486322,
+          "meanFwdAtr": -0.182464,
+          "ci95": [
+            0.432784,
+            0.540176
+          ]
+        },
+        "SPY-1d": {
+          "n": 484,
+          "winRate": 0.497934,
+          "meanFwdAtr": -0.042724,
+          "ci95": [
+            0.453582,
+            0.542319
+          ]
+        },
+        "AAPL-1d": {
+          "n": 475,
+          "winRate": 0.494737,
+          "meanFwdAtr": 0.137995,
+          "ci95": [
+            0.449998,
+            0.539561
+          ]
+        },
+        "GC-1d": {
+          "n": 456,
+          "winRate": 0.574561,
+          "meanFwdAtr": 0.429788,
+          "ci95": [
+            0.528745,
+            0.619132
+          ]
+        },
+        "LAKE-1d": {
+          "n": 565,
+          "winRate": 0.456637,
+          "meanFwdAtr": 0.050318,
+          "ci95": [
+            0.415995,
+            0.497865
+          ]
+        }
+      }
+    },
+    "engulfing": {
+      "pooled": {
+        "n": 1843,
+        "winRate": 0.484536,
+        "meanFwdAtr": -0.024157,
+        "ci95": [
+          0.461776,
+          0.507361
+        ]
+      },
+      "byAsset": {
+        "BTCUSDT-1d": {
+          "n": 457,
+          "winRate": 0.487965,
+          "meanFwdAtr": 0.170489,
+          "ci95": [
+            0.442428,
+            0.533702
+          ]
+        },
+        "SPY-1d": {
+          "n": 307,
+          "winRate": 0.449511,
+          "meanFwdAtr": -0.379991,
+          "ci95": [
+            0.394832,
+            0.505439
+          ]
+        },
+        "AAPL-1d": {
+          "n": 354,
+          "winRate": 0.525424,
+          "meanFwdAtr": 0.105916,
+          "ci95": [
+            0.473412,
+            0.57689
+          ]
+        },
+        "GC-1d": {
+          "n": 292,
+          "winRate": 0.479452,
+          "meanFwdAtr": -0.068048,
+          "ci95": [
+            0.422791,
+            0.536647
+          ]
+        },
+        "LAKE-1d": {
+          "n": 433,
+          "winRate": 0.475751,
+          "meanFwdAtr": -0.054045,
+          "ci95": [
+            0.429131,
+            0.522797
+          ]
+        }
+      }
+    },
+    "double-top": {
+      "pooled": {
+        "n": 332,
+        "winRate": 0.475904,
+        "meanFwdAtr": -0.133475,
+        "ci95": [
+          0.422766,
+          0.529593
+        ]
+      },
+      "byAsset": {
+        "BTCUSDT-1d": {
+          "n": 27,
+          "winRate": 0.407407,
+          "meanFwdAtr": -0.444429,
+          "ci95": [
+            0.245148,
+            0.592733
+          ]
+        },
+        "SPY-1d": {
+          "n": 72,
+          "winRate": 0.472222,
+          "meanFwdAtr": 0.162964,
+          "ci95": [
+            0.361265,
+            0.585993
+          ]
+        },
+        "AAPL-1d": {
+          "n": 69,
+          "winRate": 0.478261,
+          "meanFwdAtr": -0.300029,
+          "ci95": [
+            0.364687,
+            0.594127
+          ]
+        },
+        "GC-1d": {
+          "n": 83,
+          "winRate": 0.46988,
+          "meanFwdAtr": -0.49504,
+          "ci95": [
+            0.366233,
+            0.57619
+          ]
+        },
+        "LAKE-1d": {
+          "n": 81,
+          "winRate": 0.506173,
+          "meanFwdAtr": 0.219047,
+          "ci95": [
+            0.399508,
+            0.612279
+          ]
+        }
+      }
+    },
+    "head-and-shoulders": {
+      "pooled": {
+        "n": 66,
+        "winRate": 0.5,
+        "meanFwdAtr": -0.014203,
+        "ci95": [
+          0.382737,
+          0.617263
+        ]
+      },
+      "byAsset": {
+        "BTCUSDT-1d": {
+          "n": 14,
+          "winRate": 0.5,
+          "meanFwdAtr": 0.891677,
+          "ci95": [
+            0.267992,
+            0.732008
+          ]
+        },
+        "SPY-1d": {
+          "n": 8,
+          "winRate": 0.5,
+          "meanFwdAtr": -0.409125,
+          "ci95": [
+            0.215216,
+            0.784784
+          ]
+        },
+        "AAPL-1d": {
+          "n": 11,
+          "winRate": 0.545455,
+          "meanFwdAtr": 0.318392,
+          "ci95": [
+            0.280092,
+            0.787287
+          ]
+        },
+        "GC-1d": {
+          "n": 15,
+          "winRate": 0.266667,
+          "meanFwdAtr": -1.479534,
+          "ci95": [
+            0.108975,
+            0.519504
+          ]
+        },
+        "LAKE-1d": {
+          "n": 18,
+          "winRate": 0.666667,
+          "meanFwdAtr": 0.474601,
+          "ci95": [
+            0.437495,
+            0.837212
+          ]
+        }
+      }
+    }
+  }
+}

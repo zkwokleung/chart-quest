@@ -49,10 +49,31 @@ export const PATTERN_KINDS: readonly PatternKind[] = [
   "head-and-shoulders",
 ];
 
+/**
+ * Bars either side that `findSwings` needs before it will call a bar an extreme.
+ *
+ * Exported because it is the size of the hindsight a chart pattern is built on, and
+ * anything measuring what a pattern was *worth* has to pay it back.
+ */
+export const SWING_LOOKBACK = 4;
+
 export type PatternHit = {
   kind: PatternKind;
   /** The bar the pattern completes on — what a player would click. */
   bar: number;
+  /**
+   * The first bar at which this pattern could actually be known.
+   *
+   * For a candle it is the completing bar: a pin bar is a fact at its own close. For
+   * a double top it is `bar + SWING_LOOKBACK`, because the second peak is not a swing
+   * high until four bars have failed to exceed it — and those four bars are the ones
+   * in which price falls away from the top.
+   *
+   * **Measuring a chart pattern's forward return from `bar` rather than from here
+   * reports look-ahead as edge.** It moved double tops from a 73% win rate to a coin
+   * flip when it was corrected, so the field exists rather than the convention.
+   */
+  confirmedAt: number;
   direction: "bullish" | "bearish";
   /**
    * Every bar the pattern is made of, in time order.
@@ -116,6 +137,7 @@ function candleAt(
     return {
       kind,
       bar: index,
+      confirmedAt: index,
       direction: bar.c >= bar.o ? "bullish" : "bearish",
       components: [index],
     };
@@ -131,6 +153,7 @@ function candleAt(
     return {
       kind,
       bar: index,
+      confirmedAt: index,
       direction: longLower ? "bullish" : "bearish",
       components: [index],
     };
@@ -157,6 +180,7 @@ function candleAt(
   return {
     kind: "engulfing",
     bar: index,
+    confirmedAt: index,
     direction: bullish ? "bullish" : "bearish",
     components: [index - 1, index],
   };
@@ -201,7 +225,7 @@ function chartPatterns(
   kind: "double-top" | "head-and-shoulders",
   range: BarRange,
 ): PatternHit[] {
-  const swings = condenseSwings(findSwings(series, range, 4));
+  const swings = condenseSwings(findSwings(series, range, SWING_LOOKBACK));
   const out: PatternHit[] = [];
 
   if (kind === "double-top") {
@@ -222,6 +246,7 @@ function chartPatterns(
       out.push({
         kind,
         bar: right.bar,
+        confirmedAt: right.bar + SWING_LOOKBACK,
         direction: "bearish",
         components: [left.bar, trough.bar, right.bar],
       });
@@ -241,6 +266,7 @@ function chartPatterns(
     out.push({
       kind,
       bar: right.bar,
+      confirmedAt: right.bar + SWING_LOOKBACK,
       direction: "bearish",
       components: [left.bar, head.bar, right.bar],
     });
