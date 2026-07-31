@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Series } from "@/lib/chart/types";
-import { KINDS, primedBarsFor, revealHorizonFor } from "@/lib/levels/kinds";
+import { KIND_BEHAVIOUR, primedBarsFor, revealHorizonFor } from "@/lib/levels/kinds";
 import { ALL_LEVELS } from "@/lib/levels/content/all";
 import type { AnyLevel } from "@/lib/levels/schema";
 import { smaSeries } from "@/lib/ta/moving-average";
@@ -221,7 +221,7 @@ describe("the look-ahead seal", () => {
   });
 
   it("declares a reveal horizon for exactly the kinds that reveal", () => {
-    const revealing = Object.values(KINDS)
+    const revealing = Object.values(KIND_BEHAVIOUR)
       .filter((kind) => kind.revealHorizon !== undefined)
       .map((kind) => kind.kind)
       .sort();

@@ -75,3 +75,13 @@ export function perfectPredictNext(
     hintsUsed: 0,
   };
 }
+
+/**
+ * The bars a locked-in call is measured against.
+ *
+ * Same number the grader uses, read from the same place, so the reveal cannot show more than
+ * was scored. Beside the grader so the registry can read it without loading a component.
+ */
+export function revealHorizonPredictNext(level: Level<"predict-next">): number {
+  return level.config.horizon;
+}

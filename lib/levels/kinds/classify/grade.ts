@@ -38,3 +38,16 @@ export function gradeClassify(
 export function perfectClassify(level: Level<"classify">): Attempt["classify"] {
   return { kind: "classify", selected: [...level.target.correct], hintsUsed: 0 };
 }
+
+/**
+ * Bars to animate in once the answer is committed.
+ *
+ * Lives beside the grader rather than in a kind index because `lib/levels/kinds` loads
+ * behaviour statically and components lazily — anything the registry reads eagerly has to sit
+ * on a path that pulls in no React. See the note at the top of `kinds/index.ts`.
+ */
+export function revealHorizonClassify(level: Level<"classify">): number {
+  // Committing extends the chart to show what happened next — the payoff for having taken a
+  // position on the question. 3.4 reveals all six of its charts.
+  return level.config.revealBars ?? 0;
+}

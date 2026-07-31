@@ -1,6 +1,6 @@
 "use client";
 
-import { createElement, useEffect, useMemo, useState } from "react";
+import { createElement, Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Feedback } from "@/components/level/Feedback";
 import { Hints } from "@/components/level/Hints";
@@ -236,18 +236,25 @@ function Player({ level }: { level: AnyLevel }) {
 
       {/* createElement rather than a capitalised local: the component genuinely
           varies by kind, and this is the form that says so without pretending a
-          dynamic lookup is a static component. */}
-      {createElement(componentFor(level), {
-        level,
-        feeds,
-        hintsUsed,
-        grade,
-        attempt,
-        onCommit: commit,
-        // Only the composite, which grades its own stages as the player finishes
-        // them. Every other kind is sealed to what its feed has revealed.
-        ...(level.kind === "composite" ? { truth: data } : {}),
-      })}
+          dynamic lookup is a static component.
+
+          Suspense because the component now arrives in its own chunk — a
+          `classify` level does not ship `ReplayTrade`, so the one it needs is
+          fetched when it renders. The fallback matches the level-loading line, as
+          from the player's side it is the same wait continuing. */}
+      <Suspense fallback={<p className="text-sm text-muted">Loading level&hellip;</p>}>
+        {createElement(componentFor(level), {
+          level,
+          feeds,
+          hintsUsed,
+          grade,
+          attempt,
+          onCommit: commit,
+          // Only the composite, which grades its own stages as the player finishes
+          // them. Every other kind is sealed to what its feed has revealed.
+          ...(level.kind === "composite" ? { truth: data } : {}),
+        })}
+      </Suspense>
 
       <Hints
         hints={level.hints}
