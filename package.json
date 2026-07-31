@@ -21,7 +21,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "data:fetch": "node scripts/fetch-data.ts",
-    "data:rates": "tsx scripts/compute-base-rates.ts"
+    "data:rates": "tsx scripts/compute-base-rates.ts",
+    "data:resample": "tsx scripts/resample-data.ts"
   },
   "dependencies": {
     "lightweight-charts": "5.2.0",

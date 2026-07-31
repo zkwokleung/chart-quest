@@ -98,6 +98,22 @@
       "note": "FX intraday · rolling 500-day snapshot"
     },
     {
+      "id": "EURUSD-4h",
+      "tf": "4h",
+      "bars": 1742,
+      "firstBar": "2025-03-17T00:00:00.000Z",
+      "lastBar": "2026-05-14T16:00:00.000Z",
+      "bytes": 82803,
+      "gzipBytes": 18959,
+      "sha256": "d4fcf590a69d44b1d5dec922caf390c2bace3ed990549526ef83100b8e42e51a",
+      "source": "derived",
+      "snapshot": true,
+      "reconstructed": true,
+      "repairedBars": 0,
+      "droppedBars": 0,
+      "note": "Derived from EURUSD-1h · higher-timeframe pane for Chapter 6"
+    },
+    {
       "id": "GC-1d",
       "tf": "1d",
       "bars": 4607,
@@ -160,6 +176,22 @@
       "repairedBars": 0,
       "droppedBars": 0,
       "note": "Index · sessions · gaps · short-term mean-reverting"
+    },
+    {
+      "id": "SPY-1h",
+      "tf": "1h",
+      "bars": 240,
+      "firstBar": "2026-06-01T14:00:00.000Z",
+      "lastBar": "2026-07-28T19:00:00.000Z",
+      "bytes": 11971,
+      "gzipBytes": 4076,
+      "sha256": "2cfc3590409942ffc06ab13ac846dfa2f72b6bf4ad368e81b83309920967a565",
+      "source": "derived",
+      "snapshot": true,
+      "reconstructed": true,
+      "repairedBars": 0,
+      "droppedBars": 0,
+      "note": "Derived from SPY-15m · higher-timeframe pane for Chapter 6"
     }
   ]
 }

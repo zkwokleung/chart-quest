@@ -18,6 +18,14 @@ export type SeriesId =
   | "EURUSD-1h"
   | "GC-1d"
   | "LAKE-1d"
+  /**
+   * Aggregated from the intraday series above rather than fetched — see
+   * `lib/data/resample.ts`. They exist because multi-timeframe levels need two views of
+   * the same period, and outside Bitcoin the committed pairs do not overlap: EURUSD's
+   * hourly begins two years after its daily ends, and SPY's 15m three years after.
+   */
+  | "EURUSD-4h"
+  | "SPY-1h"
   /** Synthetic, for the chart harness and unit tests. Never referenced by a level. */
   | "FIXTURE-1d";
 
@@ -37,6 +45,13 @@ export type HeldBackSeriesId =
   | "AAPL-1d"
   | "EURUSD-1d"
   | "EURUSD-1h"
+  /**
+   * Derived, and held back for the same reason as anything else with enough bars to build
+   * a strategy on: 1,742 of them. Its holdback is resampled from `EURUSD-1h-oos` rather
+   * than split separately, so the boundary is the one its source already drew. `SPY-1h` is
+   * absent because `SPY-15m` is — the exemption propagates to what is derived from it.
+   */
+  | "EURUSD-4h"
   | "GC-1d"
   | "LAKE-1d";
 

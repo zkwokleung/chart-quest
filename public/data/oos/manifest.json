@@ -82,6 +82,22 @@
       "note": "Held back for Chapter 10. Not referenced by any level in chapters 1-9."
     },
     {
+      "id": "EURUSD-4h-oos",
+      "tf": "4h",
+      "bars": 307,
+      "firstBar": "2026-05-15T00:00:00.000Z",
+      "lastBar": "2026-07-28T20:00:00.000Z",
+      "bytes": 14674,
+      "gzipBytes": 3214,
+      "sha256": "0ef93c9ad37309126258d9f00a15eca8b6c85f7f5b945e4a4ba484042ccb702c",
+      "source": "derived",
+      "snapshot": true,
+      "reconstructed": true,
+      "repairedBars": 0,
+      "droppedBars": 0,
+      "note": "Derived from EURUSD-1h-oos · holdback for the derived 4h series"
+    },
+    {
       "id": "GC-1d-oos",
       "tf": "1d",
       "bars": 813,

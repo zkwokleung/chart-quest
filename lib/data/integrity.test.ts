@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { OosSeriesId, Series, SeriesId } from "@/lib/chart/types";
 import type { SeriesManifest } from "@/lib/data/manifest-types";
 import { ALL_LEVELS } from "@/lib/levels/content/all";
+import { derive, JOBS } from "../../scripts/resample-data";
 
 /**
  * Guards the committed data against drift.
@@ -32,10 +33,12 @@ const EXPECTED_SERIES: SeriesId[] = [
   "BTCUSDT-4h",
   "EURUSD-1d",
   "EURUSD-1h",
+  "EURUSD-4h",
   "GC-1d",
   "LAKE-1d",
   "SPY-15m",
   "SPY-1d",
+  "SPY-1h",
 ];
 
 /** FIXTURE-1d is synthetic and lives in code, so it has no committed file. */
@@ -165,13 +168,20 @@ describe("out-of-sample holdback", () => {
 
   it("covers every series a Chapter 10 strategy can run on", () => {
     // SPY-15m is the deliberate exception — a 60-day snapshot with no room to
-    // spare, used for the session levels rather than for strategy building.
+    // spare, used for the session levels rather than for strategy building. SPY-1h is
+    // derived from it, so the exemption propagates; deriving a holdback from a source
+    // that has none is not possible.
+    //
+    // EURUSD-4h is derived and *is* held back, because 1,742 bars is enough to build a
+    // strategy on and this guard is the reason: an unsplit series lets a player skip
+    // out-of-sample validation by choosing it.
     const held = new Set(oosManifest.series.map((e) => e.id.replace(/-oos$/, "")));
+    const exempt = new Set(["SPY-15m", "SPY-1h", "AAPL-1d-raw"]);
     const strategyCapable = manifest.series
       .map((e) => e.id)
-      .filter((id) => id !== "SPY-15m" && id !== "AAPL-1d-raw");
+      .filter((id) => !exempt.has(id));
     for (const id of strategyCapable) {
-      expect(held).toContain(id);
+      expect(held, id).toContain(id);
     }
   });
 });
@@ -199,8 +209,10 @@ describe("data quality is recorded, not hidden", () => {
   });
 
   it("flags the reconstructed series", () => {
+    // AAPL-1d-raw is un-split-adjusted for level 1.7; the other two are resampled from
+    // committed intraday series for Chapter 6's multi-timeframe panes.
     const reconstructed = manifest.series.filter((e) => e.reconstructed).map((e) => e.id);
-    expect(reconstructed).toEqual(["AAPL-1d-raw"]);
+    expect(reconstructed).toEqual(["AAPL-1d-raw", "EURUSD-4h", "SPY-1h"]);
   });
 });
 
@@ -289,5 +301,72 @@ describe("open-price health", () => {
         level.data.some((slice) => OPEN_UNRELIABLE.includes(slice.series)),
     );
     expect(usesUnreliableOpen).toEqual([]);
+  });
+});
+
+/**
+ * The derived series against what the resampler produces now.
+ *
+ * Same failure mode the base rates have: these files are fetched at runtime and levels
+ * address them by bar index, so a boundary rule changed without `npm run data:resample`
+ * would leave Chapter 6 pointing at bars that no longer mean what the level file says.
+ * Recomputing rather than hashing also means the test names *what* moved.
+ */
+describe("derived series", () => {
+  it.each(JOBS.map((job) => [job.id, job] as const))(
+    "%s matches a fresh resample of its source",
+    (_id, job) => {
+      const committed = JSON.parse(readRaw(job.dir, job.id)) as Series<string>;
+      expect(derive(job)).toEqual(committed);
+    },
+  );
+
+  it("declares every derived series as derived and reconstructed", () => {
+    for (const job of JOBS) {
+      const listed = job.dir === SERIES_DIR ? manifest : oosManifest;
+      const entry = listed.series.find((e) => e.id === job.id);
+      expect(entry?.source, job.id).toBe("derived");
+      expect(entry?.reconstructed, job.id).toBe(true);
+    }
+  });
+
+  it("keeps each derived series inside the period its source covers", () => {
+    // Aggregation cannot invent a bar outside the source, so a range wider than the
+    // source's would mean bars were assigned to the wrong bucket entirely.
+    for (const job of JOBS) {
+      const source = JSON.parse(readRaw(job.dir, job.from)) as Series<string>;
+      const derived = JSON.parse(readRaw(job.dir, job.id)) as Series<string>;
+      expect(derived.t[0]!, job.id).toBeGreaterThanOrEqual(source.t[0]!);
+      expect(derived.t.at(-1)!, job.id).toBeLessThanOrEqual(source.t.at(-1)!);
+    }
+  });
+
+  it("gives the derived series a holdback unless its source has none", () => {
+    // The guarantee `HeldBackSeriesId` exists for, checked on the derived side too: a
+    // strategy-capable series without a holdback is a way to skip Chapter 10's
+    // out-of-sample validation by choosing it.
+    const held = new Set(oosManifest.series.map((e) => e.id));
+    for (const job of JOBS.filter((j) => j.dir === SERIES_DIR)) {
+      const sourceHeld = held.has(`${job.from}-oos`);
+      expect(held.has(`${job.id}-oos`), `${job.id} holdback`).toBe(sourceHeld);
+    }
+  });
+
+  it("gives every MTF pair a real overlap, which is the point of deriving them", () => {
+    // The failure this whole artefact exists to prevent: a level cannot show two views of
+    // a period one of its series does not cover.
+    const pairs: [low: string, high: string][] = [
+      ["BTCUSDT-4h", "BTCUSDT-1d"],
+      ["EURUSD-1h", "EURUSD-4h"],
+      ["SPY-15m", "SPY-1h"],
+    ];
+    for (const [low, high] of pairs) {
+      const a = JSON.parse(readRaw(SERIES_DIR, low)) as Series<string>;
+      const b = JSON.parse(readRaw(SERIES_DIR, high)) as Series<string>;
+      const from = Math.max(a.t[0]!, b.t[0]!);
+      const to = Math.min(a.t.at(-1)!, b.t.at(-1)!);
+      const days = (to - from) / 86_400_000;
+      expect(days, `${low} vs ${high} overlap in days`).toBeGreaterThan(30);
+    }
   });
 });

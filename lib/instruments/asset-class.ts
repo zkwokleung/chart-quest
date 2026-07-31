@@ -19,10 +19,12 @@ const CLASSES: Record<SeriesId, AssetClass> = {
   "BTCUSDT-4h": "crypto-spot",
   "SPY-1d": "equity",
   "SPY-15m": "equity",
+  "SPY-1h": "equity",
   "AAPL-1d": "equity",
   "AAPL-1d-raw": "equity",
   "EURUSD-1d": "fx",
   "EURUSD-1h": "fx",
+  "EURUSD-4h": "fx",
   // Gold trades as a futures contract, which is why it is in the spine at all:
   // Chapter 7 sizes a contract rather than shares or coins.
   "GC-1d": "futures",
