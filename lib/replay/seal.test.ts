@@ -7,6 +7,7 @@ import { ALL_LEVELS } from "@/lib/levels/content/all";
 import type { AnyLevel } from "@/lib/levels/schema";
 import { smaSeries } from "@/lib/ta/moving-average";
 import { createLevelFeed, type ReplayFeed } from "./feed";
+import { barContaining, barEnd, linkFeeds } from "./linked";
 
 /**
  * Proves the look-ahead seal over every authored level.
@@ -227,5 +228,80 @@ describe("the look-ahead seal", () => {
     // mark-bars and annotate show a fixed window; composite's stages carry their
     // own horizons, handled in step-components.ts.
     expect(revealing).toEqual(["classify", "predict-next"]);
+  });
+});
+
+/**
+ * The seal across timeframes.
+ *
+ * Chapter 6 shows two panes of the same instrument at different bar sizes, and the leak
+ * available there is invisible in the single-feed case: a higher-timeframe bar whose open
+ * is behind the driver but whose close is ahead of it. Revealing it puts a price on screen
+ * that has not happened, and the pane looks entirely normal.
+ *
+ * Asserted here as well as in `linked.test.ts` because this file is where the invariant is
+ * stated for the project, and a reader checking whether the seal holds for Chapter 6
+ * should find the answer in one place.
+ */
+describe("the seal across linked timeframes", () => {
+  const PAIRS: [driver: string, follower: string][] = [
+    ["BTCUSDT-4h", "BTCUSDT-1d"],
+    ["EURUSD-1h", "EURUSD-4h"],
+    ["SPY-15m", "SPY-1h"],
+  ];
+
+  it.each(PAIRS)(
+    "%s driving %s never shows an unfinished higher-timeframe bar",
+    (driverId, followerId) => {
+      const driverSeries = load(driverId);
+      const followerSeries = load(followerId);
+      const start = Math.max(
+        1,
+        barContaining(driverSeries, Math.max(driverSeries.t[0]!, followerSeries.t[0]!)) + 1,
+      );
+
+      const driver = createLevelFeed(
+        driverSeries,
+        { from: start, to: start + 300 },
+        { primedBars: 1 },
+      );
+      const follower = linkFeeds(driver, {
+        series: followerSeries,
+        from: Math.max(0, barContaining(followerSeries, driverSeries.t[start]!)),
+        to: followerSeries.t.length - 1,
+      });
+
+      for (let i = 0; i < 300; i += 1) {
+        const shown = follower.visible();
+        const lastShown = shown.t.length - 1;
+        if (lastShown >= 0) {
+          // Every revealed bar's window must have closed by the moment the driver has
+          // reached. `visible()` on the driver is truncated, so its own end falls back to
+          // the nominal duration — which is the conservative answer, and forced by the
+          // seal rather than chosen.
+          expect(barEnd(followerSeries, lastShown)).toBeLessThanOrEqual(
+            barEnd(driver.visible(), driver.at),
+          );
+        }
+        driver.step();
+      }
+    },
+  );
+
+  it("hands a linked feed no more of the follower than the unlinked feed would", () => {
+    // A linked feed is still a feed: it must not become a way to read a series that a
+    // plain `createLevelFeed` over the same window would have withheld.
+    const driverSeries = load("BTCUSDT-4h");
+    const followerSeries = load("BTCUSDT-1d");
+    const driver = createLevelFeed(driverSeries, { from: 100, to: 400 }, { primedBars: 1 });
+    const follower = linkFeeds(driver, {
+      series: followerSeries,
+      from: 0,
+      to: followerSeries.t.length - 1,
+    });
+    driver.step(150);
+    const shown = follower.visible();
+    expect(shown.t.length - 1).toBe(follower.at);
+    expect(shown.c[follower.at + 1]).toBeUndefined();
   });
 });
