@@ -2,7 +2,7 @@ import { barMark } from "../../mark";
 import type { Level } from "../../schema";
 
 /**
- * Boss: EURUSD-1h 694-786 with EURUSD-4h 155-185 above it, trigger bar 754
+ * Boss: EURUSD-1h 694-786 with EURUSD-4h 155-193 above it, trigger bar 754
  * (2025-04-29 17:00).
  *
  * **Not AAPL + SPY, and the spec is not buildable as written.** CURRICULUM.md puts 6.B on
@@ -56,7 +56,7 @@ export const level: Level<"composite"> = {
     "The euro against the dollar, hourly, with the four-hour above it — a market no level in this chapter has used. Find where the slow chart turned, say what the fast one has to do, then trade it.",
   data: [
     { series: "EURUSD-1h", from: 694, to: 786, label: "EURUSD · 1h — the trade" },
-    { series: "EURUSD-4h", from: 155, to: 185, label: "EURUSD · 4h — the level" },
+    { series: "EURUSD-4h", from: 155, to: 193, label: "EURUSD · 4h — the level" },
   ],
   config: {
     steps: [
