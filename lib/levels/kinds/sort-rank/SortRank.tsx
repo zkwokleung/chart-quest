@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BaseRateTable } from "@/components/level/BaseRateTable";
 import type { KindProps } from "@/lib/levels/kind-module";
 
 /**
@@ -135,6 +136,12 @@ export function SortRank({
           Commit ranking
         </button>
       )}
+
+      {committed && level.config.reveal === "pattern-base-rates" ? (
+        <div className="rounded-lg border border-border bg-surface p-3">
+          <BaseRateTable />
+        </div>
+      ) : null}
     </div>
   );
 }

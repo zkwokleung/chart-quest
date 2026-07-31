@@ -238,6 +238,15 @@ export type KindConfig = {
     /** What the top of the list means, so "first" is never ambiguous. */
     topLabel: string;
     bottomLabel: string;
+    /**
+     * A measured table to show once the ranking is committed.
+     *
+     * Named rather than carried as data because the numbers live in a committed
+     * artefact fetched at runtime — `public/data/base-rates.json` is 5 patterns x 5
+     * assets x 4 statistics, which is a table rather than something to retype into a
+     * level file where it could drift from the measurement.
+     */
+    reveal?: "pattern-base-rates";
   };
   "replay-trade": {
     prompt: string;
@@ -450,6 +459,7 @@ export type AnyLevel =
   | Level<"annotate">
   | Level<"replay-trade">
   | Level<"tune-param">
+  | Level<"sort-rank">
   | Level<"composite">;
 
 export function isKind<K extends LevelKind>(
