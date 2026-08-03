@@ -9,20 +9,21 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
     "check:bundle": "node scripts/check-bundle.ts",
-    "start": "next start",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint . --quiet",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:e2e": "playwright test",
+    "data:character": "tsx scripts/compute-asset-character.ts",
     "data:fetch": "node scripts/fetch-data.ts",
     "data:rates": "tsx scripts/compute-base-rates.ts",
-    "data:resample": "tsx scripts/resample-data.ts"
+    "data:resample": "tsx scripts/resample-data.ts",
+    "dev": "next dev",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --quiet",
+    "start": "next start",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "lightweight-charts": "5.2.0",
