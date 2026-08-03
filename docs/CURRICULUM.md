@@ -17,7 +17,7 @@ Every chapter's boss runs on a **different asset than that chapter's levels**. T
 | 5   | EURUSD 1d, BTC 1d, SPY 1d          | **SPY 15m**               |
 | 6   | BTC 1d/4h                          | **AAPL 1d + SPY 1d**      |
 | 7   | all four instrument classes        | **GC 1d**                 |
-| 8   | all six (by definition)            | **unseen regime slice**   |
+| 8   | five of the six                    | **AAPL 1d, unseen window**|
 | 9   | player's own journal               | **3 reports on 3 assets** |
 | 10  | player's choice                    | **≥3 asset classes**      |
 
@@ -292,6 +292,61 @@ _unlocks: y-axis normalize toggle, correlation matrix_
 | **8.B** | **BOSS (unseen regime slice):** identify the asset's character from the chart alone, then pick and trade the appropriate edge                       | composite       |
 
 > **8.2 matters most.** It makes asset character _measured, not asserted_ — the player runs the probe and reads the number. That's the difference between the game teaching a fact and teaching a method.
+
+### Where Chapter 8 diverged from this plan, and why
+
+The longest such section in this document, and it should be. **Four of the seven specified
+premises were contradicted by the data**, and the chapter that exists to teach measuring rather
+than believing had the least excuse of any for shipping them.
+
+- **"Crypto persists; the index reverts" is wrong at one day and right at twenty.** Bitcoin's
+  lag-1 daily return autocorrelation is −0.052 — it mean-reverts — and its variance ratio crosses
+  1.0 at **6.1 bars**, climbing to 1.41 by ninety. So trend is a property of a *horizon* rather
+  than of a market, which is a better lesson and is only reachable if the player varies the
+  horizon. 8.2's commit button stays disabled until they have.
+- **And once the statistic is robust, almost none of it is significant.** With Lo–MacKinlay's
+  heteroskedasticity-robust z, Bitcoin is not distinguishable from a random walk at *any*
+  horizon. The one effect in the whole spine that survives is the index's short-horizon
+  reversion, significant across q=2 to q=9. The chapter shows the z beside every ratio and says
+  so. This document already listed **8.3** among the levels that exist "specifically to teach the
+  player to distrust their own results" — the data handed it that lesson a level early.
+- **8.3's "six assets, six outcomes" did not happen.** The breakout rule is profitable on all
+  six. What is true is a fiftyfold spread per trade, and an ordering that does not follow
+  persistence: Apple leads, Bitcoin — the only market that trends at all — is fourth. So the
+  level ranks by persistence, which the player measured in 8.2 and can therefore infer, and the
+  profit table is the reveal that refuses to cooperate. Spearman's rho between the two orderings
+  is 0.771, which sounds convincing and, at n=6, needs about 0.83 to clear the usual bar.
+- **8.4's "your five diversified longs are one bet" is not true of this spine.** Over 1,429
+  date-aligned days only one pair clears 0.6, and it is a stock against its own index. The true
+  version is worse: conditioned on the index's worst decile, Bitcoin goes 0.28 → 0.46 against the
+  index and 0.12 → 0.37 against gold while being 0.01 against the index on ordinary days. The
+  asset sold as a hedge is the one that stops being one. Not the slogan "correlations go to one",
+  which is measurably too strong — Apple against the index *falls* from 0.80 to 0.70.
+- **8.5's regime shift became a report review.** 2022 is negative on three of six markets rather
+  than all of them, so "the year explains everything" would have been another overclaim. Instead
+  every figure in a seven-claim backtest write-up is real and four of the sentences still do not
+  follow. It also forced an `AUTHORING.md` amendment: the rule that every flawed claim carry a
+  `signal` over-fitted 6.5, and now reads that a flawed claim must be *recomputable*.
+- **8.6 has no one-to-one mapping to find.** "Match 4 edges to the assets they survive on" needs
+  a bijection and Apple is best for three of the four. Ranked by portability instead, anchored on
+  the chapter's only claim with no sample size attached: `gap-fill` finds **zero** setups on
+  Bitcoin across 2,778 bars, because a market open every hour never opens below yesterday's low.
+  It ranks last for that despite a better mean than the pullback — a rule that cannot be
+  expressed in an asset class has failed the portability test before its numbers are consulted.
+- **8.1 is `classify`, not `tune-param`,** and **8.2 needed a twelfth kind.** `tune-param`'s
+  config *is* `(value) => IndicatorSpec`, so a required-win-rate curve was not the only thing it
+  could not express; a variance ratio across six markets is not an indicator on one window
+  either. 8.1's interaction is the y-axis toggle, which already existed, plus a choice — a
+  `classify`, the fifth time this project has made that call.
+- **The boss runs on Apple, and the reserve costs the chapter a pane.** The cross-asset guard is
+  series-id granular, so no Chapter 8 level may name `AAPL-1d` at any window — which is why 8.1
+  compares five markets rather than six. Apple is worth it: fourth on persistence, first on
+  profit, so it is precisely where a player who concluded "persistent means tradeable" gets
+  caught. Its unseen-window reserve is asserted from level 8.1 onward, because the generic guard
+  stays inert until a boss exists.
+
+> **Chapter 9 was unreachable until this chapter existed.** `e2e/chapter8.spec.ts` asserts the
+> chain in both directions.
 
 ## Ch 9 — Edge & Probability
 

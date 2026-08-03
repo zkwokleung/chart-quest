@@ -106,6 +106,7 @@ These run on every level automatically. You don't write them; you satisfy them.
 | Star thresholds ascending, all in `(0, 1]`                         | Malformed scoring                                                                                                       |
 | `id` matches file path and chapter number                          | Registry integrity                                                                                                      |
 | No level reads opens from a series on the unreliable-open list     | See below                                                                                                               |
+| `RENDER_AS_LINE` equals the unreliable-open allow-list             | A series cannot be flattened to hide a rendering bug, nor left drawing candles that are fiction                          |
 
 ### `EURUSD-1d` has no usable open
 
@@ -121,7 +122,14 @@ M7 and uses gold futures now; Chapter 4's base rates exclude the series for the 
 reason.
 
 `lib/data/integrity.test.ts` holds the allow-list and will say so if upstream ever
-fixes the feed. Issue #58 tracks the remaining cosmetic effect on Chapter 5.
+fixes the feed.
+
+**Since M8 the series is drawn as a close-only line rather than as candles**, so a player never
+sees the artefact. `RENDER_AS_LINE` in `lib/chart/types.ts` decides that from the series id
+inside `Chart.tsx` — never from a level — so a level can neither ask for an honest series to be
+flattened nor forget to ask for a broken one to be. `integrity.test.ts` asserts the set equals
+the unreliable-open allow-list, which means membership has to be earned by the measurement.
+That closed #58.
 
 ---
 
@@ -232,6 +240,15 @@ individually. Per component, because averaging is what let 4.B through.
 is the only thing holding it back from the player, so getting it wrong hands over the
 answer at load. It is `triggerBar - slice.from + 1`.
 
+**When a level compares markets, every window has to be typical of its own market.** 8.1 shows
+five markets that each moved about ten percent and asks which was the biggest event. The first
+search found a 2008 euro window and a 2011 index window — both crises — where the euro's ten
+percent measured 7.2 ATR against the index's 9.2, which is the wrong answer produced by
+comparing two unusual periods rather than two markets. Constrain each window's own median ATR%
+to within ~15% of that market's full-history median, and assert it: cherry-picking a calm window
+for one market and a wild one for another is the easiest way to make a comparison level say
+whatever an author wants.
+
 **Simulate the score surface before locking the window.** This is not optional, and
 it is the rule that cost the most to learn. Run a grid of plausible player stops
 through `simulate` and check the window _rewards the behaviour being taught_. Boss
@@ -339,16 +356,69 @@ Scored with `f1`, the same measure `mark-bars` uses, so finding two of three fla
 false positive scores sensibly. Marking everything is scored, and scored badly — which
 matters for a level about over-confluence.
 
-**Give every flawed claim a `signal`.** That is what makes the answer measurable rather than
-a matter of taste: `lib/ta/correlation.ts` computes which claims duplicate another, and the
-content-claims test recomputes it. A claim with no signal can be shown but must not be in
-`target.flawed`.
+**Every flawed claim must be recomputable**, which is what makes the answer measurable rather
+than a matter of taste. Two ways, depending on the kind of flaw:
+
+- **By a `signal`**, where the flaw is redundancy. `lib/ta/correlation.ts` computes which
+  claims duplicate another and 6.5's content-claims test recomputes it.
+- **By the chapter's own claims test**, where the flaw is a false inference from a true number.
+  8.5's report quotes seven real figures and four of its sentences still do not follow — "profitable
+  on all six, so the edge is in the rule" is true in its premise and wrong in its conclusion,
+  because per-trade R spreads fiftyfold. There is no signal to name.
+
+The rule was originally "give every flawed claim a `signal`", which over-fitted 6.5. A claim
+that is neither recomputable nor signalled can be shown but must not be in `target.flawed`.
+
+**A sound-but-damning claim is worth including.** 8.5 states that one market produced 43% of the
+return from 23% of the trades, which is true and is what dismantles a different claim in the
+list. `f1` scoring makes marking it cost something, which is the point: learning to distrust a
+report is not the same as learning to read one.
 
 **Leave out anything whose verdict depends on the market.** MACD's histogram runs 0.42 against
 RSI on Bitcoin and 0.80 against the ten-bar return on SPY, so whether it is redundant is not a
 fact — it is an argument, and a graded answer cannot rest on one.
 
 ---
+
+## Measuring across the spine (`probe`)
+
+```ts
+kind: 'probe',
+data: [],                     // a statistic over thousands of bars is not a window
+config: {
+  prompt: '...',
+  measure: 'variance-ratio',  // named, never a function
+  label: 'horizon, in bars',
+  min: 2, max: 90, step: 1, initial: 2,
+  assets: [...],              // read, never displayed
+  focus: 'BTCUSDT-1d',        // the row the question is about
+  scoring: 'target',
+  exploreFraction: 0.6,
+},
+target: { value: 6 },         // derived from the artefact, not authored
+tolerance: { slop: 2 },
+```
+
+For a question a chart cannot answer: does *this market* behave differently, and by how much.
+`tune-param` could not carry it — its config **is** `(value) => IndicatorSpec` — and a variance
+ratio across six markets is not an indicator on one window.
+
+**`measure` is a name, not a function.** A function in a level file would put the computation
+somewhere no test can recompute it and would ship the estimator to the client. The numbers come
+from `public/data/asset-character.json`, the same relationship `sort-rank.reveal` has with the
+base rates.
+
+**The control's range must land on the artefact's own grid.** The readout reads a committed
+table, so a value between two horizons would have to be interpolated — and an interpolated
+variance ratio is a number nobody measured. Assert it in the chapter's claims test.
+
+**`assets` goes in the config, not in `level.data`.** None of them is displayed, so they stay
+outside the cross-asset boss guard — which is what lets a chapter measure all six markets while
+its boss runs on one of them. Same call `sizing-calc` makes with `data: []`.
+
+**Accuracy is capped by the sweep, not averaged with it.** A player who drags straight to the
+answer has read a number off a table; the level is about measuring. The commit button stays
+disabled until they have swept, which is clearer than a score explained afterwards.
 
 ## Sizing levels (`sizing-calc`)
 

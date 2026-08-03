@@ -6,7 +6,7 @@ An interactive game that teaches technical analysis, from "what is a candle" to 
 
 **Live:** <https://chart-quest.vercel.app>
 
-**Status:** pre-alpha. **Chapters 1 through 7 are playable end to end** — 51 levels across eleven interaction kinds, including draw tools, a replay engine, a graded first trade with a journal, indicators with a price/percent/ATR y-axis, pattern base rates measured per asset with sample sizes and confidence intervals, multi-timeframe levels running two live panes from one clock, and position sizing across crypto, shares, futures contracts and FX lots from real contract specifications. Asset character is next. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
+**Status:** pre-alpha. **Chapters 1 through 8 are playable end to end** — 58 levels across twelve interaction kinds, including draw tools, a replay engine, a graded first trade with a journal, indicators with a price/percent/ATR y-axis, pattern base rates measured per asset with sample sizes and confidence intervals, multi-timeframe levels running two live panes from one clock, position sizing across crypto, shares, futures contracts and FX lots from real contract specifications, and a chapter that has you measure each market's character yourself — trend persistence, volatility, correlation and which edges survive being moved — rather than taking any of it on faith. Journal analytics are next. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
 
 ---
 
@@ -87,6 +87,7 @@ npm run check:bundle # per-route client JS budget (needs a build first)
 npm run data:fetch   # rebuild public/data from upstream sources
 npm run data:rates   # recompute pattern base rates
 npm run data:resample # rebuild the derived higher-timeframe series
+npm run data:character # recompute the per-asset character measurements
 ```
 
 ### Data
@@ -95,7 +96,9 @@ Twelve committed series spanning crypto, an index, a single stock, FX, gold and 
 
 `npm run data:fetch` regenerates them, but **the committed JSON is the source of truth** — levels address it by bar index, so a series is immutable once committed. Two series are rolling-window snapshots that upstream cannot serve twice identically. Read [`docs/DATA.md`](docs/DATA.md) before touching anything under `public/data/`.
 
-`npm run data:rates` regenerates the per-asset pattern base rates and `npm run data:resample` the derived higher-timeframe series. Both write committed artefacts that a test recomputes, so a stale file fails CI rather than quietly teaching last month's numbers.
+`npm run data:rates` regenerates the per-asset pattern base rates, `npm run data:resample` the derived higher-timeframe series, and `npm run data:character` the trend-persistence, correlation and edge measurements Chapter 8 rests on. All three write committed artefacts that a test recomputes, so a stale file fails CI rather than quietly teaching last month's numbers.
+
+One series is drawn as a close-only line rather than as candles. Yahoo reports the EURUSD daily open within a pip or two of the same bar's close after 2010, so 72% of that series has effectively no body — the high and the low are sound, so only the body is fiction. `RENDER_AS_LINE` in `lib/chart/types.ts` holds the list, and `integrity.test.ts` asserts it equals the set of series whose open fails a health check, so membership has to be earned by measurement rather than chosen.
 
 ### Version pinning
 

@@ -8,7 +8,7 @@ The solution is a small set of reusable interaction primitives ("level kinds"). 
 
 ## 1. Level kinds
 
-Eleven kinds cover the whole curriculum.
+Twelve kinds cover the whole curriculum.
 
 | Kind            | Interaction                                                                         | Teaches                                            |
 | --------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------- |
@@ -22,13 +22,14 @@ Eleven kinds cover the whole curriculum.
 | `sizing-calc`   | Numeric input, graded with tolerance, parameterized by `InstrumentSpec`.            | R-multiples, sizing across instruments, expectancy |
 | `spot-the-flaw` | A list of claims about a trade; check the ones that add nothing. Scored with `f1`.  | Anti-patterns, critical reading                    |
 | `trade-sequence`| Size N historical trades one at a time, account compounding between them.           | Risk of ruin, streaks, sizing discipline           |
+| `probe`         | A control over a statistic computed across the whole data spine, redrawn live.       | Asset character, measuring rather than believing    |
 | `build-rules`   | Block composer → multi-asset backtest → hit an objective.                           | Chapter 10                                         |
 
 Some levels are **composite** — a boss may chain `mark-bars` → `annotate` → `classify` → `predict-next` and average the scores. Composites are expressed as a sequence of kinds, not a new kind.
 
 **Kind components load lazily; kind behaviour does not.** `lib/levels/kinds/behaviour.ts` holds the graders and `perfectAttempt` functions and is imported eagerly, because `LevelPlayer` needs them on every route. `components.ts` maps each kind to a `lazy()` import, so a `classify` level no longer ships the drawing engine, the replay controls and the correlation matrix. This took the level route from 266.0 KB to 199.3 KB gzipped. The cost is that a kind missing from `components.ts` fails only in a browser, behind a `Suspense` boundary — which is why every chapter's e2e suite asserts each of its levels renders past it.
 
-**Three kinds author no target at all**, setting `target: {}`: `predict-next`, `sizing-calc` and `trade-sequence`. Their answers are derived from the data or from the contract spec, so there is exactly one source for each and no way for a level file to disagree with its own grader.
+**Four kinds author no target at all**, setting `target: {}`: `predict-next`, `sizing-calc`, `trade-sequence` and — for its exploration levels — `probe`. Their answers are derived from the data or from the contract spec, so there is exactly one source for each and no way for a level file to disagree with its own grader.
 
 ---
 
@@ -113,9 +114,22 @@ toAtrUnits(series, period): number[]     // price expressed in ATR multiples
 atrPct(series, period): number[]         // ATR as % of close — the cross-asset comparator
 ```
 
-Chart y-axis mode is `'price' | 'pct' | 'atr'`, toggleable on every chart (unlocked in Ch 8, available earlier for levels that set it explicitly).
+Chart y-axis mode is `'price' | 'pct' | 'atr'`. Two separate questions decide who sees the control and what mode they open in, and `lib/levels/y-axis.ts` splits them:
 
-**The toggle must never change grading.** Verified by test: grade a fixture attempt in all three modes, assert identical `Grade`.
+```ts
+export const Y_AXIS_EVERYWHERE_FROM = 8;
+export function yAxisFor(level): { mode?: YAxisMode; toggle: boolean } | undefined;
+```
+
+A level opts in through `Level.yAxis`, which also sets its starting mode. **From Chapter 8 the control is on everywhere, including replays of Chapter 1**, because that chapter's subject is that a move's size is only meaningful in its own market's units. Before it, only the levels whose lesson needs the control show it.
+
+**The unlock is a fact about the player, not about the level**, so the progress read lives in `SliceChart` — the one component that already reads the store — and `yAxisFor` contributes only the level's own opinion. An earlier version resolved visibility from `level.chapter` alone, which meant a Chapter 1 level never gained the control however far the player had got. Every unit test passed: the resolver was self-consistently wrong, and an e2e assertion across two pages is what caught it.
+
+The stored preference sets the mode and never the visibility. A saved setting must not make Chapter 2 sprout an unlock it has not reached.
+
+**The toggle must never change grading.** Verified two ways: grade a fixture attempt in all three modes and assert an identical `Grade`, and a source-level test pinning that the mode is applied as a *formatter* rather than by transforming the series. Transforming the data is the obvious implementation, would break every tolerance in the game, and would fail no grader test at all — the graders would stay internally consistent while measuring the wrong thing.
+
+**The formatter belongs to the price series, not to the chart.** `chart.localization.priceFormatter` is chart-wide and therefore relabels every pane, including volume: 8.B shipped a volume axis reading "+1036269330.1%" — a share count run through percent-from-anchor — until it moved onto the candle series' own `priceFormat`.
 
 ---
 
@@ -153,6 +167,40 @@ units = roundToLot((equity * riskPct) / riskPerUnit, spec);
 `sizePosition` returns `risked` alongside `units` — what the rounded position actually loses if the stop is hit, which is at or under the budget rather than equal to it. `riskOf` answers the reverse question for a position whose size is already stated, which is what 7.1 asks.
 
 Trading hours were specified here in the original plan and are **not implemented**. Nothing needs them yet: the gap lessons (1.6, 7.6, 7.B) read gaps straight off the committed bars, and `simulate` already fills a gapped stop at the open. They belong with the backtester in Chapter 10, where bar validity is a correctness requirement rather than a lesson.
+
+### Asset character: two measurements that need opposite treatment of the same bars
+
+```ts
+// lib/ta/autocorr.ts — within-asset
+varianceRatio(returns, q): { q; vr; z; n } | null
+crossingHorizon(curve, level?): number | null
+
+// lib/ta/cross-asset.ts — between-asset
+dayKey(t): number
+alignByDate(series, window?): { days; index }
+returnCorrelation(assets, aligned, keep?): AssetMatrix
+```
+
+A **variance ratio** compares the variance of a q-bar return against q times the variance of a one-bar return: above 1 the moves reinforce, below 1 they cancel, 1.0 is a random walk. It is *within-asset* and must use that market's own consecutive bars — including Bitcoin's weekends, since dropping them changes what a one-day return means for Bitcoin. Log returns, because only they sum, and a variance ratio is the variance of a *sum*. Overlapping windows with the Lo–MacKinlay finite-sample correction, because non-overlapping leaves 23 observations at q=60 over 1,434 bars.
+
+**And the heteroskedasticity-robust z, which changed two levels.** Bitcoin's ratio climbs to 1.41 by ninety bars and is significant at *no* horizon — z=1.7 at its strongest. The only effect in the whole spine that survives a robust test is the index's short-horizon mean reversion, significant across q=2 through q=9. Volatility clustering explains most of the rest, so the chapter shows the z beside every ratio and says plainly that the tidy picture is mostly not evidence.
+
+A **correlation** is between-asset and must align on dates, which is harder than it looks. Every committed daily bar is stamped at its own market's open:
+
+| Series | UTC time-of-day |
+| --- | --- |
+| BTCUSDT-1d | 0.0h |
+| SPY / AAPL / LAKE | 13.5h, 14.5h (EST/EDT) |
+| GC-1d | 4.0h, 5.0h |
+| **EURUSD-1d** | 0.0h under GMT, **23.0h under BST** — the previous UTC date |
+
+Joining on raw `t` returns **zero rows** for any pair. Joining on the UTC calendar day looks right and files 2,759 euro bars a day early; a draft of Chapter 8 did that and reported the euro three to five times more correlated with the index than it is. The key is `floor((t + 2h) / 24h)` — the smallest shift that fixes the euro and the largest that moves nothing else — and the test pins all three answers so the wrong ones cannot return: 0 rows raw, 1,269 naive, 1,429 correct.
+
+Unmatched days are **dropped, never forward-filled.** Carrying Friday's index close into Saturday to pair with a live Bitcoin bar would invent a correlation.
+
+`lib/ta/correlation.ts` is left alone: it correlates *signals within one asset* for 6.5, which is the transpose with a different index. One function meaning both would leave callers disagreeing about what a row is. The Pearson primitive is shared; only the indexing differs.
+
+Everything Chapter 8 quotes is precomputed into `public/data/asset-character.json` by `npm run data:character`. Two reasons, the second binding: a measurement is not code and only one chapter needs it — and `behaviour.ts` is imported eagerly by every level route, so a grader reaching for the estimators would ship the variance-ratio machinery to `/level/1-1`. `probe/grade.test.ts` asserts the grader imports nothing from `lib/ta`. Nothing in the file is a conclusion: it holds ratios and z-statistics per horizon, and the crossing the level grades on is computed from them at play time.
 
 ### Trade management: trailing stops and partials
 
