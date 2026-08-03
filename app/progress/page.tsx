@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { JournalPanel } from "@/components/JournalPanel";
+import { SkillRadar } from "@/components/SkillRadar";
 
 export const metadata = { title: "Progress" };
 
@@ -15,6 +16,7 @@ export default function ProgressPage() {
         </Link>
       </nav>
       <h1 className="text-2xl font-semibold tracking-tight">Progress</h1>
+      <SkillRadar />
       <JournalPanel />
     </main>
   );
