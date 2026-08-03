@@ -75,6 +75,26 @@ describe("the outcomes are the data's, not the level's", () => {
     expect(level.target).toEqual({});
   });
 
+  it("gives a correct running account for a partly-sized sequence", () => {
+    // The contract `TradeSequence` leans on to show the account mid-play. It used to read the
+    // running equity off `grade`, which is null until all ten are committed, so every decision
+    // was offered against the starting balance and the level's own prompt was false.
+    //
+    // Steps past the decided prefix carry a real R at zero risk, which is why the component
+    // slices — asserted here so a future change that made them meaningful would be noticed.
+    const partial = runSequence(attemptOf([0.02, 0.02]), level, [gold]);
+    const full = runSequence(attemptOf([0.02, 0.02, 0.01, 0.01, 0.01]), level, [gold]);
+
+    expect(partial.steps.slice(0, 2).map((s) => s.equity)).toEqual(
+      full.steps.slice(0, 2).map((s) => s.equity),
+    );
+    expect(partial.steps[1]!.equity).not.toBe(25_000);
+    for (const step of partial.steps.slice(2)) {
+      expect(step.risk).toBe(0);
+      expect(step.equity).toBe(partial.steps[1]!.equity);
+    }
+  });
+
   it("compounds on the running account, not the starting one", () => {
     // The whole reason a losing streak is survivable at a small fraction: each trade risks a
     // slice of what is left. Risking a slice of the original would remove the lesson.
