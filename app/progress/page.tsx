@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { JournalPanel } from "@/components/JournalPanel";
 
 export const metadata = { title: "Progress" };
 
@@ -14,7 +15,7 @@ export default function ProgressPage() {
         </Link>
       </nav>
       <h1 className="text-2xl font-semibold tracking-tight">Progress</h1>
-      <p className="max-w-prose text-muted">Not built yet.</p>
+      <JournalPanel />
     </main>
   );
 }
