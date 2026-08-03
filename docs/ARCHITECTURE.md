@@ -8,7 +8,7 @@ The solution is a small set of reusable interaction primitives ("level kinds"). 
 
 ## 1. Level kinds
 
-Ten kinds cover the whole curriculum.
+Eleven kinds cover the whole curriculum.
 
 | Kind            | Interaction                                                                         | Teaches                                            |
 | --------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------- |
@@ -21,9 +21,14 @@ Ten kinds cover the whole curriculum.
 | `sort-rank`     | Reorder rows with up/down buttons, then reveal the measured ordering.                | Base rates, setup quality, confluence              |
 | `sizing-calc`   | Numeric input, graded with tolerance, parameterized by `InstrumentSpec`.            | R-multiples, sizing across instruments, expectancy |
 | `spot-the-flaw` | A list of claims about a trade; check the ones that add nothing. Scored with `f1`.  | Anti-patterns, critical reading                    |
+| `trade-sequence`| Size N historical trades one at a time, account compounding between them.           | Risk of ruin, streaks, sizing discipline           |
 | `build-rules`   | Block composer → multi-asset backtest → hit an objective.                           | Chapter 10                                         |
 
 Some levels are **composite** — a boss may chain `mark-bars` → `annotate` → `classify` → `predict-next` and average the scores. Composites are expressed as a sequence of kinds, not a new kind.
+
+**Kind components load lazily; kind behaviour does not.** `lib/levels/kinds/behaviour.ts` holds the graders and `perfectAttempt` functions and is imported eagerly, because `LevelPlayer` needs them on every route. `components.ts` maps each kind to a `lazy()` import, so a `classify` level no longer ships the drawing engine, the replay controls and the correlation matrix. This took the level route from 266.0 KB to 199.3 KB gzipped. The cost is that a kind missing from `components.ts` fails only in a browser, behind a `Suspense` boundary — which is why every chapter's e2e suite asserts each of its levels renders past it.
+
+**Three kinds author no target at all**, setting `target: {}`: `predict-next`, `sizing-calc` and `trade-sequence`. Their answers are derived from the data or from the contract spec, so there is exactly one source for each and no way for a level file to disagree with its own grader.
 
 ---
 
@@ -121,15 +126,20 @@ Chart y-axis mode is `'price' | 'pct' | 'atr'`, toggleable on every chart (unloc
 type InstrumentSpec = {
   id: SeriesId;
   class: "crypto-spot" | "equity" | "futures" | "fx";
-  valuePerPoint: number; // $ per 1.0 price move, per unit
+  valuePerPoint: number; // quote currency per 1.0 price move, per unit
   lotSize: number; // 1e-8 crypto | 1 share | 1 contract | 0.01 FX lot
   tick?: number; // futures tick size
-  tickValue?: number; // futures $ per tick
+  tickValue?: number; // always tick × valuePerPoint; stored so a level can quote it
   quoteCcy: string;
-  hours: TradingHours; // drives gap/session lessons AND backtest bar validity
   typicalSpreadBps: number; // slippage lesson
+  unitLabel: string; // "BTC" | "shares" | "contracts" | "lots"
+  source: string; // where the contract terms come from
 };
 ```
+
+**These are exchange specifications, not measurements, and `source` exists to keep that distinction visible.** Every other number in this codebase is computed from a committed series and re-derived by a test. A contract multiplier cannot be — no amount of price data reveals that COMEX gold is 100 troy ounces — so each spec cites the venue's own definition and Chapter 7's claims test asserts that every instrument a level prices a trade with carries one. A wrong multiplier is invisible on a chart and changes every answer in 7.3 by two orders of magnitude.
+
+What the tests *can* check is internal consistency: that `tickValue` equals `tick × valuePerPoint`, and that a rounded position never exceeds its risk budget.
 
 The one formula, everywhere:
 
@@ -138,7 +148,34 @@ riskPerUnit = Math.abs(entry - stop) * spec.valuePerPoint;
 units = roundToLot((equity * riskPct) / riskPerUnit, spec);
 ```
 
-`hours` deliberately does double duty — it is teaching content (Ch 1.6 gaps, Ch 6.6 sessions) _and_ backtest correctness. A gap the game teaches about is the same gap the backtester must not fill inside.
+`roundToLot` rounds **down**, always. Rounding to nearest would let a position exceed the risk budget it was sized from, which is the one thing the formula exists to prevent. It is also what makes 7.3's gold row answer zero rather than a fraction: one contract risks 3,800 against a 500 budget, so the honest size is none.
+
+`sizePosition` returns `risked` alongside `units` — what the rounded position actually loses if the stop is hit, which is at or under the budget rather than equal to it. `riskOf` answers the reverse question for a position whose size is already stated, which is what 7.1 asks.
+
+Trading hours were specified here in the original plan and are **not implemented**. Nothing needs them yet: the gap lessons (1.6, 7.6, 7.B) read gaps straight off the committed bars, and `simulate` already fills a gapped stop at the open. They belong with the backtester in Chapter 10, where bar validity is a correctness requirement rather than a lesson.
+
+### Trade management: trailing stops and partials
+
+`TradePlan` carries two optional clauses, and `simulate` returns `finalStop` and `partial` so a level can show where the stop ended up:
+
+```ts
+trail?: { afterR: number; distanceR: number };   // start trailing at afterR, stay distanceR behind
+partial?: { atR: number; fraction: number };     // take fraction off at atR, run the rest
+```
+
+**The trail moves at bar end, never intrabar.** A stop that tightened partway through the bar that reached a new high would be reading the future — the same look-ahead rule the backtester enforces. It is also the difference between a plausible measurement and a flattering one.
+
+The measurement these exist for, 720 trades across six assets with identical entries and initial stops:
+
+| Management               | Total   | Positive |
+| ------------------------ | ------- | -------- |
+| fixed 2R target          | +69.7R  | 37%      |
+| trail 1R behind by 0.5R  | +41.6R  | 49%      |
+| trail 2R behind by 1.0R  | +104.2R | 37%      |
+| half off at 1R, rest 3R  | +38.4R  | 32%      |
+| half off at 1R, trailed  | +17.6R  | 49%      |
+
+A tight trail costs 40% of the return **while raising the share of winning trades from 37% to 49%** — it feels better and earns less, which is 7.7's subject. A late, loose trail is the only variant that beats a plain target. Chapter 7's claims test recomputes every one of these figures, so the level cannot drift from them.
 
 ---
 

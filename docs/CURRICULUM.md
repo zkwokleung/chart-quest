@@ -237,6 +237,46 @@ _unlocks: position-size calculator, R overlay_
 
 > **7.3 is what makes this chapter transfer at all.** Without it the player can size a BTC trade and nothing else.
 
+### Where Chapter 7 diverged from this plan, and why
+
+Each is recorded in full in the level's own file. Four of the eight levels changed kind, and
+three claims did not survive being measured.
+
+- **7.6's streak is thirteen, not six.** Trading the chapter's rule sequentially on SPY produces
+  thirteen consecutive losses, 2007-10-23 to 2008-11-26. LAKE and EURUSD hold thirteen too. Six
+  would have been an invention and a comforting one — the point of the level is that the streak
+  runs longer than anyone plans for. Two of the thirteen lost more than a full R because both
+  gapped through the stop, so the account figures compound the real R values rather than
+  thirteen tidy minus-ones.
+- **7.4's window never retested its own structure.** The level was drafted claiming every stop
+  inside the swing low lost and every stop beyond it won. Price bottomed 23 dollars *above* the
+  low, so the boundary sits at 0.80× ATR rather than at the structure's 1.01×. The honest lesson
+  is the better one: the stop was rewarded for buying room, not for clearing a level that held,
+  and you cannot know in advance which of those you are getting.
+- **7.5's break-even line has Bitcoin sitting on it.** Across six assets the rule's profit does
+  change hands near 33.3%, but not exactly: BTC is 1.7 points below the line and made +0.01R
+  over 76 trades. Break-even to within a hundredth of an R is a stronger demonstration than a
+  clean split would have been, and the level says so rather than rounding it away.
+- **Four levels changed kind.** 7.1 became `sizing-calc` — the annotate grader scores a drawing
+  on whether price respected it, and a risk band is not a level price turned at, so it would
+  measure the wrong property of the right shape. 7.5 became `classify`: `tune-param`'s config
+  *is* `(value) => IndicatorSpec`, and a required-win-rate curve is not an indicator. 7.6 and
+  7.7 became `classify` because both are aggregate claims over hundreds of trades, and a single
+  replay is weaker evidence than the measurement.
+- **7.B is `trade-sequence`, and "scored on expectancy" cannot mean what it says.** The trades
+  are historical, so their R outcomes are fixed before the player touches anything — no sizing
+  decision can change the expectancy in R of a sequence that already happened. What sizing
+  changes is the account path, so the score is survival, restraint and never raising risk after
+  a loss. The sequence deliberately *makes* money: at 10% the reckless player finishes with
+  double the account and still scores worse, which is the chapter's argument in one screen.
+- **7.3 keeps gold, and 7.B runs on gold.** Normally the cross-asset boss rule would forbid
+  that. 7.1 to 7.3 name no series at all — sizing is arithmetic over a contract spec — so
+  nothing is *taught* on gold and the guard holds. Asserted in the claims test rather than
+  argued here.
+
+> **Chapter 8 was unreachable until this chapter existed.** `e2e/chapter7.spec.ts` asserts the
+> chain in both directions, and reaches it by playing 7.B rather than by seeding it.
+
 ## Ch 8 — Asset Character
 
 _unlocks: y-axis normalize toggle, correlation matrix_

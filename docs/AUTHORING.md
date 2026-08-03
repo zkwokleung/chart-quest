@@ -210,6 +210,24 @@ at or above `minRR`, and entering near the trigger — for the same reason the
 trendline grader scores intrinsically: many stops are defensible, and marking against
 one author's number teaches guessing the author.
 
+**`minAtr` and `maxAtr` are total risk from entry, in ATR multiples.** Not room beyond
+the structure. The two readings agree only when the structure sits close to entry, and
+where they diverged the level lost: 4.B's second top is 2.01× ATR above entry, so a
+stop `minAtr` beyond _that_ risked 4.06× against a 3.5 cap and failed 4.B's own room
+check. It shipped anyway, because a composite averages its steps and the other three
+carried the score to 0.904 against a 0.9 threshold.
+
+So measure both ends against entry, and measure them:
+
+- `minAtr` must be wide enough to clear the structure. If the structure is 1.01× ATR
+  below entry, `minAtr` below 1.01 asks for a plan the grader scores `beyondStructure: false`.
+- `maxAtr` is the widest stop that still reaches `minRR` inside `maxBars`. A wider stop
+  pushes the target further away, so this is a real ceiling rather than a formality —
+  7.4 reaches 2R at 2.50× and runs out of bars at 2.60×.
+
+`guards.test.ts` checks every replay-trade's reference answer against all four components
+individually. Per component, because averaging is what let 4.B through.
+
 **The slice must contain the outcome**, because the grader simulates it. `primeBars`
 is the only thing holding it back from the player, so getting it wrong hands over the
 answer at load. It is `triggerBar - slice.from + 1`.
@@ -329,6 +347,82 @@ content-claims test recomputes it. A claim with no signal can be shown but must 
 **Leave out anything whose verdict depends on the market.** MACD's histogram runs 0.42 against
 RSI on Bitcoin and 0.80 against the ten-bar return on SPY, so whether it is redundant is not a
 fact — it is an argument, and a graded answer cannot rest on one.
+
+---
+
+## Sizing levels (`sizing-calc`)
+
+```ts
+kind: 'sizing-calc',
+data: [],                    // sizing is arithmetic over a spec; there is no window to show
+config: {
+  prompt: '...',
+  equity: 50_000,
+  riskPct: 0.01,
+  answer: 'units',           // or 'riskCurrency'
+  positions: [
+    { instrument: 'GC-1d', entry: 1_900, stop: 1_862, label: 'Gold · 100-ounce contracts' },
+  ],
+},
+target: {},                  // derived, never authored
+tolerance: { relative: 0.02 },
+```
+
+**Author no answers.** `answersFor` derives every row from the account, the risk and the
+instrument's contract terms, and it is the same function the grader, `perfectAttempt` and the
+claims test all call. Writing the numbers into the level file would create a second source and
+a way for a spec change to leave a level quietly wrong.
+
+**Tolerance is relative**, because the rows are not on one scale — 7.3 asks for 0.5 BTC on one
+row and 125 shares on the next, and a flat tolerance would be unmissable on one and meaningless
+on the other. A correct answer of *zero* is matched exactly rather than by ratio, because zero
+is a real answer and the ratio is undefined.
+
+**`answer: 'riskCurrency'` needs `units` on the position**, or the question answers itself: with
+no size stated, "what does this position risk" is the risk budget restated. State the size and
+the question becomes 7.1's, which is what one R costs.
+
+**Cite the contract terms.** A multiplier cannot be re-derived from price data, so `specFor`
+carries a `source` naming the venue's own definition, and Chapter 7's claims test asserts every
+instrument a level prices a trade with has one. This is the only category of number in the
+project that a test cannot check against the data.
+
+`data: []` also keeps a level out of the cross-asset boss guard, which is what lets 7.3 use gold
+as its futures example while 7.B runs on gold.
+
+---
+
+## Sizing a run of trades (`trade-sequence`)
+
+```ts
+kind: 'trade-sequence',
+config: {
+  prompt: '...',
+  equity: 25_000,
+  maxBars: 60,
+  riskChoices: [0.005, 0.01, 0.02, 0.05, 0.1],
+  trades: [{ bar: 202, stop: 459.24, targetR: 2, label: 'Trade 1 · Oct 2005' }],
+},
+target: {},
+tolerance: { maxRiskPct: 0.02, ruinBelow: 0.4 },
+```
+
+**Scored on process, not profit, and the reason is not squeamishness.** The trades are
+historical, so their R outcomes are fixed before the player touches anything — no sizing
+decision can change the expectancy in R of a sequence that already happened. What sizing
+changes is the account path. So the score is survival (0.4), restraint (0.3) and never raising
+risk after a loss (0.3).
+
+**Offer genuinely reckless choices.** A `riskChoices` list that only contains sane options
+teaches nothing; 7.B goes to 10% precisely so the wrong answer is available.
+
+**Prefer a sequence that makes money.** 7.B's ten trades total +8.6R, so the reckless player
+finishes with double the account and still scores worse — which is the lesson. A losing
+sequence would let a player conclude that caution is simply what wins, rather than that sizing
+is a decision whose quality is independent of the run it happens to meet.
+
+**Check the labels against the bars.** Each trade's label names a month, and the claims test
+recomputes it from `series.t`. An off-by-a-few-bars edit is otherwise invisible.
 
 ---
 
