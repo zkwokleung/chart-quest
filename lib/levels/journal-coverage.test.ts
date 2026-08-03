@@ -56,8 +56,9 @@ const byClass = (planned?: boolean) => {
 };
 
 describe("what the journal records", () => {
-  it("writes seventeen entries, not three", () => {
-    expect(drafts).toHaveLength(17);
+  it("writes eighteen entries, not three", () => {
+    // Seventeen before Chapter 9; 9.4 is the eighteenth and the eighth the player planned.
+    expect(drafts).toHaveLength(18);
   });
 
   it("covers all four asset classes, with the counts pinned", () => {
@@ -67,29 +68,43 @@ describe("what the journal records", () => {
       "crypto-spot": 2,
       equity: 4,
       fx: 1,
-      futures: 10,
+      // Ten from 7.B's sequence plus 9.4's own trade, which is the first futures trade a player
+      // actually plans.
+      futures: 11,
     });
   });
 
   it("writes from every level that asks the player for a trade", () => {
     const levels = [...new Set(drafts.map((d) => d.levelId))].sort();
-    expect(levels).toEqual(["3-B", "4-B", "5-B", "6-2", "6-B", "7-4", "7-B", "8-B"]);
+    expect(levels).toEqual([
+      "3-B",
+      "4-B",
+      "5-B",
+      "6-2",
+      "6-B",
+      "7-4",
+      "7-B",
+      "8-B",
+      "9-4",
+    ]);
   });
 });
 
 describe("planned trades, which every headline figure rests on", () => {
-  it("counts seven, and futures is not among them", () => {
-    // **The distinction Chapter 9.6 depends on.** Ten of the seventeen come from 7.B, where the
+  it("counts eight, one of them the first futures trade a player plans", () => {
+    // **The distinction Chapter 9.6 depends on.** Ten of the eighteen come from 7.B, where the
     // entries, stops and targets were authored and the only decision was size. Pooling them
     // would make "your average loss is 1.4R, not the 1R you set" a claim about the author's
-    // stops — the exact error the chapter exists to cure. And it is why futures has no planned
-    // cell at all: gold appears only in the sequence.
+    // stops — the exact error the chapter exists to cure.
     const planned = drafts.filter((d) => d.draft.planned !== false);
-    expect(planned).toHaveLength(7);
+    expect(planned).toHaveLength(8);
     expect(Object.fromEntries([...byClass(true)].sort())).toEqual({
       "crypto-spot": 2,
       equity: 4,
       fx: 1,
+      // 9.4 trades gold, so the futures cell stops being empty of the player's own plans — which
+      // 9.6's prose had to be corrected for. This test is what caught it.
+      futures: 1,
     });
   });
 

@@ -10,12 +10,12 @@ import type { Level } from "../../schema";
  * a component may do. What makes the level *gradeable* without a grader touching the store is
  * that **the honest reading is the same for every possible player**:
  *
- * A full playthrough of Chapters 1-8 leaves seven trades the player planned themselves —
- * two crypto, four shares, one currency — plus ten from 7.B whose entry, stop and target were
- * authored and where the only decision was size. Eight once 9.4 exists. So the largest
- * per-asset-class cell any player can reach is **four trades**, and a player who skipped levels
- * has fewer, never more. No cell can support an expectancy. That is author-known, so
- * `perfectAttempt` works and the winnability guard is untouched.
+ * A player reaching this level has planned **eight** trades: two crypto, four shares, one
+ * currency and — once 9.4 is behind them — one gold. Plus ten from 7.B whose entry, stop and
+ * target were authored, where the only decision was size. So the largest per-asset-class cell
+ * any player can reach is **four trades**, and a player who skipped levels has fewer, never
+ * more. No cell can support an expectancy. That is author-known, so `perfectAttempt` works and
+ * the winnability guard is untouched.
  *
  * The chapter's claims test *computes* that guarantee from the journal-coverage numbers rather
  * than asserting a constant, so a future chapter adding a trade level fails a guarantee rather
@@ -27,9 +27,12 @@ import type { Level } from "../../schema";
  * loss" would describe *the author's* stops — the exact error this chapter exists to cure — so
  * the panel separates them and the second misconception catches a player who did not notice.
  *
- * That is also why the fx cell has one trade in it and the futures cell has none: gold appears
- * only in the sequence. A player looking for "which market am I worst at" finds a single euro
- * trade at −1.00R and, if they take it at face value, concludes they cannot trade currencies.
+ * That is also why the fx cell has exactly one trade in it, and the futures cell one planned
+ * trade beside ten authored ones. A player looking for "which market am I worst at" finds a
+ * single euro trade and, if they take it at face value, concludes they cannot trade currencies.
+ *
+ * The journal-coverage test is what keeps this paragraph true: it pins the per-class counts, and
+ * it caught this very sentence claiming an empty futures cell after 9.4 put a gold trade in it.
  *
  * ## Why not a `dashboard` kind
  *
@@ -92,7 +95,7 @@ export const level: Level<"classify"> = {
       id: "journal-counted-the-authored-trades",
       test: () => false,
       message:
-        "If you included the ten gold trades, look again at what you chose in them: the size, and nothing else. Their entries, stops and targets were written for you, so their average loss is a fact about the author rather than about you. That is why the panel separates them and puts your seven first — and why the futures row is empty of anything you planned.",
+        "If you included the ten gold trades from Chapter 7, look again at what you chose in them: the size, and nothing else. Their entries, stops and targets were written for you, so their average loss is a fact about the author rather than about you. That is why the panel separates them and puts your own eight first — of which exactly one is gold, the trade you just planned in 9.4.",
     },
     {
       id: "journal-what-it-does-support",
