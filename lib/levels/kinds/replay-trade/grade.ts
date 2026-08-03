@@ -34,8 +34,22 @@ import type { Attempt, Level, LevelSlice, SetupId } from "../../schema";
  * asserts the invariant rather than the arithmetic that happens to deliver it.
  */
 
-const PLAN_WEIGHT = 0.7;
 const OUTCOME_WEIGHT = 0.3;
+
+/**
+ * The two weights for one level, which sum to 1 whatever the outcome's share is.
+ *
+ * 9.4 sets `outcomeWeight: 0` because the player is shown the result before being asked for a
+ * plan: once you know it worked, the only thing left to judge is the plan, and letting a known
+ * outcome carry weight would be scoring hindsight. Everything else leaves it unset.
+ */
+function weightsFor(level: Level<"replay-trade">): {
+  plan: number;
+  outcome: number;
+} {
+  const outcome = level.config.outcomeWeight ?? OUTCOME_WEIGHT;
+  return { plan: 1 - outcome, outcome };
+}
 
 /** Below this, the plan was not good enough for the outcome to speak for it. */
 const PLAN_FLOOR = 0.5;
@@ -203,7 +217,8 @@ export function gradeReplayTrade(
   }
 
   const outcomePart = outcomeScore(outcome);
-  const score = plan.score * PLAN_WEIGHT + outcomePart * OUTCOME_WEIGHT;
+  const weights = weightsFor(level);
+  const score = plan.score * weights.plan + outcomePart * weights.outcome;
   const earned = starsFor(score, level.stars, attempt.hintsUsed);
   const capped: Stars =
     plan.score < PLAN_FLOOR ? (Math.min(earned, 1) as Stars) : earned;

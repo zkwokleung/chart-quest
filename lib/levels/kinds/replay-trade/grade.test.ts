@@ -290,3 +290,64 @@ describe("the journal entry", () => {
     expect(grade.reference.r).toBeLessThan(-1);
   });
 });
+
+describe("the outcome's share of the score", () => {
+  const data = [market()];
+
+  it("defaults to 0.3, so nothing that existed before M9 moved", () => {
+    // `outcomeWeight` was added for 9.4, which sets it to zero. Every other replay level and
+    // step leaves it unset, and this asserts the default reproduces the old arithmetic rather
+    // than trusting that it does.
+    const lvl = level();
+    expect(lvl.config.outcomeWeight).toBeUndefined();
+
+    const perfect = perfectReplayTrade(lvl, data);
+    const grade = gradeReplayTrade(perfect, lvl, data);
+    const plan = measurePlan(perfect, lvl, data[0]!)!;
+
+    // The outcome component is min(1, r / 2), and this fixture's perfect attempt reaches its
+    // target, so it is 1. Which makes the expected score plan*0.7 + 0.3.
+    expect(grade.score).toBeCloseTo(plan.score * 0.7 + 0.3, 10);
+  });
+
+  it("scores the plan alone when the outcome is worth nothing", () => {
+    // 9.4's setting. A player who is told the trade worked must not be paid for knowing it.
+    const base = level();
+    const lvl = level({ config: { ...base.config, outcomeWeight: 0 } });
+    const perfect = perfectReplayTrade(lvl, data);
+    const grade = gradeReplayTrade(perfect, lvl, data);
+    expect(grade.score).toBeCloseTo(measurePlan(perfect, lvl, data[0]!)!.score, 10);
+  });
+
+  it("makes a known-winning outcome worth nothing to a bad plan", () => {
+    // The property 9.4 turns on: with the outcome given away, a stop crammed under entry
+    // cannot ride a winning trade to a passing score.
+    const base = level();
+    const withOutcome = gradeReplayTrade(
+      {
+        kind: "replay-trade",
+        entryBar: TRIGGER,
+        stop: 99.8,
+        target: 100.4,
+        reason: "a stated reason of sufficient length",
+        hintsUsed: 0,
+      },
+      base,
+      data,
+    );
+    const withoutOutcome = gradeReplayTrade(
+      {
+        kind: "replay-trade",
+        entryBar: TRIGGER,
+        stop: 99.8,
+        target: 100.4,
+        reason: "a stated reason of sufficient length",
+        hintsUsed: 0,
+      },
+      level({ config: { ...base.config, outcomeWeight: 0 } }),
+      data,
+    );
+    expect(withoutOutcome.score).toBeLessThan(withOutcome.score);
+    expect(withoutOutcome.stars).toBeLessThanOrEqual(1);
+  });
+});

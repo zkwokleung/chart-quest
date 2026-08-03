@@ -498,6 +498,17 @@ export type KindConfig = {
     minRR: number;
     /** ATR period for judging whether a stop has room. */
     atrPeriod?: number;
+    /**
+     * How much of the score the outcome carries. Defaults to 0.3.
+     *
+     * Zero for 9.4, where the player already knows the trade worked. Once the outcome is known
+     * the only thing left to judge is the plan, and letting a known result carry any weight
+     * would be scoring hindsight.
+     *
+     * Every existing replay level and step leaves this unset and scores identically — asserted
+     * in `replay-trade/grade.test.ts` rather than assumed.
+     */
+    outcomeWeight?: number;
   };
 };
 

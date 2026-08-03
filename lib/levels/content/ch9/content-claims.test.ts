@@ -1,6 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import type { Series } from "@/lib/chart/types";
+import { atr } from "@/lib/ta/atr";
 import type { EdgeSweepFile } from "@/lib/ta/edge-sweep";
+import { simulate } from "@/lib/trade/simulate";
 import { assetClassOf } from "@/lib/instruments/asset-class";
 import { UNDERPOWERED_BELOW } from "@/lib/journal/analytics";
 import { answersFor } from "../../kinds/sizing-calc/grade";
@@ -299,5 +302,68 @@ describe("9-6 your own record", () => {
     const messages = level.misconceptions.map((m) => m.message).join(" ");
     expect(messages).toContain("ten gold trades");
     expect(messages).toContain("the size, and nothing else");
+  });
+});
+
+describe("9-4 you already know it worked", () => {
+  const level = need("9-4", "replay-trade");
+  const gold = JSON.parse(
+    readFileSync("public/data/series/GC-1d.json", "utf8"),
+  ) as Series<string>;
+  const trigger = level.target.triggerBar;
+  const entry = gold.c[trigger]!;
+  const volatility = atr(gold, trigger, 14);
+  const structure =
+    level.target.structure.shape === "level" ? level.target.structure.price : NaN;
+
+  const at = (totalAtr: number) => {
+    const stop = entry - volatility * totalAtr;
+    return simulate(
+      { side: "long", stop, target: entry + (entry - stop) * level.config.minRR },
+      gold,
+      trigger,
+      level.config.maxBars,
+    );
+  };
+
+  it("scores the plan alone, because the outcome was given away", () => {
+    expect(level.config.outcomeWeight).toBe(0);
+    // And the brief actually tells them, or the setting would be scoring a secret.
+    expect(level.brief).toContain("made two R");
+  });
+
+  it("really did make two R, which is what the brief promises", () => {
+    expect(at(level.tolerance.minAtr)?.r ?? 0).toBeGreaterThanOrEqual(2);
+  });
+
+  it("rewards every width clearing the structure and punishes the tight ones", () => {
+    expect((entry - structure) / volatility).toBeCloseTo(2.187, 2);
+    for (const width of [2.2, 2.5, 3, 4, 4.5]) {
+      expect(at(width)?.r ?? 0, `${width}x`).toBeGreaterThanOrEqual(2);
+    }
+    for (const width of [0.2, 0.35, 0.5, 1.0]) {
+      expect(at(width)?.r ?? 0, `${width}x`).toBeLessThan(-1);
+    }
+  });
+
+  it("has the tight stops losing multiples, which is the misconception's claim", () => {
+    // The most expensive cell in any level in the game: price gapped through a stop a fifth of
+    // an ATR from entry, and a small R denominator turned that into −5.41R.
+    const worst = at(0.2)!;
+    expect(worst.r).toBeLessThan(-5);
+    expect(worst.gapped).toBe(true);
+    expect(level.misconceptions[0]!.message).toContain("5.41R");
+  });
+
+  it("puts its tolerance band inside the verified surface", () => {
+    expect(entry - volatility * level.tolerance.minAtr).toBeLessThan(structure);
+    expect(at(level.tolerance.maxAtr)?.r ?? 0).toBeGreaterThanOrEqual(2);
+  });
+
+  it("displays a series no other Chapter 9 level does, leaving five for the boss", () => {
+    const others = chapter9()
+      .filter((l) => l.id !== "9-4" && l.id !== "9-B")
+      .flatMap((l) => l.data.map((d) => d.series));
+    expect(others).not.toContain("GC-1d");
   });
 });
