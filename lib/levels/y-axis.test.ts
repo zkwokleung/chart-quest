@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { ALL_LEVELS } from "./content/all";
+import { stepAsAnyLevel } from "./kinds/composite/steps";
 import { Y_AXIS_EVERYWHERE_FROM, yAxisFor } from "./y-axis";
 
 describe("who gets the y-axis control", () => {
@@ -24,6 +25,19 @@ describe("who gets the y-axis control", () => {
         expect(resolved?.toggle, level.id).toBe(true);
         expect(resolved?.mode, level.id).toBe(level.yAxis);
       }
+    }
+  });
+
+  it("carries a boss's axis mode into its stages", () => {
+    // `stepAsLevel` dropped `yAxis`, so 8.B opened on a price axis while its first stage asked
+    // how big a typical day is as a share of price. Nothing failed; the chart just fell back to
+    // the stored preference. Asserted here because a browser is an expensive place to find it.
+    const boss = ALL_LEVELS.find((l) => l.id === "8-B");
+    if (boss?.kind !== "composite") throw new Error("8-B should be a composite");
+    expect(boss.yAxis).toBe("pct");
+    for (const step of boss.config.steps) {
+      const asLevel = stepAsAnyLevel(boss, step);
+      expect(yAxisFor(asLevel)).toEqual({ mode: "pct", toggle: true });
     }
   });
 

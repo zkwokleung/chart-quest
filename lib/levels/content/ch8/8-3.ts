@@ -86,7 +86,7 @@ export const level: Level<"sort-rank"> = {
         note: "Ratio 0.667, z −1.1 at ninety bars — but significant at two through nine, the only effect in the spine that survives a robust test.",
       },
     ],
-    reveal: "edge-by-market",
+    reveal: "breakout-by-market",
   },
   // The measured order at 90 bars. Recomputed from the committed artefact in the claims test,
   // so a change to the estimator fails there rather than making a level quietly wrong.

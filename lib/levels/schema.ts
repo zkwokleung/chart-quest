@@ -407,7 +407,7 @@ export type KindConfig = {
      * assets x 4 statistics, which is a table rather than something to retype into a
      * level file where it could drift from the measurement.
      */
-    reveal?: "pattern-base-rates" | "edge-by-market";
+    reveal?: "pattern-base-rates" | "breakout-by-market" | "edge-by-market";
   };
   "replay-trade": {
     prompt: string;

@@ -82,11 +82,22 @@ describe("the mode reaches the axis and nothing else", () => {
 
     // The prop, its default, the formatter call, and the effect's dependency.
     expect(uses.length).toBeLessThanOrEqual(5);
-    expect(source).toContain("priceFormatter");
+
+    // A custom `priceFormat` on the price series, not `chart.localization`. It was the latter
+    // until M8, which relabelled *every* pane and made 8.B's volume axis read
+    // "+1036269330.1%" — a share count run through percent-from-anchor. Either mechanism keeps
+    // the data untouched, so what this pins is that the mode is still a *formatter* at all.
+    expect(source).toMatch(/priceFormat:\s*\{/);
+    expect(source).toContain("formatter: (price: number)");
+    expect(
+      source,
+      "the mode must not go back to chart-wide localization, which relabels volume too",
+    ).not.toContain("localization: {");
 
     // The data path must not know about it.
     expect(source).not.toMatch(/toCandlestickData\([^)]*yAxisMode/);
     expect(source).not.toMatch(/toLineData\([^)]*yAxisMode/);
+    expect(source).not.toMatch(/toCloseLineData\([^)]*yAxisMode/);
   });
 });
 

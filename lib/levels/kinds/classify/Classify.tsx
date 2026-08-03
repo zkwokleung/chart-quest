@@ -50,7 +50,15 @@ export function Classify({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* Two columns only when there is something to compare. A single chart in a
+          two-column grid renders at half width, which is how 8.B first drew its 999-bar
+          window into 268 pixels. */}
+      <div
+        className={[
+          "grid gap-4",
+          level.data.length > 1 ? "lg:grid-cols-2" : "",
+        ].join(" ")}
+      >
         {level.data.map((slice, i) => {
           const feed = feeds[i];
           if (!feed) return null;

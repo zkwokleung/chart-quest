@@ -397,9 +397,15 @@ export function Chart({
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart) return;
-    chart.applyOptions({
-      localization: {
-        priceFormatter: (price: number) => {
+    // On the price series rather than `chart.localization`, which is chart-wide and therefore
+    // relabels *every* pane — including volume. 8.B showed a volume axis reading
+    // "+1036269330.1%" because a share count had been run through percent-from-anchor. The
+    // formatter belongs to the series whose numbers are prices.
+    candlesRef.current?.applyOptions({
+      priceFormat: {
+        type: "custom",
+        minMove: 0.00001,
+        formatter: (price: number) => {
           const converted = toMode(price, yAxisMode, series, from);
           return converted === null
             ? price.toFixed(2)

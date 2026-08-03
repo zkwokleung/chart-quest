@@ -11,7 +11,8 @@ import type { RenderableDrawing } from "@/components/chart/DrawingPrimitive";
 import type { IndicatorSpec } from "@/lib/chart/indicator-data";
 import { YAxisToggle } from "@/components/chart/YAxisToggle";
 import type { LevelSlice } from "@/lib/levels/schema";
-import type { YAxisOption } from "@/lib/levels/y-axis";
+import { Y_AXIS_EVERYWHERE_FROM, type YAxisOption } from "@/lib/levels/y-axis";
+import { isChapterUnlocked } from "@/lib/levels/unlock";
 import { useGameStore } from "@/lib/store/game";
 import type { YAxisMode } from "@/lib/ta/normalize";
 
@@ -59,7 +60,18 @@ export function SliceChart({
   // The level's default, then the player's own preference, then price. The stored
   // setting has existed since M1 and until now was read by nothing.
   const stored = useGameStore((state) => state.profile.settings.yAxisMode);
+  const progress = useGameStore((state) => state.progress);
   const [yAxisMode, setYAxisMode] = useState<YAxisMode>(yAxis?.mode ?? stored);
+
+  /**
+   * The level opted in, or the player has reached the chapter that unlocks it everywhere.
+   *
+   * The progress half lives here rather than in `yAxisFor` because this is the only component
+   * that already reads the store — and because the unlock is a fact about the player, which a
+   * pure function over a level cannot know.
+   */
+  const showYAxis =
+    yAxis?.toggle === true || isChapterUnlocked(Y_AXIS_EVERYWHERE_FROM, progress);
 
   return (
     <figure className="flex flex-col gap-1.5">
@@ -68,7 +80,7 @@ export function SliceChart({
           {slice.label ?? slice.series}
         </figcaption>
         <span className="flex items-center gap-2">
-          {yAxis?.toggle ? (
+          {showYAxis ? (
             <YAxisToggle mode={yAxisMode} onChange={setYAxisMode} />
           ) : null}
           {scaleToggle ? (

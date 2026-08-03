@@ -172,9 +172,17 @@ export function SortRank({
         </div>
       ) : null}
 
-      {committed && level.config.reveal === "edge-by-market" ? (
+      {/* 8.3 asks about one rule across six markets; 8.6 asks about four rules, and its whole
+          point is the cell with no trades in it. Same component, different slice. */}
+      {committed && level.config.reveal === "breakout-by-market" ? (
         <div className="rounded-lg border border-border bg-surface p-3">
           <EdgeMatrix only={["breakout-20"]} />
+        </div>
+      ) : null}
+
+      {committed && level.config.reveal === "edge-by-market" ? (
+        <div className="rounded-lg border border-border bg-surface p-3">
+          <EdgeMatrix />
         </div>
       ) : null}
     </div>

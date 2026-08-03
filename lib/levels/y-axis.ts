@@ -25,20 +25,32 @@ export const Y_AXIS_EVERYWHERE_FROM = 8;
 export type YAxisOption = {
   /** The mode to open in, or undefined to use the player's stored preference. */
   mode?: YAxisMode;
-  /** Whether the player may change it. */
+  /**
+   * Whether this level shows the control regardless of progress.
+   *
+   * True for a level that opted in through `Level.yAxis`, and for anything in Chapter 8 or
+   * later. False is not "hide it" — the chart adds the progress-gated case on top, because
+   * **the unlock is a property of the player rather than of the level.** An earlier version
+   * resolved visibility here from `level.chapter` alone, which meant a Chapter 1 level never
+   * gained the control no matter how far the player had got. The e2e caught it; nothing in
+   * `lib/` could, since the resolver was self-consistently wrong.
+   */
   toggle: boolean;
 };
 
 /**
- * Pure, and takes no store: the chart supplies the stored preference as its own fallback, so
- * a kind component resolves this without reaching for global state.
+ * The level's own opinion, which is only half the answer.
  *
- * Composite steps come along for free — `stepAsLevel` copies the boss's `chapter`, so a
- * Chapter 8 boss's stages resolve to `toggle: true` without a special case.
+ * Pure and store-free: the chart owns the progress read, so a kind component resolves this
+ * without reaching for global state, and the two halves meet in exactly one place.
+ *
+ * Composite steps come along free — `stepAsLevel` copies the boss's `chapter`.
  */
 export function yAxisFor(
   level: Pick<AnyLevel, "chapter" | "yAxis">,
 ): YAxisOption | undefined {
-  if (level.chapter >= Y_AXIS_EVERYWHERE_FROM) return { mode: level.yAxis, toggle: true };
-  return level.yAxis === undefined ? undefined : { mode: level.yAxis, toggle: true };
+  if (level.yAxis === undefined && level.chapter < Y_AXIS_EVERYWHERE_FROM) {
+    return undefined;
+  }
+  return { mode: level.yAxis, toggle: true };
 }

@@ -25,6 +25,11 @@ export function stepAsLevel<K extends StepKind>(
     kind: step.kind,
     brief: step.brief,
     data: step.data ?? composite.data,
+    // The boss's axis mode carries to its stages. Dropping it was silent: `yAxisFor` resolved
+    // `mode: undefined`, the chart fell back to the player's stored preference, and 8.B opened
+    // on a price axis while its first stage asks how big a typical day is *as a share of
+    // price*. The y-axis unit tests caught the visibility rule; only a browser caught this.
+    yAxis: composite.yAxis,
     config: step.config,
     target: step.target,
     tolerance: step.tolerance,
