@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { JournalPanel } from "@/components/JournalPanel";
 import { AssetCorrelationMatrix } from "@/components/level/AssetCorrelationMatrix";
+import { CoinFlipDistribution } from "@/components/level/CoinFlipDistribution";
 import { yAxisFor } from "@/lib/levels/y-axis";
 import { FeedChart } from "@/components/level/FeedChart";
 import type { KindProps } from "@/lib/levels/kind-module";
@@ -50,6 +52,15 @@ export function Classify({
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Evidence, shown before the answer rather than after it. `reveal` is the correction;
+          an artefact is the thing the question is about. */}
+      {level.config.artefact === "coin-flip-distribution" ? (
+        <div className="rounded-lg border border-border bg-surface p-3">
+          <CoinFlipDistribution />
+        </div>
+      ) : null}
+      {level.config.artefact === "journal-analytics" ? <JournalPanel /> : null}
+
       {/* Two columns only when there is something to compare. A single chart in a
           two-column grid renders at half width, which is how 8.B first drew its 999-bar
           window into 268 pixels. */}

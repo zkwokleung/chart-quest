@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { EdgeSweepFile } from "@/lib/ta/edge-sweep";
+import { assetClassOf } from "@/lib/instruments/asset-class";
+import { UNDERPOWERED_BELOW } from "@/lib/journal/analytics";
 import { answersFor } from "../../kinds/sizing-calc/grade";
 import type { AnyLevel, Level } from "../../schema";
 import { ALL_LEVELS, getAuthoredLevel } from "../all";
@@ -212,5 +214,90 @@ describe("9-1 was it worth taking", () => {
     const messages = level.misconceptions.map((m) => m.message).join(" ");
     expect(messages).toContain("37.5%");
     expect(messages).toContain("nine of twenty-four");
+  });
+});
+
+describe("9-2 how much of that was luck", () => {
+  const level = need("9-2", "classify");
+
+  it("shows the distribution before the answer, because it is the evidence", () => {
+    // An `artefact` is pre-commit; `reveal` is the correction. Hiding this until commit would
+    // leave nothing to reason from.
+    expect(level.config.artefact).toBe("coin-flip-distribution");
+    expect(level.config.reveal).toBeUndefined();
+  });
+
+  it("has an answer that does not depend on the player's stored score", () => {
+    // The rule that made this level change kind. `predictions["1-B"]` is absent on a fresh save,
+    // after resetProgress, and in private mode — so the graded question is the arithmetic and the
+    // recall is a marker beside it.
+    expect(level.target.correct).toEqual(["nothing"]);
+    expect(level.data).toEqual([]);
+  });
+
+  it("quotes the binomial correctly", () => {
+    // C(5,5)/32 = 3.1%, and two-or-three happens 20/32 = 62.5% of the time.
+    const choose = [1, 5, 10, 10, 5, 1];
+    const total = 2 ** 5;
+    expect(total).toBe(32);
+    expect((choose[5]! / total) * 100).toBeCloseTo(3.1, 1);
+    expect(((choose[2]! + choose[3]!) / total) * 100).toBeCloseTo(62.5, 1);
+
+    const text = [level.config.prompt, ...level.config.options.map((o) => o.note ?? "")].join(
+      " ",
+    );
+    expect(text).toContain("1/32");
+    expect(text).toContain("3.1%");
+    // "about thirty in a thousand" is 31.25 rounded, and the prompt says so rather than "31.25".
+    expect(level.config.prompt).toContain("thirty");
+  });
+});
+
+describe("9-6 your own record", () => {
+  const level = need("9-6", "classify");
+
+  it("shows the player's real journal, which is the milestone's gate", () => {
+    expect(level.config.artefact).toBe("journal-analytics");
+  });
+
+  it("has an answer that is true for every possible player", () => {
+    // **Computed rather than asserted**, so a future chapter adding a trade level fails this
+    // guarantee rather than leaving a stale constant behind. The largest per-asset-class cell of
+    // *planned* trades a full playthrough can reach must stay under the underpowered threshold —
+    // and a player who skipped levels has fewer trades, never more.
+    const planned = new Map<string, number>();
+    for (const other of ALL_LEVELS) {
+      const add = (seriesId: string, n: number) => {
+        const cls = assetClassOf(seriesId as never);
+        planned.set(cls, (planned.get(cls) ?? 0) + n);
+      };
+      if (other.kind === "replay-trade") add(other.data[0]!.series, 1);
+      else if (other.kind === "composite") {
+        for (const step of other.config.steps) {
+          if (step.kind !== "replay-trade") continue;
+          add((step.data ?? other.data)[0]!.series, 1);
+        }
+      }
+      // `trade-sequence` is deliberately excluded: its plans were authored, so it contributes
+      // nothing a per-class expectancy of the *player's* decisions could rest on.
+    }
+
+    const largest = Math.max(...planned.values());
+    expect(largest).toBeLessThan(UNDERPOWERED_BELOW);
+    expect(level.target.correct).toEqual(["too-small-to-split"]);
+  });
+
+  it("does not claim the record is worthless, which is the other wrong answer", () => {
+    // Two things in the journal need no sample size, because neither is an average: whether the
+    // stops held, and whether a reason was written. The level has to leave room for them.
+    const wrong = level.config.options.find((o) => o.id === "nothing-at-all")!;
+    expect(level.target.correct).not.toContain("nothing-at-all");
+    expect(wrong.note).toContain("stops held");
+  });
+
+  it("names the authored trades so a player cannot pool them by accident", () => {
+    const messages = level.misconceptions.map((m) => m.message).join(" ");
+    expect(messages).toContain("ten gold trades");
+    expect(messages).toContain("the size, and nothing else");
   });
 });

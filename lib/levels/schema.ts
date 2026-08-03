@@ -240,6 +240,18 @@ export type KindConfig = {
      * a level comes to disagree with the measurement it rests on.
      */
     reveal?: "asset-correlation";
+    /**
+     * An artefact shown *before* the answer is committed, because it is the evidence.
+     *
+     * Distinct from `reveal`, which is a correction. 9.2's distribution and 9.6's journal
+     * report are what the question is *about* — hiding them until commit would leave nothing to
+     * reason from.
+     *
+     * Both read state the grader cannot: the player's stored 1.B score, and their own trade
+     * record. A kind *component* may read the store; only graders must stay pure. What keeps
+     * these levels gradeable is that their answers are author-known anyway — see the level files.
+     */
+    artefact?: "coin-flip-distribution" | "journal-analytics";
   };
   "mark-bars": {
     prompt: string;
