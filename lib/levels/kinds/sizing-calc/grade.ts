@@ -1,5 +1,5 @@
 import type { Series } from "@/lib/chart/types";
-import { sizePosition } from "@/lib/instruments/sizing";
+import { riskOf, sizePosition } from "@/lib/instruments/sizing";
 import { specFor } from "@/lib/instruments/specs";
 import { diagnose, starsFor, type Grade } from "../../grade";
 import type { Attempt, Level } from "../../schema";
@@ -38,13 +38,22 @@ export type SizingAnswer = {
 export function answersFor(level: Level<"sizing-calc">): SizingAnswer[] {
   const { equity, riskPct, positions, answer } = level.config;
   return positions.map((position) => {
+    const spec = specFor(position.instrument);
     const result = sizePosition({
-      spec: specFor(position.instrument),
+      spec,
       equity,
       riskPct,
       entry: position.entry,
       stop: position.stop,
     });
+
+    // A stated size means the question is "what does *this* position risk" — 7.1's question.
+    // Without one, `riskCurrency` would answer the risk budget restated.
+    if (answer === "riskCurrency" && position.units !== undefined) {
+      const risked = riskOf(spec, position.units, position.entry, position.stop);
+      return { correct: risked, risked, riskPerUnit: result.riskPerUnit };
+    }
+
     return {
       correct: answer === "units" ? result.units : result.risked,
       risked: result.risked,

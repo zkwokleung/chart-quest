@@ -471,11 +471,18 @@ describe("4-B find it then trade it", () => {
         step.config.maxBars,
       );
 
-    const beyond = run(structure.price + volatility * step.tolerance.minAtr);
+    // Widths are **total risk from entry**, in ATR — the units `measurePlan` grades in. These
+    // used to offset from the structure, the reading the grader never used, and 4.B is the level
+    // where the two disagree most: its second top sits 2.01x ATR above entry, so a stop minAtr
+    // beyond *that* risked 4.06x against a 3.5 cap and failed the level's own room check.
+    const atRisk = (atrs: number) => entry + volatility * atrs;
+    const atFloor = run(atRisk(step.tolerance.minAtr));
     const inside = run(entry + (structure.price - entry) * 0.45);
-    const tooWide = run(structure.price + volatility * (step.tolerance.maxAtr + 0.6));
+    const tooWide = run(atRisk(step.tolerance.maxAtr + 0.6));
 
-    expect(beyond?.r ?? 0).toBeGreaterThanOrEqual(step.config.minRR);
+    expect(atFloor?.r ?? 0).toBeGreaterThanOrEqual(step.config.minRR);
+    // And the floor really does clear the structure, which is the other half of a valid plan.
+    expect(atRisk(step.tolerance.minAtr)).toBeGreaterThan(structure.price);
     expect(inside?.r ?? 0).toBeLessThan(-0.9);
     expect(tooWide?.r ?? 9).toBeLessThan(step.config.minRR);
   });
@@ -488,7 +495,7 @@ describe("4-B find it then trade it", () => {
     const trigger = step.target.triggerBar;
     const entry = data.c[trigger]!;
     const volatility = atr(data, trigger, step.config.atrPeriod ?? 14);
-    const stop = structure.price + volatility * step.tolerance.minAtr;
+    const stop = entry + volatility * step.tolerance.minAtr;
     const outcome = simulate(
       { side: "short", stop, target: entry - (stop - entry) * step.config.minRR },
       data,

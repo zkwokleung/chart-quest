@@ -6,7 +6,8 @@ import type { SeriesManifest } from "@/lib/data/manifest-types";
 import { AUTHORED_IDS } from "./content";
 import { ALL_LEVELS } from "./content/all";
 import { gradeAny, perfectAttemptFor } from "./kinds";
-import type { AnyLevel } from "./schema";
+import { measurePlan } from "./kinds/replay-trade/grade";
+import type { AnyLevel, Attempt, Level } from "./schema";
 
 /**
  * Guards that run over every authored level.
@@ -107,6 +108,62 @@ describe.each(LEVELS.map((l) => [l.id, l] as const))("%s", (_id, level) => {
     const grade = gradeAny(level, perfectAttemptFor(level, data), data);
     expect(grade.stars).toBe(3);
   });
+
+  /**
+   * Every replay-trade's own reference answer must satisfy all four plan components.
+   *
+   * The three-star check above is not enough, and 4.B is why: its reference risked 2.16× ATR
+   * against a 1.4 cap, so `roomOk` was false — and it still passed, because a composite averages
+   * its steps and the other three carried the total to 0.904 against a 0.9 threshold. A boss
+   * shipped with a reference answer that fails its own room check, and nothing said so.
+   *
+   * Asserted per component rather than on the aggregate score, which is exactly the granularity
+   * that averaging destroys.
+   */
+  const replaySteps: { tag: string; level: Level<"replay-trade"> }[] =
+    level.kind === "replay-trade"
+      ? [{ tag: level.id, level }]
+      : level.kind === "composite"
+        ? level.config.steps.flatMap((step, i) =>
+            step.kind === "replay-trade"
+              ? [
+                  {
+                    tag: `${level.id} step ${i + 1}`,
+                    level: {
+                      ...level,
+                      kind: "replay-trade",
+                      config: step.config,
+                      target: step.target,
+                      tolerance: step.tolerance,
+                    } as unknown as Level<"replay-trade">,
+                  },
+                ]
+              : [],
+          )
+        : [];
+
+  it.each(replaySteps.length > 0 ? replaySteps : [])(
+    "$tag's reference trade satisfies every plan component",
+    ({ level: step }) => {
+      const series = data[0];
+      if (!series) throw new Error("a replay-trade needs a series");
+      const plan = measurePlan(
+        perfectAttemptFor(step, data) as Attempt["replay-trade"],
+        step,
+        series,
+      );
+      if (!plan) throw new Error("the reference stop is on the wrong side of entry");
+
+      expect(plan.beyondStructure, "stop is not beyond the structure").toBe(true);
+      expect(
+        plan.roomOk,
+        `risks ${plan.roomAtr.toFixed(2)}× ATR, outside [${step.tolerance.minAtr}, ${step.tolerance.maxAtr}]`,
+      ).toBe(true);
+      expect(plan.rrOk, `reward:risk ${plan.rewardRisk} under ${step.config.minRR}`).toBe(true);
+      expect(plan.onTime, "reference entry is outside barSlop of the trigger").toBe(true);
+      expect(plan.score).toBe(1);
+    },
+  );
 
   it("authors at least two misconceptions", () => {
     expect(level.misconceptions.length).toBeGreaterThanOrEqual(2);

@@ -144,10 +144,15 @@ export const level: Level<"composite"> = {
           structure: { shape: "level", price: 16.46 },
           triggerBar: 4427,
         },
-        // Measured on this window rather than copied. Below 0.15 ATR of room the stop
-        // sits inside the pattern and a 7-bar bounce takes it; past 1.4 ATR above the
-        // structure the 2R target moves further than the window ever travels.
-        tolerance: { minAtr: 0.15, maxAtr: 1.4, barSlop: 2 },
+        // **Total risk from entry, in ATR** — see the note on KindTolerance. Authored in M7
+        // against the wrong reading of that field, as "room beyond the structure", which made
+        // this level reject its own reference answer: it risks 2.16x ATR against a 1.4 cap.
+        // Only composite averaging hid it, at 0.904 against a 0.9 threshold.
+        //
+        // Re-measured: the second top sits 2.01x ATR above entry, so any stop beyond it risks
+        // at least that, and total risk from 2.25x to 3.5x reaches the 2R target inside the
+        // window. Below 2.01x the stop is inside the pattern and the next bounce takes it.
+        tolerance: { minAtr: 2.05, maxAtr: 3.5, barSlop: 2 },
         misconceptions: [
           {
             id: "boss4-stop-inside-the-pattern",

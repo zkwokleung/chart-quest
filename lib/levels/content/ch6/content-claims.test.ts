@@ -457,8 +457,15 @@ function checkTrade(
         spec.triggerBar,
         spec.maxBars,
       );
-    const beyond = (atrs: number) =>
-      short ? spec.structure + volatility() * atrs : spec.structure - volatility() * atrs;
+    /**
+     * A stop at a given **total risk from entry**, in ATR — the units `measurePlan` grades in.
+     *
+     * This used to offset from the structure, which is the reading the schema doc once implied
+     * and the grader never used. The two agree only when the structure sits close to entry, and
+     * where they disagreed 4.B shipped with a reference answer that failed its own room check.
+     */
+    const atRisk = (atrs: number) =>
+      short ? entry() + volatility() * atrs : entry() - volatility() * atrs;
 
     it("puts the structure on a swing inside the pane that displays it", () => {
       // The defect both of these shipped with in draft: a level found forty bars back
@@ -479,9 +486,16 @@ function checkTrade(
     });
 
     it("reaches its target inside the window it shows", () => {
-      const outcome = run(beyond(spec.minAtr));
+      const outcome = run(atRisk(spec.minAtr));
       expect(outcome?.r ?? 0).toBeGreaterThanOrEqual(spec.minRR);
       expect(outcome!.exitBar).toBeLessThan(spec.low.to);
+    });
+
+    it("clears the structure at its own tolerance floor", () => {
+      // The floor has to be wide enough to put the stop past the level the trade rests on,
+      // or the level is asking for a plan its own grader scores `beyondStructure: false`.
+      const stop = atRisk(spec.minAtr);
+      expect(short ? stop > spec.structure : stop < spec.structure).toBe(true);
     });
 
     it("punishes a stop inside the level", () => {
@@ -492,7 +506,7 @@ function checkTrade(
     it("still reaches the target at the tolerance ceiling", () => {
       // 6.2 never punishes width and 6.B does, so the ceilings differ on purpose. What
       // must hold either way: a stop the tolerance accepts is a stop that works.
-      expect(run(beyond(spec.maxAtr))?.r ?? 0).toBeGreaterThanOrEqual(spec.minRR);
+      expect(run(atRisk(spec.maxAtr))?.r ?? 0).toBeGreaterThanOrEqual(spec.minRR);
     });
   });
 }

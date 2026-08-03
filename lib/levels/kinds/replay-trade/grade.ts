@@ -96,7 +96,14 @@ export function measurePlan(
   // No volatility estimate means no opinion on room, rather than a free pass or an
   // automatic failure — see the note on atr() returning 0.
   const roomAtr = volatility > 0 ? risk / volatility : 0;
-  const roomOk = volatility > 0 ? roomAtr >= minAtr && roomAtr <= maxAtr : true;
+  // Epsilon because the band's endpoints are exactly where a reference answer lands: a stop
+  // placed *at* minAtr computes to 0.6999999999 and would fail an exact comparison, which is
+  // a level failing its own guard over float representation rather than over content.
+  const BAND_EPSILON = 1e-6;
+  const roomOk =
+    volatility > 0
+      ? roomAtr >= minAtr - BAND_EPSILON && roomAtr <= maxAtr + BAND_EPSILON
+      : true;
 
   const plan: TradePlan = { side, stop: attempt.stop, target: attempt.target };
   const rr = rewardRisk(plan, entry);
@@ -261,19 +268,32 @@ export function perfectReplayTrade(
 
   const edge = structurePrice(level.target.structure, entryBar, side) ?? entry;
   const volatility = atr(series, entryBar, level.config.atrPeriod ?? 14);
-  const room = volatility * ((minAtr + maxAtr) / 2);
   const long = side === "long";
 
-  // Measured from the structure, not from entry: the stop's job is to sit beyond
-  // the level that would invalidate the idea. Then the room band is checked against
-  // entry, which is what keeps the two constraints honest about each other.
-  const stopFromStructure = long
-    ? edge - volatility * minAtr
-    : edge + volatility * minAtr;
-  const stopFromEntry = long ? entry - room : entry + room;
+  /**
+   * The nearest stop satisfying both constraints the grader checks.
+   *
+   * `minAtr` is **total risk from entry**, which is what `measurePlan` measures. It used to
+   * double as a beyond-structure margin here, and the two readings are incompatible whenever the
+   * structure sits further from entry than the band allows: 4.B's second top is 2.01× ATR above
+   * entry, so a reference stop `minAtr` beyond *that* risked 4.06× against a 3.5 cap and failed
+   * the level's own room check. It escaped the winnability guard only because composite
+   * averaging carried the score to 0.904 against a 0.9 threshold.
+   *
+   * So the structure margin is a hair rather than `minAtr` — being past the level is scored
+   * separately by `beyondStructure` — and `minAtr` now means one thing only.
+   */
+  const STRUCTURE_MARGIN_ATR = 0.05;
+  const pastStructure = long
+    ? edge - volatility * STRUCTURE_MARGIN_ATR
+    : edge + volatility * STRUCTURE_MARGIN_ATR;
+  const atMinimumRisk = long
+    ? entry - volatility * minAtr
+    : entry + volatility * minAtr;
   const stop = long
-    ? Math.min(stopFromStructure, stopFromEntry)
-    : Math.max(stopFromStructure, stopFromEntry);
+    ? Math.min(pastStructure, atMinimumRisk)
+    : Math.max(pastStructure, atMinimumRisk);
+  void maxAtr;
 
   const risk = Math.abs(entry - stop);
   const target = long ? entry + risk * minRR : entry - risk * minRR;

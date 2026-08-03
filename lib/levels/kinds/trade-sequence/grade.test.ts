@@ -40,6 +40,7 @@ function build(
       { id: "a", test: () => false, message: "x" },
       { id: "b", test: () => false, message: "y" },
     ],
+    hints: [],
     ...overrides,
   };
 }

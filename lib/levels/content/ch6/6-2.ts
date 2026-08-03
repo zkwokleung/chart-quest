@@ -59,11 +59,14 @@ export const level: Level<"replay-trade"> = {
     structure: { shape: "level", price: 753.31 },
     triggerBar: 818,
   },
-  // Measured on this window rather than copied. Inside the level a retest takes the stop out
-  // on the next bar; beyond it, every width from 0.1 to 2.5 ATR reached the target, so the
-  // upper bound is set where the window stops being informative rather than where it starts
-  // punishing — it never does.
-  tolerance: { minAtr: 0.1, maxAtr: 2.5, barSlop: 2 },
+  // **Total risk from entry, in ATR**, which is what the grader measures — the M7b comment
+  // here described it as room beyond the level, and that is a different quantity.
+  //
+  // Re-measured on this window: the hourly high sits 0.93x ATR above entry, and total risk from
+  // 1.0x to 3.5x reaches the 2R target. Inside the level a retest takes the stop out on the next
+  // bar. The upper bound is where the window stops being informative rather than where it starts
+  // punishing — on this move, width never did.
+  tolerance: { minAtr: 1.0, maxAtr: 3.0, barSlop: 2 },
   stars: [0.4, 0.7, 0.9],
   misconceptions: [
     {

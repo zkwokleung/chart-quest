@@ -76,6 +76,12 @@ export function SizingCalc({
               <p className="font-mono text-xs text-muted">
                 entry {position.entry} · stop {position.stop} · distance{" "}
                 {Number(distance.toPrecision(6))}
+                {position.units === undefined ? null : (
+                  <>
+                    {" · holding "}
+                    {position.units} {spec.unitLabel}
+                  </>
+                )}
               </p>
 
               <label className="flex flex-wrap items-center gap-2 text-sm">

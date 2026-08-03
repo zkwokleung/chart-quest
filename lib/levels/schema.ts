@@ -282,7 +282,21 @@ export type KindConfig = {
      * 7.2 lists one and 7.3 lists four — and four is the point of 7.3, since splitting it
      * into four levels would lose the comparison it exists to make.
      */
-    positions: { instrument: SeriesId; entry: number; stop: number; label?: string }[];
+    positions: {
+      instrument: SeriesId;
+      entry: number;
+      stop: number;
+      label?: string;
+      /**
+       * How much of it is held.
+       *
+       * Required when `answer` is `riskCurrency` and meaningless otherwise: pricing the risk
+       * of a position needs a position, and 7.1 hands the player one rather than asking them
+       * to derive it. Without this the answer would be `equity * riskPct` restated, which is
+       * a question with itself for an answer.
+       */
+      units?: number;
+    }[];
     /** Whether the player is asked for a position size or for the money at risk. */
     answer: "units" | "riskCurrency";
   };
@@ -452,13 +466,17 @@ export type KindTolerance = {
   };
   "replay-trade": {
     /**
-     * How much room a stop needs beyond the structure, and how much is too much,
-     * both in ATR multiples.
+     * **Total risk from entry to stop, in ATR multiples** — not distance beyond the structure.
      *
-     * In ATR rather than price because the same numbers then work on Bitcoin at
-     * 25,000 and the euro at 1.09. A stop with less than `minAtr` of room is
-     * sitting where everyone else's is; more than `maxAtr` is not a stop, it is a
-     * hope.
+     * The grader computes `|entry − stop| / atr` and checks it falls in `[minAtr, maxAtr]`.
+     * This doc said "beyond the structure" from M5 until M7c, and two levels were authored
+     * against the wrong reading: 4.B ended up rejecting its own reference answer, which only
+     * escaped the winnability guard because composite averaging carried it to 0.904 against a
+     * 0.9 threshold. `guards.test.ts` now checks every replay-trade's reference satisfies all
+     * four plan components directly, so the next mis-reading fails loudly.
+     *
+     * Being beyond the structure is scored separately, by `beyondStructure`. In ATR rather
+     * than price so the same numbers work on Bitcoin at 25,000 and the euro at 1.09.
      */
     minAtr: number;
     maxAtr: number;

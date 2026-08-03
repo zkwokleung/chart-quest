@@ -161,10 +161,14 @@ export const level: Level<"composite"> = {
           structure: { shape: "level", price: 1.14012 },
           triggerBar: 754,
         },
-        // Measured on this window. Inside the level the next hour takes the stop out; past
-        // 0.8 ATR above it the 2R target moves further than these 30 bars travel, reaching
-        // only +1.84R at 1.0 ATR.
-        tolerance: { minAtr: 0.15, maxAtr: 0.8, barSlop: 2 },
+        // **Total risk from entry, in ATR** — the M7b comment described room beyond the level,
+        // which is a different quantity, and left this level admitting its reference by 0.02.
+        //
+        // Re-measured: the 4h high sits 0.63x ATR above entry, and total risk from 0.75x to 1.5x
+        // reaches the 2R target inside the 30 bars — 0.75 is the measured floor. Inside the level
+        // the next hour takes the stop
+        // out; past 1.5x the target moves further than the window travels.
+        tolerance: { minAtr: 0.75, maxAtr: 1.5, barSlop: 2 },
         misconceptions: [
           {
             id: "boss6-stop-inside-the-level",
