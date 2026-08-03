@@ -316,7 +316,15 @@ export type KindConfig = {
      * `public/data/asset-character.json`, exactly as `sort-rank` and `spot-the-flaw` name
      * their reveals rather than carrying them.
      */
-    measure: "variance-ratio";
+    /**
+     * Which measurement the control drives.
+     *
+     * `variance-ratio` is 8.2's trend persistence; `edge-sweep` is 9.5's parameter sweep and
+     * `drawdown` is 9.3's. All three read a committed artefact, so a new one means a new
+     * readout component and nothing else — `Probe.tsx` switches on this and the switch is typed
+     * so a `measure` without a readout is a compile error.
+     */
+    measure: "variance-ratio" | "edge-sweep" | "drawdown";
     /** What the control moves. Labels it, and heads the readout column. */
     label: string;
     /**
@@ -342,6 +350,15 @@ export type KindConfig = {
     assets: SeriesId[];
     /** The row the graded question is about. Marked in the readout. */
     focus: SeriesId;
+    /**
+     * Whether the readout holds part of itself back until the answer is committed.
+     *
+     * 8.2 shows its whole table always, because its lesson is in the sweep. 9.5's later-window
+     * column and 9.3's answer must not be visible while the player is deciding — that is the
+     * entire pedagogy of both, and showing it early would turn a test of judgement into a
+     * reading exercise.
+     */
+    revealOnCommit?: boolean;
     /** `target` when the reading has a measured answer, `exploration` when it does not. */
     scoring: "target" | "exploration";
     /** Share of the range that must be covered before full marks. Default 0.6. */

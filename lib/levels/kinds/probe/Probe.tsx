@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { AssetCharacterReadout } from "@/components/level/AssetCharacterReadout";
+import { DrawdownReadout } from "@/components/level/DrawdownReadout";
+import { EdgeSweepReadout } from "@/components/level/EdgeSweepReadout";
 import type { KindProps } from "@/lib/levels/kind-module";
 import { exploredFraction } from "./grade";
 
@@ -28,8 +30,19 @@ export function Probe({
   attempt,
   onCommit,
 }: KindProps<"probe">) {
-  const { prompt, label, min, max, step, initial, assets, focus, exploreFraction } =
-    level.config;
+  const {
+    prompt,
+    label,
+    min,
+    max,
+    step,
+    initial,
+    assets,
+    focus,
+    exploreFraction,
+    measure,
+    revealOnCommit,
+  } = level.config;
 
   const [value, setValue] = useState(initial);
   const [visited, setVisited] = useState<number[]>([initial]);
@@ -49,12 +62,27 @@ export function Probe({
     <div className="flex flex-col gap-4">
       <p className="text-sm font-medium">{prompt}</p>
 
-      <AssetCharacterReadout
-        assets={assets}
-        focus={focus}
-        horizon={shown}
-        label={label}
-      />
+      {/* One readout per measurement, switched here rather than by the level. The switch is
+          exhaustive, so a new `measure` without a readout is a compile error — and it lives
+          inside the lazy `probe` chunk, so no other route pays for any of them. */}
+      {measure === "variance-ratio" ? (
+        <AssetCharacterReadout
+          assets={assets}
+          focus={focus}
+          horizon={shown}
+          label={label}
+        />
+      ) : measure === "edge-sweep" ? (
+        <EdgeSweepReadout
+          lookback={shown}
+          revealed={revealOnCommit !== true || committed}
+        />
+      ) : (
+        <DrawdownReadout
+          guess={shown}
+          revealed={revealOnCommit !== true || committed}
+        />
+      )}
 
       <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-3">
         <label className="flex items-center gap-3 text-sm">
