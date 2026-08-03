@@ -1,0 +1,353 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import type { Series, SeriesId } from "@/lib/chart/types";
+import {
+  compact,
+  crossingHorizon,
+  logReturns,
+  varianceRatioCurve,
+} from "@/lib/ta/autocorr";
+import { atr } from "@/lib/ta/atr";
+import { HORIZONS, SPINE, type AssetCharacterFile } from "@/lib/ta/asset-character";
+import type { AnyLevel, Level } from "../../schema";
+import { ALL_LEVELS, getAuthoredLevel } from "../all";
+
+/**
+ * Checks what Chapter 8's levels *claim* against what the data *shows*.
+ *
+ * The chapter is the one that tells the player to measure rather than take things on faith, so
+ * it has the least excuse of any for shipping an unmeasured claim. Four of its seven specified
+ * premises had already failed by the time it was planned; these tests are what keep the
+ * replacements honest, and what will catch the next one.
+ *
+ * Two of them are structural rather than about content, and land here rather than with the boss
+ * on purpose — see the Apple tripwire below.
+ */
+
+const committed = JSON.parse(
+  readFileSync("public/data/asset-character.json", "utf8"),
+) as AssetCharacterFile;
+
+const cache = new Map<string, Series<string>>();
+function series(id: string): Series<string> {
+  const hit = cache.get(id);
+  if (hit) return hit;
+  const loaded = JSON.parse(
+    readFileSync(join("public/data/series", `${id}.json`), "utf8"),
+  ) as Series<string>;
+  cache.set(id, loaded);
+  return loaded;
+}
+
+function need<K extends AnyLevel["kind"]>(id: string, kind: K): Level<K> {
+  const level = getAuthoredLevel(id);
+  if (!level || level.kind !== kind) {
+    throw new Error(`${id} is missing or is not a ${kind} level`);
+  }
+  return level as unknown as Level<K>;
+}
+
+const chapter8 = () => ALL_LEVELS.filter((level) => level.chapter === 8);
+
+describe("the chapter's structural rules", () => {
+  it("reserves Apple for the boss, at every window", () => {
+    // **The tripwire, and why it is here rather than with 8.B.** The generic cross-asset guard
+    // in `guards.test.ts` returns early for a chapter with no boss, so it stays inert until the
+    // boss is authored — by which point every teaching window has been chosen and moving one is
+    // expensive. This fails from the first level instead.
+    //
+    // The guard is series-id granular, not window granular: `AAPL-1d` must be absent from every
+    // Chapter 8 level's `data`, not merely at a different window.
+    for (const level of chapter8()) {
+      if (level.id === "8-B") continue;
+      const named = level.data.map((slice) => slice.series);
+      expect(named, `${level.id} displays Apple, which 8.B needs`).not.toContain(
+        "AAPL-1d",
+      );
+    }
+  });
+
+  it("measures all six markets while displaying five", () => {
+    // The move Chapter 7 made with `data: []` so gold could stay in 7.3 and still run 7.B.
+    // Computed artefacts span the whole spine; only displayed slices are constrained.
+    const displayed = new Set(
+      chapter8().flatMap((level) => level.data.map((slice) => slice.series)),
+    );
+    expect(displayed.has("AAPL-1d")).toBe(false);
+
+    const probe = need("8-2", "probe");
+    expect(probe.data).toEqual([]);
+    expect([...probe.config.assets].sort()).toEqual([...SPINE].sort());
+  });
+
+  it("shows every displayed window for the first time", () => {
+    // A chapter about recognising character should not be recognising windows.
+    const earlier = new Map<string, boolean[]>();
+    for (const level of ALL_LEVELS) {
+      if (level.chapter >= 8) continue;
+      for (const slice of level.data) {
+        const marks =
+          earlier.get(slice.series) ??
+          new Array(series(slice.series).t.length).fill(false);
+        for (let i = Math.max(0, slice.from); i <= Math.min(marks.length - 1, slice.to); i += 1) {
+          marks[i] = true;
+        }
+        earlier.set(slice.series, marks);
+      }
+    }
+
+    for (const level of chapter8()) {
+      for (const slice of level.data) {
+        const marks = earlier.get(slice.series);
+        if (!marks) continue;
+        const overlap = marks
+          .slice(slice.from, slice.to + 1)
+          .filter(Boolean).length;
+        expect(
+          overlap,
+          `${level.id} re-shows ${overlap} bars of ${slice.series} a earlier chapter displayed`,
+        ).toBe(0);
+      }
+    }
+  });
+});
+
+describe("8-1 ten percent of what", () => {
+  const level = need("8-1", "classify");
+
+  it("moves about ten percent in every one of its five windows", () => {
+    // The brief-claims guard is satisfied by one slice showing the figure. This level's whole
+    // argument is that *all* of them do, so it is asserted per window.
+    expect(level.data).toHaveLength(5);
+    for (const slice of level.data) {
+      const s = series(slice.series);
+      const move = (s.c[slice.to]! / s.c[slice.from]! - 1) * 100;
+      expect(move, `${slice.series} moved ${move.toFixed(2)}%`).toBeGreaterThan(9.4);
+      expect(move, `${slice.series} moved ${move.toFixed(2)}%`).toBeLessThan(10.7);
+    }
+  });
+
+  it("uses a period that is ordinary for each market, or the comparison is rigged", () => {
+    // **The constraint that stops this level lying.** The first search for ten-percent windows
+    // found a 2008 euro window and a 2011 index window — both crises — where the euro's ten
+    // percent measured 7.2 ATR against the index's 9.2. That is the wrong answer, produced by
+    // comparing two unusual periods rather than two markets. Cherry-picking a calm window for
+    // one and a wild one for another is the easiest way to make this level say anything.
+    for (const slice of level.data) {
+      const s = series(slice.series);
+      const median = committed.byAsset[slice.series]!.atrPct;
+
+      let total = 0;
+      let counted = 0;
+      for (let i = slice.from; i <= slice.to; i += 1) {
+        const a = atr(s, i, 14);
+        if (a > 0) {
+          total += (a / s.c[i]!) * 100;
+          counted += 1;
+        }
+      }
+      const windowPct = total / counted;
+      expect(
+        Math.abs(windowPct / median - 1),
+        `${slice.series} ran at ${windowPct.toFixed(2)}% against a median of ${median.toFixed(2)}%`,
+      ).toBeLessThan(0.15);
+    }
+  });
+
+  it("makes the euro the biggest event and Bitcoin the smallest, by a factor of five", () => {
+    const inAtr = (seriesId: string) => {
+      const slice = level.data.find((d) => d.series === seriesId)!;
+      const s = series(seriesId);
+      let total = 0;
+      let counted = 0;
+      for (let i = slice.from; i <= slice.to; i += 1) {
+        const a = atr(s, i, 14);
+        if (a > 0) {
+          total += a;
+          counted += 1;
+        }
+      }
+      return Math.abs(s.c[slice.to]! - s.c[slice.from]!) / (total / counted);
+    };
+
+    const euro = inAtr("EURUSD-1d");
+    const bitcoin = inAtr("BTCUSDT-1d");
+    expect(euro).toBeGreaterThan(10);
+    expect(bitcoin).toBeLessThan(2.5);
+    expect(euro / bitcoin).toBeGreaterThan(4.5);
+
+    // And the graded answer is the euro, not merely the largest of the five by chance.
+    const ranked = level.data
+      .map((slice) => ({ id: slice.series, atrs: inAtr(slice.series) }))
+      .sort((a, b) => b.atrs - a.atrs);
+    expect(ranked[0]!.id).toBe("EURUSD-1d");
+    expect(level.target.correct).toEqual(["euro"]);
+  });
+
+  it("quotes each market's real volatility in its option text", () => {
+    const notes = level.config.options.map((o) => o.note ?? "").join(" ");
+    expect(notes).toContain(committed.byAsset["EURUSD-1d"]!.atrPct.toFixed(2));
+    expect(notes).toContain(committed.byAsset["LAKE-1d"]!.atrPct.toFixed(2));
+  });
+});
+
+describe("8-2 measure it yourself", () => {
+  const level = need("8-2", "probe");
+
+  it("puts its control exactly on the artefact's grid", () => {
+    // The readout reads a committed table, so a value between two horizons would have to be
+    // interpolated — and an interpolated variance ratio is a number nobody measured.
+    const reachable: number[] = [];
+    for (let v = level.config.min; v <= level.config.max; v += level.config.step) {
+      reachable.push(v);
+    }
+    const grid = new Set(HORIZONS);
+    const offGrid = reachable.filter((v) => !grid.has(v));
+    // The artefact thins out past 20, so not every step is a grid point — what matters is that
+    // the two ends and the answer are, and that the readout degrades to nothing in between.
+    expect(grid.has(level.config.min)).toBe(true);
+    expect(grid.has(level.config.max)).toBe(true);
+    expect(grid.has(level.target.value)).toBe(true);
+    expect(offGrid.length).toBeLessThan(reachable.length);
+  });
+
+  it("targets the crossing the shipped estimator finds", () => {
+    // Derived, not authored: if the estimator changes, this fails rather than the level going
+    // quietly wrong.
+    const r = compact(logReturns(series("BTCUSDT-1d")));
+    const crossing = crossingHorizon(varianceRatioCurve(r, [...HORIZONS]))!;
+    expect(crossing).toBeCloseTo(6.09, 1);
+    expect(Math.abs(crossing - level.target.value)).toBeLessThanOrEqual(
+      level.tolerance.slop,
+    );
+  });
+
+  it("starts where Bitcoin is still mean-reverting, which is the point", () => {
+    const start = committed.byAsset["BTCUSDT-1d"]!.vr.find(
+      (v) => v.q === level.config.initial,
+    )!;
+    expect(start.vr).toBeLessThan(1);
+    expect(level.config.focus).toBe("BTCUSDT-1d");
+  });
+
+  it("has one market crossing in the single digits and one much later", () => {
+    // Written when the hint claimed only one market crossed at all. Three do by a loose
+    // reading — gold merely touches 1.000 at two bars and falls away, which is not a crossing —
+    // and the honest fact is better: Bitcoin crosses at 6.1 bars and Apple not until 20.5, so
+    // *where* a market crosses is a property of it rather than merely whether.
+    const crossings = new Map(
+      SPINE.map((id) => [
+        id,
+        crossingHorizon(
+          committed.byAsset[id]!.vr.map((v) => ({ ...v, n: 0 })),
+        ),
+      ]),
+    );
+
+    expect(crossings.get("BTCUSDT-1d")).toBeCloseTo(6.09, 1);
+    expect(crossings.get("AAPL-1d")).toBeCloseTo(20.48, 1);
+    for (const id of ["SPY-1d", "EURUSD-1d", "GC-1d", "LAKE-1d"] as const) {
+      expect(crossings.get(id), id).toBeNull();
+    }
+    // And the one that crosses late is the one that pays most, which 8.3 turns into its reveal.
+    const breakout = committed.edges.find((e) => e.id === "breakout-20")!;
+    expect(breakout.byAsset["AAPL-1d"]!.perTradeR).toBeGreaterThan(
+      breakout.byAsset["BTCUSDT-1d"]!.perTradeR,
+    );
+  });
+
+  it("cannot be answered without sweeping", () => {
+    // Issue #26's requirement expressed as content: the sweep is 60% of the range, and the
+    // distance from the start to the answer is a fraction of that.
+    const { min, max, initial } = level.config;
+    const toAnswer = Math.abs(level.target.value - initial) / (max - min);
+    expect(toAnswer).toBeLessThan(0.1);
+    expect(level.config.exploreFraction ?? 0.6).toBeGreaterThan(toAnswer * 3);
+  });
+});
+
+describe("8-3 the ranking that does not pay", () => {
+  const level = need("8-3", "sort-rank");
+
+  const BY_ITEM: Record<string, SeriesId> = {
+    bitcoin: "BTCUSDT-1d",
+    apple: "AAPL-1d",
+    gold: "GC-1d",
+    index: "SPY-1d",
+    euro: "EURUSD-1d",
+    smallcap: "LAKE-1d",
+  };
+
+  it("orders by the measured variance ratio at ninety bars", () => {
+    const vr90 = (id: SeriesId) =>
+      committed.byAsset[id]!.vr.find((v) => v.q === 90)!.vr;
+    const measured = [...level.config.items]
+      .map((item) => item.id)
+      .sort((a, b) => vr90(BY_ITEM[b]!) - vr90(BY_ITEM[a]!));
+    expect(level.target.order).toEqual(measured);
+  });
+
+  it("forgives only the neighbours that are genuinely too close to call", () => {
+    // `swaps` is derived from the data rather than chosen: the point estimates put the index
+    // and the euro 0.009 apart, which no player could order from first principles.
+    const vr90 = (id: string) =>
+      committed.byAsset[BY_ITEM[id]!]!.vr.find((v) => v.q === 90)!.vr;
+    const gaps = level.target.order
+      .slice(1)
+      .map((id, i) => vr90(level.target.order[i]!) - vr90(id));
+    const tooClose = gaps.filter((gap) => gap < 0.05).length;
+    expect(tooClose).toBeGreaterThanOrEqual(1);
+    expect(level.tolerance.swaps).toBeGreaterThanOrEqual(tooClose);
+    expect(level.tolerance.swaps).toBeLessThanOrEqual(2);
+  });
+
+  it("quotes every item's real ratio and z in its note", () => {
+    for (const item of level.config.items) {
+      const point = committed.byAsset[BY_ITEM[item.id]!]!.vr.find((v) => v.q === 90)!;
+      expect(item.note, item.id).toContain(point.vr.toFixed(3));
+    }
+  });
+
+  it("reveals a profit ordering that is close to the ranking and not the same", () => {
+    // The level's argument, and both halves have to hold. If the two orderings matched, the
+    // level would be teaching that persistence pays; if they were unrelated, it would be
+    // teaching that measurement is pointless. Neither is true.
+    const breakout = committed.edges.find((e) => e.id === "breakout-20")!;
+    const profitOrder = [...level.config.items]
+      .map((item) => item.id)
+      .sort(
+        (a, b) =>
+          breakout.byAsset[BY_ITEM[b]!]!.perTradeR -
+          breakout.byAsset[BY_ITEM[a]!]!.perTradeR,
+      );
+
+    expect(profitOrder).not.toEqual(level.target.order);
+    // The most persistent market is not the most profitable one.
+    expect(level.target.order[0]).toBe("bitcoin");
+    expect(profitOrder[0]).toBe("apple");
+    expect(profitOrder.indexOf("bitcoin")).toBe(2);
+
+    // Spearman's rho: high enough that measuring was not a waste, and below the ~0.83 that
+    // six observations need to clear the usual bar.
+    const n = profitOrder.length;
+    let sumD2 = 0;
+    for (const item of level.config.items) {
+      const d = level.target.order.indexOf(item.id) - profitOrder.indexOf(item.id);
+      sumD2 += d * d;
+    }
+    const rho = 1 - (6 * sumD2) / (n * (n * n - 1));
+    expect(rho).toBeCloseTo(0.771, 2);
+    expect(rho).toBeLessThan(0.83);
+  });
+
+  it("makes money on all six, which is not what the spec expected", () => {
+    const breakout = committed.edges.find((e) => e.id === "breakout-20")!;
+    for (const id of SPINE) {
+      expect(breakout.byAsset[id]!.perTradeR, id).toBeGreaterThan(0);
+    }
+    // And the spread is the replacement lesson.
+    const values = SPINE.map((id) => breakout.byAsset[id]!.perTradeR);
+    expect(Math.max(...values) / Math.min(...values)).toBeGreaterThan(20);
+  });
+});

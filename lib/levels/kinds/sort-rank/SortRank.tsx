@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { yAxisFor } from "@/lib/levels/y-axis";
 import { BaseRateTable } from "@/components/level/BaseRateTable";
+import { EdgeMatrix } from "@/components/level/EdgeMatrix";
 import { FeedChart } from "@/components/level/FeedChart";
 import type { KindProps } from "@/lib/levels/kind-module";
 
@@ -168,6 +169,12 @@ export function SortRank({
       {committed && level.config.reveal === "pattern-base-rates" ? (
         <div className="rounded-lg border border-border bg-surface p-3">
           <BaseRateTable />
+        </div>
+      ) : null}
+
+      {committed && level.config.reveal === "edge-by-market" ? (
+        <div className="rounded-lg border border-border bg-surface p-3">
+          <EdgeMatrix only={["breakout-20"]} />
         </div>
       ) : null}
     </div>
