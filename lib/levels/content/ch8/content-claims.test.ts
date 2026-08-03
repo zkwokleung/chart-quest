@@ -9,6 +9,7 @@ import {
   varianceRatioCurve,
 } from "@/lib/ta/autocorr";
 import { atr } from "@/lib/ta/atr";
+import { simulate } from "@/lib/trade/simulate";
 import { HORIZONS, SPINE, type AssetCharacterFile } from "@/lib/ta/asset-character";
 import type { AnyLevel, Level } from "../../schema";
 import { ALL_LEVELS, getAuthoredLevel } from "../all";
@@ -72,9 +73,13 @@ describe("the chapter's structural rules", () => {
     // The move Chapter 7 made with `data: []` so gold could stay in 7.3 and still run 7.B.
     // Computed artefacts span the whole spine; only displayed slices are constrained.
     const displayed = new Set(
-      chapter8().flatMap((level) => level.data.map((slice) => slice.series)),
+      chapter8()
+        .filter((level) => level.id !== "8-B")
+        .flatMap((level) => level.data.map((slice) => slice.series)),
     );
     expect(displayed.has("AAPL-1d")).toBe(false);
+    // And the boss is the one level that does display it.
+    expect(need("8-B", "composite").data[0]!.series).toBe("AAPL-1d");
 
     const probe = need("8-2", "probe");
     expect(probe.data).toEqual([]);
@@ -579,5 +584,139 @@ describe("8-6 the edge that cannot travel", () => {
       const p = portability(BY_ITEM[item.id]!);
       expect(item.note, item.id).toContain(String(p.positive));
     }
+  });
+});
+
+describe("8-B an unfamiliar market", () => {
+  const level = need("8-B", "composite");
+  const aapl = series("AAPL-1d");
+
+  const tradeStep = level.config.steps.find((s) => s.kind === "replay-trade")!;
+  if (tradeStep.kind !== "replay-trade") throw new Error("expected a replay stage");
+  const structure =
+    tradeStep.target.structure.shape === "level"
+      ? tradeStep.target.structure.price
+      : NaN;
+  const trigger = tradeStep.target.triggerBar;
+  const entry = aapl.c[trigger]!;
+  const volatility = atr(aapl, trigger, 14);
+
+  const at = (totalAtr: number) => {
+    const stop = entry - volatility * totalAtr;
+    return simulate(
+      { side: "long", stop, target: entry + (entry - stop) * tradeStep.config.minRR },
+      aapl,
+      trigger,
+      tradeStep.config.maxBars,
+    );
+  };
+
+  it("runs on the asset the chapter reserved", () => {
+    expect(level.data.every((slice) => slice.series === "AAPL-1d")).toBe(true);
+    for (const step of level.config.steps) {
+      for (const slice of step.data ?? []) expect(slice.series).toBe("AAPL-1d");
+    }
+  });
+
+  it("shows a window no earlier level displayed", () => {
+    const shown = new Array(aapl.t.length).fill(false);
+    for (const other of ALL_LEVELS) {
+      if (other.id === "8-B") continue;
+      for (const slice of other.data) {
+        if (slice.series !== "AAPL-1d") continue;
+        for (let i = slice.from; i <= Math.min(shown.length - 1, slice.to); i += 1) {
+          shown[i] = true;
+        }
+      }
+    }
+    for (const slice of level.data) {
+      expect(
+        shown.slice(slice.from, slice.to + 1).filter(Boolean).length,
+        "the boss window has been displayed before",
+      ).toBe(0);
+    }
+  });
+
+  it("is representative of the market rather than a calm or wild stretch", () => {
+    // The character read is only answerable if the window behaves like the market. A quiet
+    // stretch of a volatile market would make the graded answer wrong.
+    // Median against median, not mean against median: ATR% is right-skewed, so a window mean
+    // sits above a full-history median even for an unremarkable stretch, and comparing the two
+    // would fail an honest window for a reason that is about the statistic rather than the data.
+    const slice = level.data[0]!;
+    const values: number[] = [];
+    for (let i = slice.from; i <= slice.to; i += 1) {
+      const a = atr(aapl, i, 14);
+      if (a > 0) values.push((a / aapl.c[i]!) * 100);
+    }
+    values.sort((x, y) => x - y);
+    const windowMedian = values[Math.floor(values.length / 2)]!;
+    const median = committed.byAsset["AAPL-1d"]!.atrPct;
+    expect(median).toBeCloseTo(2.32, 2);
+    expect(
+      Math.abs(windowMedian / median - 1),
+      `the window runs at ${windowMedian.toFixed(2)}% against a median of ${median.toFixed(2)}%`,
+    ).toBeLessThan(0.15);
+  });
+
+  it("places the character answer between the index and the small-cap", () => {
+    // The middle of the six, which is the least guessable answer available.
+    const median = committed.byAsset["AAPL-1d"]!.atrPct;
+    expect(median).toBeGreaterThan(committed.byAsset["SPY-1d"]!.atrPct);
+    expect(median).toBeGreaterThan(committed.byAsset["GC-1d"]!.atrPct);
+    expect(median).toBeLessThan(committed.byAsset["LAKE-1d"]!.atrPct);
+    expect(median).toBeLessThan(committed.byAsset["BTCUSDT-1d"]!.atrPct);
+  });
+
+  it("asks for the edge that is both most portable and best here", () => {
+    // If the portable answer and the locally-best answer disagreed, the boss would be unfair —
+    // two defensible readings, one graded. They agree, and the test says so rather than hoping.
+    const perTrade = (id: string) =>
+      committed.edges.find((e) => e.id === id)!.byAsset["AAPL-1d"]!.perTradeR;
+    const portability = (id: string) => {
+      const edge = committed.edges.find((e) => e.id === id)!;
+      const traded = SPINE.map((a) => edge.byAsset[a]!).filter((c) => c.trades > 0);
+      return traded.filter((c) => c.perTradeR > 0).length;
+    };
+    const ids = ["breakout-20", "pullback-ma", "revert-3down", "gap-fill"];
+
+    expect(ids.every((id) => perTrade("breakout-20") >= perTrade(id))).toBe(true);
+    expect(ids.every((id) => portability("breakout-20") >= portability(id))).toBe(true);
+  });
+
+  it("rewards every stop that clears the structure and punishes every stop inside the noise", () => {
+    // **The score-surface sweep AUTHORING.md requires**, and the reason this setup was chosen
+    // over bar 3656, whose surface has a −1.00R hole at 3.0x sitting between two winners.
+    expect((entry - structure) / volatility).toBeCloseTo(1.946, 2);
+
+    for (const width of [2.0, 2.5, 3.0, 3.5, 4.0, 5.0]) {
+      expect(at(width)?.r ?? 0, `${width}x ATR`).toBeGreaterThanOrEqual(2);
+    }
+    for (const width of [0.2, 0.35, 0.5]) {
+      expect(at(width)?.r ?? 0, `${width}x ATR`).toBeCloseTo(-1, 2);
+    }
+  });
+
+  it("puts its tolerance band inside the verified surface", () => {
+    const { minAtr, maxAtr } = tradeStep.tolerance;
+    // The floor clears the structure, and both ends were swept above.
+    expect(entry - volatility * minAtr).toBeLessThan(structure);
+    expect(at(minAtr)?.r ?? 0).toBeGreaterThanOrEqual(2);
+    expect(at(maxAtr)?.r ?? 0).toBeGreaterThanOrEqual(2);
+    expect(maxAtr).toBeLessThanOrEqual(5);
+  });
+
+  it("finishes the trade inside the window the stage shows", () => {
+    const slice = tradeStep.data![0]!;
+    expect(slice.from + tradeStep.config.primeBars - 1).toBe(trigger);
+    const outcome = at(tradeStep.tolerance.minAtr)!;
+    expect(outcome.exitBar).toBeLessThanOrEqual(slice.to);
+  });
+
+  it("weights the trade above the reading, because character has to inform a decision", () => {
+    const weights = new Map(level.config.steps.map((s) => [s.kind, s.weight]));
+    expect(weights.get("replay-trade")).toBeGreaterThan(weights.get("classify")!);
+    const total = level.config.steps.reduce((t, s) => t + s.weight, 0);
+    expect(total).toBeCloseTo(1, 6);
   });
 });
