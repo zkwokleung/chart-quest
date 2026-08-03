@@ -130,6 +130,8 @@ export const level: Level<"composite"> = {
           prompt:
             "Place your stop and target, say why, then play the replay out.",
           side: "long",
+          // a pullback low in a rally.
+          setup: "continuation",
           primeBars: 81,
           maxBars: 60,
           minRR: 2,

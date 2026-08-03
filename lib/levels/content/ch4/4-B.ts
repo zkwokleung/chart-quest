@@ -135,6 +135,8 @@ export const level: Level<"composite"> = {
           prompt:
             "Short it. Place your stop and target, say why, and play it out.",
           side: "short",
+          // a double top.
+          setup: "reversal",
           primeBars: 34,
           maxBars: 35,
           minRR: 2,

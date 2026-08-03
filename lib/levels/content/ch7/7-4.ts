@@ -44,6 +44,8 @@ export const level: Level<"replay-trade"> = {
   config: {
     prompt: "Place your stop and target, say why, and let it run.",
     side: "long",
+    // a low price has already turned at once.
+    setup: "level",
     primeBars: 61,
     maxBars: 20,
     minRR: 2,

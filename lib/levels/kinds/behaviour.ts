@@ -4,7 +4,11 @@ import type { JournalDraft } from "../kind-module";
 import type { AnyLevel, Attempt, Level, LevelKind } from "../schema";
 import { gradeAnnotate, perfectAnnotate } from "./annotate/grade";
 import { gradeClassify, perfectClassify, revealHorizonClassify } from "./classify/grade";
-import { gradeComposite, perfectComposite } from "./composite/grade";
+import {
+  gradeComposite,
+  journalEntriesComposite,
+  perfectComposite,
+} from "./composite/grade";
 import { gradeMarkBars, perfectMarkBars } from "./mark-bars/grade";
 import {
   gradePredictNext,
@@ -13,7 +17,7 @@ import {
 } from "./predict-next/grade";
 import {
   gradeReplayTrade,
-  journalEntryReplayTrade,
+  journalEntriesReplayTrade,
   perfectReplayTrade,
   primedBarsReplayTrade,
 } from "./replay-trade/grade";
@@ -22,6 +26,7 @@ import { gradeSortRank, perfectSortRank } from "./sort-rank/grade";
 import { gradeSpotTheFlaw, perfectSpotTheFlaw } from "./spot-the-flaw/grade";
 import {
   gradeTradeSequence,
+  journalEntriesTradeSequence,
   perfectTradeSequence,
 } from "./trade-sequence/grade";
 import { gradeProbe, perfectProbe } from "./probe/grade";
@@ -57,12 +62,17 @@ export type KindBehaviour<K extends LevelKind> = {
   revealHorizon?: (level: Level<K>) => number;
   /** Bars visible before the player acts, when fewer than the whole slice. */
   primedBars?: (level: Level<K>) => number;
-  /** A journal entry for this attempt, or null when the kind produces none. */
-  journalEntry?: (
+  /**
+   * Every journal entry this attempt produced, empty when the kind writes none.
+   *
+   * Plural because a composite boss produces one per replay stage and a sequence produces ten.
+   * The singular version silently dropped five sixths of the record — see `kind-module.ts`.
+   */
+  journalEntries?: (
     attempt: Attempt[K],
     level: Level<K>,
     grade: Grade,
-  ) => JournalDraft | null;
+  ) => JournalDraft[];
 };
 
 /**
@@ -89,6 +99,7 @@ export const KIND_BEHAVIOUR: { [K in LevelKind]: KindBehaviour<K> } = {
     kind: "composite",
     grade: gradeComposite,
     perfectAttempt: perfectComposite,
+    journalEntries: journalEntriesComposite,
   },
   "mark-bars": {
     kind: "mark-bars",
@@ -106,7 +117,7 @@ export const KIND_BEHAVIOUR: { [K in LevelKind]: KindBehaviour<K> } = {
     grade: gradeReplayTrade,
     perfectAttempt: perfectReplayTrade,
     primedBars: primedBarsReplayTrade,
-    journalEntry: journalEntryReplayTrade,
+    journalEntries: journalEntriesReplayTrade,
   },
   "sizing-calc": {
     kind: "sizing-calc",
@@ -127,6 +138,7 @@ export const KIND_BEHAVIOUR: { [K in LevelKind]: KindBehaviour<K> } = {
     kind: "trade-sequence",
     grade: gradeTradeSequence,
     perfectAttempt: perfectTradeSequence,
+    journalEntries: journalEntriesTradeSequence,
   },
   probe: {
     kind: "probe",

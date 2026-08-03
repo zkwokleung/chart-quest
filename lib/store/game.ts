@@ -16,7 +16,14 @@ import {
 type Actions = {
   recordAttempt(levelId: LevelId, score: number, stars: 0 | 1 | 2 | 3): void;
   recordPrediction(levelId: LevelId, answer: unknown): void;
-  logTrade(entry: Omit<JournalEntry, "id" | "at" | "attemptNo">): void;
+  /**
+   * Logs one attempt's trades. Plural because an attempt can produce several.
+   *
+   * A composite boss produces one entry per replay stage and 7.B produces ten, so the singular
+   * version dropped five sixths of the record. All the entries in one call share an
+   * `attemptNo`, because they are one attempt.
+   */
+  logTrades(entries: Omit<JournalEntry, "id" | "at" | "attemptNo">[]): void;
   updateSettings(patch: Partial<Settings>): void;
   resetProgress(): void;
 };
@@ -30,6 +37,39 @@ type Actions = {
  * a player is still learning from.
  */
 const JOURNAL_LIMIT = 500;
+
+/**
+ * Trims the journal to `JOURNAL_LIMIT`, dropping whole attempts rather than entries.
+ *
+ * Per-entry eviction became a correctness bug the moment writes batched: it can leave five of
+ * 7.B's ten trades in the record, which Chapter 9.6 then reads as a five-trade run at a level
+ * that has ten — a wrong number rather than a missing one, and the kind a player cannot detect.
+ *
+ * Attempts are dropped oldest-first by their earliest entry. An attempt larger than the whole
+ * limit would loop forever, so the last group is always kept: a truncated record is still
+ * better than none, and the alternative is a hang.
+ */
+function evictWholeAttempts(journal: JournalEntry[]): JournalEntry[] {
+  if (journal.length <= JOURNAL_LIMIT) return journal;
+
+  const groups = new Map<string, JournalEntry[]>();
+  for (const entry of journal) {
+    const key = `${entry.levelId}#${entry.attemptNo ?? "legacy"}`;
+    groups.set(key, [...(groups.get(key) ?? []), entry]);
+  }
+
+  const ordered = [...groups.values()].sort(
+    (a, b) => (a[0]?.at ?? "").localeCompare(b[0]?.at ?? ""),
+  );
+
+  let total = journal.length;
+  let dropped = 0;
+  while (total > JOURNAL_LIMIT && dropped < ordered.length - 1) {
+    total -= ordered[dropped]!.length;
+    dropped += 1;
+  }
+  return ordered.slice(dropped).flat();
+}
 
 export type GameState = Persisted & Actions;
 
@@ -87,28 +127,36 @@ export const useGameStore = create<GameState>()(
         }));
       },
 
-      logTrade(entry) {
+      logTrades(entries) {
+        if (entries.length === 0) return;
         set((state) => {
-          // Every committed trade is logged, retries included. A journal that
-          // hides your retries is not a journal, and Chapter 9.6's credibility
-          // rests on it being the real record — `attemptNo` is what lets 9.6
-          // separate a considered trade from the fifth attempt at a level.
-          const attemptNo =
-            state.journal.filter((t) => t.levelId === entry.levelId).length + 1;
+          // Every committed trade is logged, retries included. A journal that hides your
+          // retries is not a journal, and Chapter 9.6's credibility rests on it being the real
+          // record — `attemptNo` is what lets 9.6 separate a considered trade from the fifth
+          // attempt at a level.
+          const levelId = entries[0]!.levelId;
+          const mine = state.journal.filter((t) => t.levelId === levelId);
+
+          // **One attempt number for the whole batch.** Counting entries would number 7.B's
+          // ten trades 1…10 within a single attempt, and 9.6 reads `attemptNo` to tell a
+          // considered trade from a retry. Falls back to counting for entries written before
+          // M5, which carry no `attemptNo` and were count-derived at the time.
+          const seen = mine.reduce(
+            (highest, t) => Math.max(highest, t.attemptNo ?? 0),
+            0,
+          );
+          const attemptNo = Math.max(seen, mine.filter((t) => t.attemptNo === undefined).length) + 1;
+
           const at = new Date().toISOString();
-          const logged: JournalEntry = {
+          const logged: JournalEntry[] = entries.map((entry, i) => ({
             ...entry,
-            id: `${entry.levelId}-${attemptNo}-${at}`,
+            // The index matters: ten entries in one batch share an ISO millisecond.
+            id: `${entry.levelId}-${attemptNo}-${i}-${at}`,
             at,
             attemptNo,
-          };
-          const journal = [...state.journal, logged];
-          return {
-            journal:
-              journal.length > JOURNAL_LIMIT
-                ? journal.slice(journal.length - JOURNAL_LIMIT)
-                : journal,
-          };
+          }));
+
+          return { journal: evictWholeAttempts([...state.journal, ...logged]) };
         });
       },
 

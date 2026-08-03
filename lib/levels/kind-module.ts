@@ -84,18 +84,28 @@ export type KindModule<K extends LevelKind> = {
    */
   primedBars?: (level: Level<K>) => number;
   /**
-   * A journal entry for this attempt, or null if this kind does not produce one.
+   * Every journal entry this attempt produced. Empty when the kind writes none.
    *
-   * Declared by the kind so `LevelPlayer` never branches on `level.kind` to decide
-   * what to persist. Chapter 7 adds several more trade levels and Chapter 9 reads
-   * the whole record back, so "which kinds write trades" has to be a property of
-   * the kinds rather than a growing condition in the player.
+   * Declared by the kind so `LevelPlayer` never branches on `level.kind` to decide what to
+   * persist. Chapter 9 reads the whole record back, so "which kinds write trades" has to be a
+   * property of the kinds rather than a growing condition in the player.
+   *
+   * **Plural, and an array rather than `Draft | null`.** A composite boss produces one entry
+   * per replay stage and `trade-sequence` produces ten, so the singular version silently
+   * dropped five sixths of the record: a perfect playthrough of Chapters 1-8 logged three
+   * trades out of seventeen, and four of the five asset classes never appeared at all. A
+   * `Draft | Draft[] | null` union would push a normalisation branch into the dispatcher and
+   * into every test; one shape does not.
+   *
+   * Deliberately **not** given `data`. A composite would then have to re-grade its steps to
+   * build the journal — a second grading pass whose only purpose is to be able to disagree
+   * with the first. It reads the trade off the grade it was handed instead.
    */
-  journalEntry?: (
+  journalEntries?: (
     attempt: Attempt[K],
     level: Level<K>,
     grade: Grade,
-  ) => JournalDraft | null;
+  ) => JournalDraft[];
 };
 
 /** A journal entry before the store stamps its id, timestamp and attempt number. */

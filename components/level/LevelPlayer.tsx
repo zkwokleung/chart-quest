@@ -11,7 +11,7 @@ import type { Grade } from "@/lib/levels/grade";
 import {
   componentFor,
   gradeAny,
-  journalEntryFor,
+  journalEntriesFor,
   primedBarsFor,
   revealHorizonFor,
 } from "@/lib/levels/kinds";
@@ -108,7 +108,7 @@ function Player({ level }: { level: AnyLevel }) {
   const hydrated = useHydrated();
   const recordAttempt = useGameStore((s) => s.recordAttempt);
   const recordPrediction = useGameStore((s) => s.recordPrediction);
-  const logTrade = useGameStore((s) => s.logTrade);
+  const logTrades = useGameStore((s) => s.logTrades);
 
   // The full series stays here and goes to the grader. Kind components get feeds
   // built from it, which is the only thing standing between a player and the
@@ -191,8 +191,10 @@ function Player({ level }: { level: AnyLevel }) {
     if (result.detail) recordPrediction(level.id, result.detail);
     // Asked of the kind, not decided here: kinds that produce a trade say so, and
     // this file stays free of any branch on level.kind.
-    const trade = journalEntryFor(level, submitted, result);
-    if (trade) logTrade(trade);
+    // Plural: a boss writes one entry per replay stage and 7.B writes ten. Still no branch on
+    // `level.kind` here — the kinds say what they produce.
+    const trades = journalEntriesFor(level, submitted, result);
+    if (trades.length > 0) logTrades(trades);
   }
 
   function retry() {

@@ -43,6 +43,8 @@ export const level: Level<"replay-trade"> = {
     prompt:
       "Place your stop and target, say why, then take the trade and play the replay out.",
     side: "long",
+    // a pullback inside a 35% run.
+    setup: "continuation",
     // 61 bars visible: the run up and the pullback, ending on the trigger bar.
     primeBars: 61,
     maxBars: 45,

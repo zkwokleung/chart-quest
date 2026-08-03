@@ -1,4 +1,6 @@
 import type { Series } from "@/lib/chart/types";
+import { assetClassOf } from "@/lib/instruments/asset-class";
+import type { JournalDraft } from "../../kind-module";
 import { simulate } from "@/lib/trade/simulate";
 import { diagnose, starsFor, type Grade } from "../../grade";
 import type { Attempt, Level } from "../../schema";
@@ -32,7 +34,27 @@ import type { Attempt, Level } from "../../schema";
 
 const WEIGHTS = { survival: 0.4, restraint: 0.3, consistency: 0.3 };
 
-export type SequenceStep = { r: number; risk: number; equity: number };
+/**
+ * One trade of a sequence, with the prices the journal needs.
+ *
+ * `{r, risk, equity}` was enough to score and to render, and nothing else asked — which is why
+ * 7.B's ten trades were never journalled: there were no prices to record. `runSequence` had all
+ * of them in hand the whole time.
+ */
+export type SequenceStep = {
+  r: number;
+  risk: number;
+  equity: number;
+  /** The bar from the level's own trade list, so an entry can be traced back to it. */
+  bar: number;
+  entry: number;
+  stop: number;
+  target: number;
+  exit: number;
+  /** How it ended, in the same words the score card uses. */
+  outcome: string;
+  label?: string;
+};
 
 export type SequenceRun = {
   steps: SequenceStep[];
@@ -98,7 +120,21 @@ export function runSequence(
 
     account *= 1 + r * risk;
     if (account <= ruinLine) ruined = true;
-    steps.push({ r, risk, equity: account });
+    steps.push({
+      r,
+      risk,
+      equity: account,
+      bar: trade.bar,
+      entry,
+      stop: trade.stop,
+      target:
+        distance > 0
+          ? entry + distance * trade.targetR
+          : entry + distance * trade.targetR,
+      exit: outcome?.exitPrice ?? entry,
+      outcome: outcome?.reason ?? "not simulated",
+      label: trade.label,
+    });
   });
 
   return {
@@ -159,6 +195,44 @@ export function gradeTradeSequence(
  * answer earns three stars, and a reference of "risk almost nothing" would pass while teaching
  * that the safest play is not to trade.
  */
+/**
+ * Ten journal entries, one per trade, all from one attempt.
+ *
+ * **Every one is `planned: false`.** The entries, stops and targets were authored; the only
+ * decision the player made was size. Chapter 9.6's headline figures are computed over planned
+ * trades only for exactly this reason — pooling these would make "your average loss is 1.4R,
+ * not the 1R you set" a claim about the author's stops rather than the player's, which is the
+ * error the chapter exists to cure.
+ *
+ * `reason` is empty rather than synthesised. The player stated none, and writing "sized at 1%"
+ * would put words in their mouth in the one field whose whole value is that it is theirs. 9.6
+ * reports "no stated reason" as a real category instead.
+ */
+export function journalEntriesTradeSequence(
+  attempt: Attempt["trade-sequence"],
+  level: Level<"trade-sequence">,
+  grade: Grade,
+): JournalDraft[] {
+  if (grade.reference.kind !== "sequence") return [];
+  const slice = level.data[0];
+  if (!slice) return [];
+
+  return grade.reference.steps.map((step) => ({
+    levelId: level.id,
+    seriesId: slice.series,
+    assetClass: assetClassOf(slice.series),
+    entry: step.entry,
+    stop: step.stop,
+    target: step.target,
+    exit: step.exit,
+    r: step.r,
+    reason: "",
+    setup: level.config.setup,
+    planned: false,
+    tags: ["long", slice.series, `${Math.round(step.risk * 1000) / 10}%`],
+  }));
+}
+
 export function perfectTradeSequence(
   level: Level<"trade-sequence">,
 ): Attempt["trade-sequence"] {

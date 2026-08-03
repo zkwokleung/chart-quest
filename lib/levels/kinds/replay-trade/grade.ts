@@ -10,7 +10,9 @@ import {
   type TradePlan,
 } from "@/lib/trade/simulate";
 import { diagnose, starsFor, type Grade, type Stars } from "../../grade";
-import type { Attempt, Level } from "../../schema";
+import type { TradeSide } from "@/lib/trade/simulate";
+import type { LevelId } from "@/lib/store/schema";
+import type { Attempt, Level, LevelSlice, SetupId } from "../../schema";
 
 /**
  * Scoring a trade on two axes, and letting only one of them award stars.
@@ -320,21 +322,29 @@ export function primedBarsReplayTrade(level: Level<"replay-trade">): number {
 }
 
 /**
- * The journal entry a committed trade produces.
+ * A journal draft from a graded trade, shared by this kind and by `composite`.
+ *
+ * Extracted so a boss's replay stage writes the *same* record a standalone replay level does.
+ * Four bosses' trades were dropped entirely until M9, and the fix must not introduce a second,
+ * subtly different builder — the whole value of the journal is that Chapter 9 can treat it as
+ * fact.
  *
  * Read off the grade's own overlay rather than recomputed, so the journal and the score card
- * can never disagree about what the trade did. Chapter 9 treats this record as fact.
+ * can never disagree about what the trade did.
  */
-export function journalEntryReplayTrade(
-  attempt: Attempt["replay-trade"],
-  level: Level<"replay-trade">,
-  grade: Grade,
-): JournalDraft | null {
-  const slice = level.data[0];
-  if (!slice || grade.reference.kind !== "trade") return null;
-  const trade = grade.reference;
+export function tradeDraft(args: {
+  levelId: LevelId;
+  slice: LevelSlice;
+  side: TradeSide;
+  setup: SetupId;
+  reason: string;
+  /** The *level's* stars. A composite step's own stars are progress, not a result. */
+  stars: Stars;
+  trade: Extract<Grade["reference"], { kind: "trade" }>;
+}): JournalDraft {
+  const { levelId, slice, side, setup, reason, stars, trade } = args;
   return {
-    levelId: level.id,
+    levelId,
     seriesId: slice.series,
     assetClass: assetClassOf(slice.series),
     entry: trade.entryPrice,
@@ -342,7 +352,32 @@ export function journalEntryReplayTrade(
     target: trade.target,
     exit: trade.exitPrice,
     r: trade.r,
-    reason: attempt.reason,
-    tags: [level.config.side, slice.series, `${grade.stars}-star`],
+    reason,
+    setup,
+    // The player chose the entry, the stop and the target here. A `trade-sequence` entry is
+    // false for this, because its plan was authored and only the size was theirs — and 9.6's
+    // headline figures are computed over planned trades only for exactly that reason.
+    planned: true,
+    tags: [side, slice.series, `${stars}-star`],
   };
+}
+
+export function journalEntriesReplayTrade(
+  attempt: Attempt["replay-trade"],
+  level: Level<"replay-trade">,
+  grade: Grade,
+): JournalDraft[] {
+  const slice = level.data[0];
+  if (!slice || grade.reference.kind !== "trade") return [];
+  return [
+    tradeDraft({
+      levelId: level.id,
+      slice,
+      side: level.config.side,
+      setup: level.config.setup,
+      reason: attempt.reason,
+      stars: grade.stars,
+      trade: grade.reference,
+    }),
+  ];
 }

@@ -53,6 +53,8 @@ export const level: Level<"trade-sequence"> = {
   config: {
     prompt:
       "Ten trades, in order. Choose what fraction of the account to risk on each — you will see how it went before the next one.",
+    // The chapter's rule throughout: a bullish reversal candle at a prior swing low.
+    setup: "reversal",
     equity: 25_000,
     maxBars: 60,
     // A tenth of a percent through a tenth of the account: enough range that the reckless choices

@@ -176,6 +176,8 @@ export const level: Level<"composite"> = {
         config: {
           prompt: "Place your stop and target, say why, and let it run.",
           side: "long",
+          // a breakout of the 20-bar high.
+          setup: "continuation",
           primeBars: 61,
           maxBars: 60,
           minRR: 2,

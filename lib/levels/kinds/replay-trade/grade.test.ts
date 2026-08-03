@@ -53,6 +53,7 @@ function level(
     config: {
       prompt: "Trade the retest.",
       side: "long",
+      setup: "level",
       primeBars: 21,
       maxBars: 20,
       minRR: 2,

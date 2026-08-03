@@ -28,6 +28,7 @@ function build(
     data: [{ series: "GC-1d", from: 3000, to: 3400 }],
     config: {
       prompt: "size them",
+      setup: "reversal",
       equity: 25_000,
       trades,
       riskChoices: [0.005, 0.01, 0.02, 0.05, 0.1],

@@ -152,6 +152,8 @@ export const level: Level<"composite"> = {
           prompt:
             "Short it at the retest. Place your stop and target, say why, and let it run.",
           side: "short",
+          // a level and a trigger across two timeframes.
+          setup: "level",
           primeBars: 61,
           maxBars: 30,
           minRR: 2,

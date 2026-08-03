@@ -37,6 +37,28 @@ export type LevelKind =
  */
 export type StepKind = Exclude<LevelKind, "composite" | "probe">;
 
+/**
+ * What kind of setup a trade was, for the journal to group by.
+ *
+ * **Authored on the level, never derived.** Three cheaper derivations were considered and all
+ * three are wrong:
+ *
+ * - From `tags`, which holds `[side, seriesId, "N-star"]`. A side and a series id is not a
+ *   setup; deriving one from them is inventing it.
+ * - From `target.structure.shape`. That is the shape of the *structure*, not the setup — 3.B's
+ *   pullback and 7.4's structural stop both rest on a `level`, so it would silently mislabel
+ *   half the record. It is the option that looks right.
+ * - By keyword-matching the player's stated `reason`. Unfalsifiable prose, in a project whose
+ *   selling point is that every number is recomputable. `reason` is displayed verbatim and is
+ *   never a grouping key.
+ *
+ * **Three ids rather than one per level.** Eight planned trades over six ids would be one per
+ * 1.3 trades and every by-setup cell would be n=1, which is a breakdown that cannot say
+ * anything. Three gets at least one cell to n>=3; per-level detail lives in the by-series
+ * breakdown instead.
+ */
+export type SetupId = "continuation" | "reversal" | "level";
+
 export type ToolId =
   "crosshair" | "timeframe" | "log-scale" | "y-axis-mode" | "measure";
 
@@ -327,6 +349,8 @@ export type KindConfig = {
   };
   "trade-sequence": {
     prompt: string;
+    /** What kind of setup these trades are, for the journal. */
+    setup: SetupId;
     /** Starting account, in the series' quote currency. */
     equity: number;
     /**
@@ -412,6 +436,8 @@ export type KindConfig = {
   "replay-trade": {
     prompt: string;
     side: TradeSide;
+    /** What kind of setup this is, for the journal. Required so it cannot be forgotten. */
+    setup: SetupId;
     /** Bars shown before the player may act. The rest arrive through the replay. */
     primeBars: number;
     /** Bars the replay will advance before forcing an exit at the close. */
@@ -614,8 +640,26 @@ export type OverlaySpec =
     }
   | {
       kind: "sequence";
-      /** Per trade: the R it returned and the account after it. */
-      steps: { r: number; risk: number; equity: number }[];
+      /**
+       * Per trade: what it returned, the account after it, and the prices it ran at.
+       *
+       * The prices are here so the trades can be journalled. 7.B's ten were dropped until M9
+       * partly because this carried only `{r, risk, equity}`, so there was nothing to record.
+       * Declared inline rather than imported from the kind, which would make the schema depend
+       * on a grader; `trade-sequence/grade.ts` exports the matching `SequenceStep`.
+       */
+      steps: {
+        r: number;
+        risk: number;
+        equity: number;
+        bar: number;
+        entry: number;
+        stop: number;
+        target: number;
+        exit: number;
+        outcome: string;
+        label?: string;
+      }[];
       startingEquity: number;
       /** True once the account fell through the ruin line. */
       ruined: boolean;
@@ -647,6 +691,19 @@ export type OverlaySpec =
       inPlace: string[];
       /** Adjacent transpositions between the two orderings. */
       swaps: number;
+    }
+  | {
+      /**
+       * One overlay per composite step, in order.
+       *
+       * Exists so a boss's replay stages can be journalled. `gradeComposite` used to discard
+       * every step grade after reading its score, and return `{ kind: "none" }` — which is why
+       * four bosses' trades never reached the journal. Collecting them here keeps the invariant
+       * that a journal entry is read off the grade rather than recomputed.
+       */
+      kind: "steps";
+      /** `{ kind: "none" }` for a stage not attempted. */
+      steps: OverlaySpec[];
     }
   | {
       kind: "trade";

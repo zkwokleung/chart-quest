@@ -52,7 +52,7 @@ type ErasedJournal = (
   attempt: Attempt[LevelKind],
   level: AnyLevel,
   grade: Grade,
-) => JournalDraft | null;
+) => JournalDraft[];
 
 /** Grades a level without the caller needing to know its kind. */
 export function gradeAny(
@@ -98,17 +98,17 @@ export function primedBarsFor(level: AnyLevel): number | null {
 }
 
 /**
- * The journal entry an attempt produces, or null when the kind makes none.
+ * Every journal entry an attempt produces, empty when the kind writes none.
  *
  * Erased like the grader, and for the same contravariance reason.
  */
-export function journalEntryFor(
+export function journalEntriesFor(
   level: AnyLevel,
   attempt: Attempt[LevelKind],
   grade: Grade,
-): JournalDraft | null {
-  const build = KIND_BEHAVIOUR[level.kind].journalEntry as ErasedJournal | undefined;
-  return build ? build(attempt, level, grade) : null;
+): JournalDraft[] {
+  const build = KIND_BEHAVIOUR[level.kind].journalEntries as ErasedJournal | undefined;
+  return build ? build(attempt, level, grade) : [];
 }
 
 /** The attempt a player who did it perfectly would submit. Used by the guards. */

@@ -52,6 +52,22 @@ export type JournalEntry = {
    * from the fifth try at the same level.
    */
   attemptNo?: number;
+  /**
+   * Whether the player chose the entry, stop and target — or only the size.
+   *
+   * Optional so saves written before M9 stay valid and `SCHEMA_VERSION` need not move, the
+   * same call `attemptNo` made in M5. Undefined is read as planned, because every entry
+   * written before M9 came from a `replay-trade` level where the plan was the player's.
+   *
+   * **9.6's headline figures are computed over planned trades only**, and this is why. Ten of
+   * the seventeen entries a full playthrough writes come from 7.B, where the entries, stops and
+   * targets were authored and the only decision was size. Pooling them would make "your average
+   * loss is 1.4R, not the 1R you set" a claim about the author's stops rather than the
+   * player's — the exact error this chapter exists to cure.
+   */
+  planned?: boolean;
+  /** What kind of setup the level called this. See `SetupId`. */
+  setup?: string;
 };
 
 export type SavedStrategy = {

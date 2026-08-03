@@ -50,6 +50,8 @@ export const level: Level<"replay-trade"> = {
     prompt:
       "Play forward. When price retests the hourly level, place your stop and target, say why, and let it run.",
     side: "short",
+    // a level named on the higher timeframe.
+    setup: "level",
     primeBars: 61,
     maxBars: 21,
     minRR: 2,
