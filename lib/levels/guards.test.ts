@@ -165,6 +165,20 @@ describe.each(LEVELS.map((l) => [l.id, l] as const))("%s", (_id, level) => {
     },
   );
 
+  it("pairs a sizing level's answer mode with the config it needs", () => {
+      // `expectancy` reads `outcomes` and `units`/`riskCurrency` read `positions`. A level
+      // carrying both would have two plausible readings and one graded answer; a level carrying
+      // neither would grade an empty list as zero and call it correct.
+      if (level.kind !== "sizing-calc") return;
+      if (level.config.answer === "expectancy") {
+        expect(level.config.outcomes?.length ?? 0, level.id).toBeGreaterThan(0);
+        expect(level.config.positions, level.id).toEqual([]);
+      } else {
+        expect(level.config.positions.length, level.id).toBeGreaterThan(0);
+        expect(level.config.outcomes, level.id).toBeUndefined();
+      }
+    });
+
   it("authors at least two misconceptions", () => {
     expect(level.misconceptions.length).toBeGreaterThanOrEqual(2);
   });

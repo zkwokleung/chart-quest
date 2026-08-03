@@ -410,8 +410,25 @@ export type KindConfig = {
        */
       units?: number;
     }[];
-    /** Whether the player is asked for a position size or for the money at risk. */
-    answer: "units" | "riskCurrency";
+    /**
+     * What the player is asked for.
+     *
+     * `units` is a position size, `riskCurrency` the money at risk — both derived from
+     * `positions`. `expectancy` is 9.1's: the mean R of an authored trade list, derived from
+     * `outcomes`.
+     *
+     * **Why this kind rather than a new one.** `sizing-calc`'s identity is *type a number,
+     * derived from config rather than authored, graded on relative tolerance* — and an
+     * expectancy is exactly that. The rejection that produced `probe` in M8 was structural:
+     * `tune-param.config` literally *is* `(value) => IndicatorSpec`, which no amount of
+     * widening makes into a table of markets. Nothing here is being bent out of shape.
+     */
+    answer: "units" | "riskCurrency" | "expectancy";
+    /**
+     * A trade list to compute an expectancy from. Required by `expectancy` and forbidden
+     * otherwise; `positions` is the reverse. A guard enforces both.
+     */
+    outcomes?: { r: number; label?: string }[];
   };
   "spot-the-flaw": {
     prompt: string;

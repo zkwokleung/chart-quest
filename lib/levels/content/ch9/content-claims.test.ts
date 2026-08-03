@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { EdgeSweepFile } from "@/lib/ta/edge-sweep";
+import { answersFor } from "../../kinds/sizing-calc/grade";
 import type { AnyLevel, Level } from "../../schema";
 import { ALL_LEVELS, getAuthoredLevel } from "../all";
 
@@ -162,5 +163,54 @@ describe("9-3 how deep does a good year get", () => {
   it("holds the answer back until the guess is committed", () => {
     expect(level.config.revealOnCommit).toBe(true);
     expect(level.config.initial).toBe(0);
+  });
+});
+
+describe("9-1 was it worth taking", () => {
+  const level = need("9-1", "sizing-calc");
+  const rs = (level.config.outcomes ?? []).map((o) => o.r);
+
+  it("derives its answer rather than authoring it", () => {
+    // `answersFor` is the single source the grader, `perfectAttempt` and this test all call, so
+    // the expectancy cannot be typed into the level file and then disagree with the grader.
+    expect(level.target).toEqual({});
+    expect(answersFor(level)[0]!.correct).toBeCloseTo(
+      rs.reduce((t, r) => t + r, 0) / rs.length,
+      10,
+    );
+  });
+
+  it("has the expectancy be the mean, which is what it is when every trade risks 1R", () => {
+    const wins = rs.filter((r) => r > 0);
+    const losses = rs.filter((r) => r < 0);
+    const winRate = wins.length / rs.length;
+    const textbook =
+      winRate * (wins.reduce((t, r) => t + r, 0) / wins.length) -
+      (1 - winRate) * Math.abs(losses.reduce((t, r) => t + r, 0) / losses.length);
+    expect(answersFor(level)[0]!.correct).toBeCloseTo(textbook, 10);
+  });
+
+  it("looks like a losing list and is not, which is the level", () => {
+    const wins = rs.filter((r) => r > 0).length;
+    expect(rs).toHaveLength(24);
+    expect(wins).toBe(9);
+    // A hit rate a player would call a failure, and a positive expectancy anyway.
+    expect(wins / rs.length).toBeCloseTo(0.375, 3);
+    expect(answersFor(level)[0]!.correct).toBeGreaterThan(0);
+    expect(answersFor(level)[0]!.correct).toBeCloseTo(0.146, 2);
+  });
+
+  it("keeps two losses past the 1R the stop promised, and labels them", () => {
+    // 1.6 taught that a stop does not protect across a gap. Here it costs money in arithmetic
+    // rather than on a chart, so the list must actually contain them.
+    const gapped = (level.config.outcomes ?? []).filter((o) => o.r < -1.0001);
+    expect(gapped).toHaveLength(2);
+    for (const o of gapped) expect(o.label).toContain("gapped");
+  });
+
+  it("names the win rate its misconception warns against", () => {
+    const messages = level.misconceptions.map((m) => m.message).join(" ");
+    expect(messages).toContain("37.5%");
+    expect(messages).toContain("nine of twenty-four");
   });
 });

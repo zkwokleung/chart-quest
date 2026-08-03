@@ -22,7 +22,7 @@ export function SizingCalc({
   attempt,
   onCommit,
 }: KindProps<"sizing-calc">) {
-  const { prompt, equity, riskPct, positions, answer } = level.config;
+  const { prompt, equity, riskPct, positions, answer, outcomes } = level.config;
   const [values, setValues] = useState<(number | null)[]>(() => positions.map(() => null));
 
   const committed = grade !== null;
@@ -31,6 +31,92 @@ export function SizingCalc({
 
   const money = (value: number) =>
     value.toLocaleString("en", { maximumFractionDigits: 2 });
+
+  // 9.1 asks for an expectancy over an authored trade list, so there are no instrument rows
+  // to render and no contract terms to show — just the trades and one box.
+  if (answer === "expectancy") {
+    const rs = outcomes ?? [];
+    const wins = rs.filter((o) => o.r > 0).length;
+    const correct = overlay?.correct[0];
+    const right = overlay ? shown[0] === correct : null;
+
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="text-sm font-medium">{prompt}</p>
+
+        <div className="flex flex-wrap gap-x-6 gap-y-1 rounded-lg border border-border bg-surface p-3 font-mono text-xs text-muted">
+          <span>{rs.length} trades</span>
+          <span>
+            {wins} won, {rs.length - wins} lost
+          </span>
+          <span>
+            {rs.length === 0 ? "" : `${Math.round((wins / rs.length) * 100)}% hit rate`}
+          </span>
+        </div>
+
+        <ol className="flex flex-wrap gap-1.5">
+          {rs.map((outcome, i) => (
+            <li
+              key={i}
+              title={outcome.label}
+              className="rounded-md border border-border/60 px-2 py-1 font-mono text-xs"
+              style={{
+                color: outcome.r > 0 ? "var(--color-up)" : "var(--color-down)",
+              }}
+            >
+              {outcome.r >= 0 ? "+" : ""}
+              {outcome.r.toFixed(2)}
+              {outcome.label ? <span className="ml-1 text-muted">*</span> : null}
+            </li>
+          ))}
+        </ol>
+
+        <label
+          className={[
+            "flex flex-wrap items-center gap-2 rounded-lg border bg-surface p-3 text-sm",
+            right === true ? "border-up" : right === false ? "border-down" : "border-border",
+          ].join(" ")}
+        >
+          <span className="text-muted">expectancy, in R per trade</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="any"
+            disabled={committed}
+            value={shown[0] ?? ""}
+            onChange={(event) => {
+              const raw = event.target.value;
+              setValues([raw === "" ? null : Number(raw)]);
+            }}
+            aria-label="Expectancy in R per trade"
+            className="w-40 rounded-md border border-border bg-bg px-2 py-1 font-mono text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60"
+          />
+          {overlay ? (
+            <span className="font-mono text-xs text-muted">
+              answer {correct === undefined ? "" : Number(correct.toFixed(4))}
+            </span>
+          ) : null}
+        </label>
+
+        {committed ? null : (
+          <button
+            type="button"
+            disabled={shown[0] === null || shown[0] === undefined}
+            onClick={() => onCommit({ kind: "sizing-calc", values, hintsUsed })}
+            className="self-start rounded-md bg-accent px-5 py-2.5 font-medium text-bg disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            Commit
+          </button>
+        )}
+
+        <p className="text-xs text-muted">
+          An asterisk marks a trade that gapped — through the stop, or past the target. A stop
+          does not protect you across a gap, which is why two of these losses ran past the 1R
+          they promised.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">

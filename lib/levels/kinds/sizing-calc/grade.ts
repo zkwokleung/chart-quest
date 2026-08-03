@@ -36,7 +36,20 @@ export type SizingAnswer = {
  * content-claims test that checks 7.3's four rows really do differ.
  */
 export function answersFor(level: Level<"sizing-calc">): SizingAnswer[] {
-  const { equity, riskPct, positions, answer } = level.config;
+  const { equity, riskPct, positions, answer, outcomes } = level.config;
+
+  // 9.1: one row, the mean R of an authored trade list.
+  //
+  // Expectancy *is* the mean R here, and the textbook formula is deliberately not computed
+  // beside it: every trade in this game risks exactly 1R by construction, so
+  // winRate*avgWin - lossRate*avgLoss equals the mean. Two sources for one number is how
+  // they come to disagree, and the journal analytics make the same call for the same reason.
+  if (answer === "expectancy") {
+    const rs = outcomes ?? [];
+    const mean = rs.length === 0 ? 0 : rs.reduce((t, o) => t + o.r, 0) / rs.length;
+    return [{ correct: mean, risked: 0, riskPerUnit: 1 }];
+  }
+
   return positions.map((position) => {
     const spec = specFor(position.instrument);
     const result = sizePosition({
