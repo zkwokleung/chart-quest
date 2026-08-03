@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Series } from "@/lib/chart/types";
+import type { BaseRates } from "@/lib/data/load-base-rates";
+import type { SeriesManifest } from "@/lib/data/manifest-types";
 import { atr } from "@/lib/ta/atr";
 import type { EdgeSweepFile } from "@/lib/ta/edge-sweep";
 import { simulate } from "@/lib/trade/simulate";
@@ -22,6 +24,14 @@ import { ALL_LEVELS, getAuthoredLevel } from "../all";
 const sweep = JSON.parse(
   readFileSync("public/data/edge-sweep.json", "utf8"),
 ) as EdgeSweepFile;
+
+const rates = JSON.parse(
+  readFileSync("public/data/base-rates.json", "utf8"),
+) as BaseRates;
+
+const manifest = JSON.parse(
+  readFileSync("public/data/series/manifest.json", "utf8"),
+) as SeriesManifest;
 
 function need<K extends AnyLevel["kind"]>(id: string, kind: K): Level<K> {
   const level = getAuthoredLevel(id);
@@ -365,5 +375,238 @@ describe("9-4 you already know it worked", () => {
       .filter((l) => l.id !== "9-4" && l.id !== "9-B")
       .flatMap((l) => l.data.map((d) => d.series));
     expect(others).not.toContain("GC-1d");
+  });
+});
+
+describe("9-B three reports", () => {
+  const boss = need("9-B", "composite");
+  const reports = boss.config.steps.map((step, i) => {
+    if (step.kind !== "spot-the-flaw") {
+      throw new Error(`9-B stage ${i} is a ${step.kind}, not a spot-the-flaw`);
+    }
+    return step;
+  });
+  const [overfit, undersampled, survivorship] = reports;
+  const textOf = (step: (typeof reports)[number]) =>
+    [
+      step.brief,
+      step.config.prompt,
+      ...step.config.claims.flatMap((c) => [c.label, c.note ?? ""]),
+      ...step.misconceptions.map((m) => m.message),
+    ].join(" ");
+
+  it("scores each report separately, which is why it is a composite", () => {
+    // A single `spot-the-flaw` scores one flat f1 over all sixteen claims, so nailing report one
+    // and ignoring report three would earn credit that hides the miss. Equal thirds are what make
+    // "three reports" mean three gradings.
+    expect(reports).toHaveLength(3);
+    for (const step of reports) expect(step.weight).toBeCloseTo(1 / 3, 6);
+    for (const step of reports) expect(step.target.flawed).toHaveLength(2);
+  });
+
+  it("puts a different market under each report, none of them gold", () => {
+    const series = reports.map((step) => step.data![0]!.series);
+    expect(new Set(series).size).toBe(3);
+    // 9.4 charts gold, so the boss-asset guard rules it out here. Both reports that quote the
+    // sweep quote gold's figures instead of drawing them, which is what keeps that legal.
+    expect(series).not.toContain("GC-1d");
+    expect(series).toEqual(boss.data.map((d) => d.series));
+  });
+
+  describe("report one, the overfit index", () => {
+    const spy = forAsset("SPY-1d");
+    const cell = bestCell("SPY-1d");
+
+    it("quotes the tuning window the sweep measured", () => {
+      expect(spy.bestInSample).toBe(9);
+      expect(cell.inSample.trades).toBe(80);
+      expect(cell.inSample.totalR).toBeCloseTo(26.2, 1);
+      // "a third of an R a trade" — 0.328, which rounds to 0.33 rather than being exactly 1/3.
+      expect(Math.round(cell.inSample.perTradeR * 100) / 100).toBe(0.33);
+      const text = textOf(overfit!);
+      expect(text).toContain("eighty trades");
+      expect(text).toContain("nine-bar high");
+      expect(text).toContain("26.2R");
+    });
+
+    it("quotes the held-back window, which is the flaw", () => {
+      expect(cell.later.trades).toBe(45);
+      expect(cell.later.totalR).toBeCloseTo(4.3, 1);
+      expect(spy.bestInSampleRankLater).toBe(25);
+      // Twenty-four settings did better later than the one chosen for doing best earlier.
+      expect(sweep.lookbacks.length - spy.bestInSampleRankLater).toBe(1);
+      const text = textOf(overfit!);
+      expect(text).toContain("4.3R");
+      expect(text).toContain("25th of 26");
+      expect(text).toContain("twenty-four");
+    });
+
+    it("describes the two windows in the years they actually span", () => {
+      const first = new Date(
+        manifest.series.find((e) => e.id === "SPY-1d")!.firstBar,
+      ).getTime();
+      const split = new Date(spy.splitDate).getTime();
+      const last = new Date(
+        manifest.series.find((e) => e.id === "SPY-1d")!.lastBar,
+      ).getTime();
+      const years = (a: number, b: number) => (b - a) / (365.2425 * 864e5);
+      expect(years(first, split)).toBeCloseTo(12.8, 1);
+      expect(years(split, last)).toBeCloseTo(5.5, 1);
+      const text = textOf(overfit!);
+      expect(text).toContain("Thirteen years");
+      expect(text).toContain("five and a half years");
+    });
+
+    it("charts the held-back window rather than the tuned one", () => {
+      // The slice starts on the split bar itself, so the chart is literally the stretch the
+      // report never saw.
+      expect(overfit!.data![0]!.from).toBe(spy.splitBar);
+    });
+
+    it("marks the disclosure and the honest figures as sound", () => {
+      expect(overfit!.target.flawed).toEqual(["r1-robust", "r1-forward"]);
+      // 'We tried twenty-six and kept the best' is the most useful line in the report, so f1 has
+      // to make marking it cost something.
+      expect(overfit!.target.flawed).not.toContain("r1-tuned");
+    });
+  });
+
+  describe("report two, the under-sampled small-cap", () => {
+    const hs = rates.patterns["head-and-shoulders"];
+    const cell = hs.byAsset["LAKE-1d"]!;
+
+    it("quotes the cell and its interval", () => {
+      expect(cell.n).toBe(18);
+      expect(cell.winRate * 100).toBeCloseTo(66.7, 1);
+      expect(cell.ci95[0] * 100).toBeCloseTo(43.7, 1);
+      expect(cell.ci95[1] * 100).toBeCloseTo(83.7, 1);
+      const text = textOf(undersampled!);
+      expect(text).toContain("66.7%");
+      expect(text).toContain("eighteen occurrences");
+      expect(text).toContain("43.7% to 83.7%");
+    });
+
+    it("is the highest win rate in the whole table, which is the report's whole case", () => {
+      const every = Object.values(rates.patterns).flatMap((p) =>
+        Object.values(p.byAsset).map((c) => c.winRate),
+      );
+      expect(Math.max(...every)).toBeCloseTo(cell.winRate, 10);
+      expect(textOf(undersampled!)).toContain("highest win rate anywhere in our table");
+    });
+
+    it("quotes the pooled reading that dismantles it", () => {
+      expect(hs.pooled.n).toBe(66);
+      expect(hs.pooled.winRate * 100).toBeCloseTo(50, 1);
+      expect(hs.pooled.ci95[0] * 100).toBeCloseTo(38.3, 1);
+      expect(hs.pooled.ci95[1] * 100).toBeCloseTo(61.7, 1);
+      expect(rates.assets).toHaveLength(5);
+      const text = textOf(undersampled!);
+      expect(text).toContain("all five markets");
+      expect(text).toContain("sixty-six occurrences");
+      expect(text).toContain("[38.3, 61.7]");
+    });
+
+    it("counts the wins and losses behind the figure, and what one more costs", () => {
+      const wins = Math.round(cell.winRate * cell.n);
+      expect(wins).toBe(12);
+      expect(cell.n - wins).toBe(6);
+      // The arithmetic the note and the misconception both quote.
+      expect((wins / (cell.n + 1)) * 100).toBeCloseTo(63, 0);
+      expect((wins / (cell.n + 2)) * 100).toBeCloseTo(60, 0);
+      const text = textOf(undersampled!);
+      expect(text).toContain("twelve wins and six losses");
+      expect(text).toContain("to 63%");
+      expect(text).toContain("to 60%");
+    });
+
+    it("marks the interval and the pooled figure as sound", () => {
+      expect(undersampled!.target.flawed).toEqual(["r2-best", "r2-market"]);
+      for (const id of ["r2-rate", "r2-n", "r2-ci", "r2-pooled"]) {
+        expect(undersampled!.target.flawed).not.toContain(id);
+      }
+    });
+  });
+
+  describe("report three, the survivor", () => {
+    const N = 21;
+    const equities = ["AAPL-1d", "LAKE-1d", "SPY-1d"] as const;
+    const studied = ["SPY-1d", "AAPL-1d"] as const;
+    const atN = (id: string) => forAsset(id).cells.find((c) => c.n === N)!;
+
+    it("uses one fixed lookback across both names, never a per-market best", () => {
+      expect(sweep.lookbacks).toContain(N);
+      // The setting is not any of the four assets' in-sample optima, so it cannot have been
+      // chosen by the sweep — which is what "fixed before testing" has to mean.
+      expect(sweep.assets.map((a) => a.bestInSample)).not.toContain(N);
+      expect(textOf(survivorship!)).toContain("twenty-one-bar high");
+    });
+
+    it("quotes the combined figures the sweep actually produced", () => {
+      const cells = studied.map(atN);
+      const trades = cells.reduce(
+        (t, c) => t + c.inSample.trades + c.later.trades,
+        0,
+      );
+      const totalR = cells.reduce(
+        (t, c) => t + c.inSample.totalR + c.later.totalR,
+        0,
+      );
+      expect(trades).toBe(230);
+      expect(totalR).toBeCloseTo(92.8, 1);
+      expect(totalR / trades).toBeCloseTo(0.4, 1);
+      const text = textOf(survivorship!);
+      expect(text).toContain("230 trades");
+      expect(text).toContain("+92.8R");
+      expect(text).toContain("four tenths of an R");
+    });
+
+    it("rests its flaw on the game's own data having no delistings", () => {
+      // **What makes a constructed report recomputable.** DATA.md concedes no dead ticker is
+      // obtainable, so the survivorship report could not be assembled from real casualties. It
+      // does not need to be: a universe defined by holding a complete record is a universe chosen
+      // after the outcomes, and this data set is the proof. Three equities, all starting the same
+      // day and running to the last bar, is not what happens to a real universe of companies.
+      const entries = equities.map(
+        (id) => manifest.series.find((e) => e.id === id)!,
+      );
+      expect(new Set(entries.map((e) => e.firstBar.slice(0, 10)))).toEqual(
+        new Set(["2005-01-03"]),
+      );
+      expect(new Set(entries.map((e) => e.lastBar.slice(0, 10)))).toEqual(
+        new Set(["2023-04-28"]),
+      );
+      expect(new Set(entries.map((e) => e.bars)).size).toBe(1);
+      // And the set really is every equity, so "three for three" is a census rather than a sample.
+      const allEquities = manifest.series
+        .filter((e) => e.tf === "1d" && !e.reconstructed)
+        .filter((e) => assetClassOf(e.id as never) === "equity")
+        .map((e) => e.id);
+      expect([...allEquities].sort()).toEqual([...equities].sort());
+      const text = textOf(survivorship!);
+      expect(text).toContain("three for three");
+      expect(text).toContain("eighteen years");
+    });
+
+    it("marks the good practice as sound, which is why it is the hardest report", () => {
+      expect(survivorship!.target.flawed).toEqual(["r3-since", "r3-nobias"]);
+      // The two things this report got right are the two the previous reports got wrong.
+      expect(survivorship!.target.flawed).not.toContain("r3-fixed");
+      expect(survivorship!.target.flawed).not.toContain("r3-total");
+      expect(survivorship!.target.flawed).not.toContain("r3-complete");
+    });
+  });
+
+  it("does not hand a star to a player who marked every sentence", () => {
+    // Two flawed of five or six means marking everything scores about 0.55, which clears the
+    // usual 0.5 first threshold. On a boss about reading reports it must not.
+    const marked = reports.map((step) => {
+      const hit = step.target.flawed.length;
+      const submitted = step.config.claims.length;
+      const precision = hit / submitted;
+      return (2 * precision) / (precision + 1);
+    });
+    const score = marked.reduce((t, f1) => t + f1 / 3, 0);
+    expect(score).toBeGreaterThan(0.5);
+    expect(score).toBeLessThan(boss.stars[0]);
   });
 });

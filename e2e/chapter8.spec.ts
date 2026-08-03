@@ -147,6 +147,21 @@ test("8.4's reveal switches between all days and the days that mattered", async 
   expect((await storedProgress(page, "8-4"))?.stars).toBe(3);
 });
 
+test("8.5 keeps its verdicts back until the review is committed", async ({ page }) => {
+  // **A shipped level was answering itself.** Every `spot-the-flaw` claim carries a `note` that is
+  // a verdict — "The premise is true and the conclusion is not" — and the component rendered them
+  // beside the checkboxes from M6 until 9.B's stages made it obvious in a browser. Nothing in the
+  // unit suite could see it: the grader is pure and the notes are content.
+  await openUnlocked(page, "8-5");
+  const verdict = page.getByText(/The premise is true and the conclusion is not/);
+  await expect(page.getByRole("checkbox").first()).toBeVisible();
+  await expect(verdict).toHaveCount(0);
+
+  await page.getByRole("checkbox").nth(2).check();
+  await page.getByRole("button", { name: /^commit$/i }).click();
+  await expect(verdict).toBeVisible();
+});
+
 test("8.6 shows the edge that has no setups at all", async ({ page }) => {
   // The chapter's only claim with no sample size attached, and the one place a "0.00" instead
   // of "none" would quietly turn an impossible edge into a break-even one.

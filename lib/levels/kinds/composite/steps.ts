@@ -1,3 +1,4 @@
+import type { Series } from "@/lib/chart/types";
 import type { AnyStep, CompositeStep, Level, StepKind } from "../../schema";
 
 /**
@@ -46,6 +47,27 @@ export function stepAsAnyLevel(
   step: AnyStep,
 ): Level<StepKind> {
   return stepAsLevel(composite, step as CompositeStep<StepKind>);
+}
+
+/**
+ * The loaded series behind each of a stage's slices, **paired by series id**.
+ *
+ * `truth` arrives in the boss's own `level.data` order, and a stage's slices are its own list —
+ * so pairing them by position is wrong whenever a stage names anything but the boss's first
+ * series. It was wrong silently: the stage rendered, graded and scored, on a chart of a different
+ * market. 9.B is the first boss to put a stage on the boss's second and third series, and under
+ * positional pairing all three of its reports would have charted the index.
+ *
+ * A missing entry is `null` rather than an error, because a stage may render before its slice has
+ * loaded.
+ */
+export function stepSources(
+  composite: Level<"composite">,
+  step: AnyStep,
+  truth: readonly Series<string>[],
+): (Series<string> | null)[] {
+  const byId = new Map(composite.data.map((slice, i) => [slice.series, truth[i]]));
+  return (step.data ?? composite.data).map((slice) => byId.get(slice.series) ?? null);
 }
 
 /**

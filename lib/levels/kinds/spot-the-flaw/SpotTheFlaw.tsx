@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { EdgeMatrix } from "@/components/level/EdgeMatrix";
 import { CorrelationMatrix } from "@/components/level/CorrelationMatrix";
+import { FeedChart } from "@/components/level/FeedChart";
 import type { KindProps } from "@/lib/levels/kind-module";
+import { yAxisFor } from "@/lib/levels/y-axis";
 import type { SignalId } from "@/lib/ta/correlation";
 
 /**
@@ -13,6 +15,13 @@ import type { SignalId } from "@/lib/ta/correlation";
  * own state, and group under a `fieldset` legend without any of it being written here. Every
  * kind since M3 has had to work without a pointer, and the cheapest way to meet that is to
  * use the element that already does.
+ *
+ * **The market the claims are about is drawn, where the level names one.** `AUTHORING.md`
+ * introduced this kind "for an artefact that is not a chart", and the artefact still is not one —
+ * but 6.5 declares `BTCUSDT · daily` and 8.5 declares `S&P 500 · 2022`, both labelled, and neither
+ * appeared anywhere. A level that loads and labels a window is asking for it to be shown; the
+ * slice was reaching the component and being used only by the correlation reveal. 9.B is three
+ * reports on three markets and would have been three tables.
  */
 export function SpotTheFlaw({
   level,
@@ -53,6 +62,16 @@ export function SpotTheFlaw({
     <div className="flex flex-col gap-4">
       <p className="text-sm font-medium">{prompt}</p>
 
+      {slice && feed ? (
+        <FeedChart
+          slice={slice}
+          feed={feed}
+          height={260}
+          showVolume={false}
+          yAxis={yAxisFor(level)}
+        />
+      ) : null}
+
       <fieldset className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3">
         <legend className="px-1 font-mono text-xs text-muted">
           the case as it was argued
@@ -82,17 +101,26 @@ export function SpotTheFlaw({
               />
               <span className="flex-1">
                 {claim.label}
-                {claim.note ? (
+                {/* **After committing only.** A note here is a verdict — every one of 8.5's
+                    begins "True, and…" or "The premise is true and the conclusion is not" — so
+                    rendering them beside the checkboxes printed the answer next to the question.
+                    `classify` had this right and this kind did not, from M6 until 9.B's stages
+                    made it obvious. `sort-rank` shows its notes throughout on purpose: there they
+                    are the pattern definitions the ranking is *from*. */}
+                {committed && claim.note ? (
                   <span className="block font-mono text-xs text-muted">{claim.note}</span>
                 ) : null}
               </span>
               {state ? (
                 <span className="shrink-0 font-mono text-xs text-muted">
+                  {/* Neutral wording, because the kind's flaws are not all one thing. 6.5's are
+                      redundancy — "adds nothing", which these labels used to say — and 8.5's and
+                      9.B's are true premises with conclusions that do not follow. */}
                   {state === "right"
-                    ? "adds nothing ✓"
+                    ? "flawed ✓"
                     : state === "missed"
-                      ? "also adds nothing"
-                      : "this one was fine"}
+                      ? "also flawed"
+                      : "this one was sound"}
                 </span>
               ) : null}
             </label>

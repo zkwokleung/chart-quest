@@ -257,16 +257,24 @@ describe.each(LEVELS.map((l) => [l.id, l] as const))("%s", (_id, level) => {
     }
   });
 
-  it("keeps composite steps on the same series as the boss, in the same order", () => {
-    // Step data may narrow a range but not swap the series: the player loads the
-    // boss's series once, and the grader pairs them with step slices by position.
+  it("keeps composite steps on series the boss itself declares", () => {
+    // Step data may narrow a range but not introduce a series the boss never loaded: the
+    // player fetches the boss's slices once, and a stage naming anything else has no data.
+    //
+    // **Relaxed in M9, and why it was stricter is worth recording.** It used to require a
+    // step's series to be a positional *prefix* of the boss's, because Composite.tsx paired
+    // step slices with loaded series by index — so a stage naming the boss's second series
+    // was handed its first. That pairing now looks the series up by id, which is what 9.B
+    // needs to put a different backtest report on each of three markets.
     if (level.kind !== "composite") return;
-    const bossSeries = level.data.map((d) => d.series);
+    const declared = new Set(level.data.map((d) => d.series));
     for (const step of level.config.steps) {
-      if (!step.data) continue;
-      expect(step.data.map((d) => d.series)).toEqual(
-        bossSeries.slice(0, step.data.length),
-      );
+      for (const slice of step.data ?? []) {
+        expect(
+          declared.has(slice.series),
+          `${level.id} step names ${slice.series}, which the boss does not load`,
+        ).toBe(true);
+      }
     }
   });
 

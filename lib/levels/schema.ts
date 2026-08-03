@@ -206,6 +206,7 @@ export type CompositeStep<K extends StepKind = StepKind> = {
 };
 
 export type AnyStep =
+  | CompositeStep<"spot-the-flaw">
   | CompositeStep<"classify">
   | CompositeStep<"mark-bars">
   | CompositeStep<"predict-next">
@@ -451,6 +452,10 @@ export type KindConfig = {
      * one. That is what lets 6.5 be graded against data rather than against taste — the
      * content-claims test recomputes which claims duplicate another and checks the
      * authored answer still matches.
+     *
+     * `note` is shown **after committing**, whether or not the claim was marked, the same as
+     * `ClassifyOption.note`. It is a verdict on the claim, so showing it earlier prints the
+     * answer beside the question.
      */
     claims: { id: string; label: string; note?: string; signal?: SignalId }[];
     /** A measured table to show once the answer is committed. */

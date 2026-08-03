@@ -119,8 +119,11 @@ test("6.5 is completable by keyboard alone and shows the measured matrix", async
   );
   expect(stored?.stars).toBe(3);
 
-  // The reveal is a measurement, not prose.
-  const table = page.getByRole("table").first();
+  // The reveal is a measurement, not prose. `.last()` rather than `.first()` because the chart
+  // library lays itself out in a `<table>`, so any charted level has a decorative one first —
+  // which is why every other spec here already reaches for the last. 6.5 only got away with
+  // `.first()` while `spot-the-flaw` drew no chart.
+  const table = page.getByRole("table").last();
   await expect(table).toBeVisible();
   await expect(table).toContainText("RSI");
   await expect(table).toContainText("0.9");

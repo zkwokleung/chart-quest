@@ -12,7 +12,7 @@ import {
   stepPrimedBars,
   stepRevealHorizon,
 } from "./step-components";
-import { stepAsAnyLevel } from "./steps";
+import { stepAsAnyLevel, stepSources } from "./steps";
 
 /**
  * Walks a boss through its stages.
@@ -48,19 +48,21 @@ export function Composite({
   // rather than passing its own through. This is the one place `truth` is used and
   // the reason the composite gets it: grading a stage as the player finishes it
   // means knowing what happened next.
-  const stepFeeds = useMemo(() => {
-    const series = truth ?? [];
-    return steps.map((s) =>
-      (s.data ?? level.data).map((slice, i) => {
-        const source = series[i];
-        if (!source) return null;
-        return createLevelFeed(source, slice, {
-          horizon: stepRevealHorizon(s),
-          primedBars: stepPrimedBars(s),
+  const stepFeeds = useMemo(
+    () =>
+      steps.map((s) => {
+        const slices = s.data ?? level.data;
+        return stepSources(level, s, truth ?? []).map((source, i) => {
+          const slice = slices[i];
+          if (!source || !slice) return null;
+          return createLevelFeed(source, slice, {
+            horizon: stepRevealHorizon(s),
+            primedBars: stepPrimedBars(s),
+          });
         });
       }),
-    );
-  }, [steps, level.data, truth]);
+    [steps, level, truth],
+  );
 
   function commitStep(stepAttempt: StepAttempt) {
     if (committed) return;
