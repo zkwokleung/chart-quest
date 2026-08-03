@@ -178,6 +178,20 @@ Three rules for this file:
 
 ---
 
+## The edge sweep
+
+`public/data/edge-sweep.json`, from `npm run data:sweep`. One rule — a close above the highest high of the previous _n_ bars, a stop 2 ATR below entry, a 2R target, entering only when flat — across **26 lookbacks** (5 to 55, step 2) and **four markets**, measured twice: on the first 70% of each series and on the rest.
+
+Per (asset, lookback) it stores `trades`, `totalR`, `perTradeR` and `maxDrawdownR` for each window, plus `rankLater` — where that lookback's later-window total placed among all 26, best first. The rank is the honest statistic, and the reason it is stored rather than left to be inferred: a total can be explained away by a shorter window and a rank cannot.
+
+**The split is inside the in-sample data, and Chapter 9 must not call it out-of-sample.** `oos/` is Chapter 10's, and 10.6 uses that phrase for bars the game has never shown. 9.5 says "the later third", and its claims test asserts the level never says otherwise. A game with two meanings for its most load-bearing term has none.
+
+**The loader refuses a file missing `trades` per cell.** A total R with no sample size attached is a number nobody can argue with, which is precisely what Chapter 9 is about.
+
+`lib/data/edge-sweep.test.ts` recomputes the committed file from the shipped `edges.ts` and fails on drift, exactly as the base rates do. `breakoutN(20)` is separately pinned to reproduce Chapter 8's committed `breakout-20` figures on all six markets, so Chapter 8's numbers cannot move underneath 8.3, 8.5, 8.6 and 8.B.
+
+---
+
 ## Open data decisions
 
 **Resolved:**

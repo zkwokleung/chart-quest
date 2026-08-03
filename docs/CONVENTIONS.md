@@ -12,6 +12,7 @@ Orientation for anyone working in this repo. An interactive game teaching techni
 ## Other enforced invariants
 
 - Graders are pure and deterministic — no `Date.now()`, `Math.random()`, DOM, or store access.
+- **No level's graded answer depends on the store.** The stronger form of the rule above, and the one Chapter 9 had to be designed around: a component may read the player's journal or their recalled scores — 9.6's whole point is that it does — but the _answer_ may not, because `journal` and `predictions` are empty on a fresh save, after `resetProgress`, and in private mode where storage degrades to memory. A level whose answer depends on them is unwinnable for those players and cannot satisfy the winnability guard. Read the store to show evidence; grade against the data.
 - The backtester never reads a bar index `> current`, and never fills inside a market-closed gap (`spec.hours`).
 - No level in Ch 1–9 references `public/data/oos/` — that data is Ch 10's out-of-sample set.
 - Every level's own `target` must score 3 stars through its own grader.
@@ -20,7 +21,7 @@ Orientation for anyone working in this repo. An interactive game teaching techni
 
 ## Architecture in one paragraph
 
-~73 levels must not be ~73 components. Ten **level kinds**, each one React component + one pure grader, and every level is _data_ (`lib/levels/content/ch<N>/`) referencing bar indices into a committed price series. `app/level/[id]/page.tsx` dispatches on `level.kind` and contains no kind-specific logic. Adding a level means adding a data file.
+~73 levels must not be ~73 components. Twelve **level kinds**, each one React component + one pure grader, and every level is _data_ (`lib/levels/content/ch<N>/`) referencing bar indices into a committed price series. `app/level/[id]/page.tsx` dispatches on `level.kind` and contains no kind-specific logic. Adding a level means adding a data file.
 
 ## Verification
 

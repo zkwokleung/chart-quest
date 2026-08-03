@@ -352,19 +352,92 @@ than believing had the least excuse of any for shipping them.
 
 _unlocks: journal analytics_
 
-| #       | Level                                                                                              | Kind            |
-| ------- | -------------------------------------------------------------------------------------------------- | --------------- |
-| 9.1     | Expectancy from a trade list                                                                       | `sizing-calc`   |
-| 9.2     | Sample size — coin-flip sim vs your 10 trades. How much was luck? Recall your 1.B score.           | `predict-next`  |
-| 9.3     | Guess the max drawdown of a +40%/yr equity curve, then see it                                      | `predict-next`  |
-| 9.4     | Hindsight bias — a replay you already solved, re-shown honestly                                    | `replay-trade`  |
-| 9.5     | **Overfitting** — tune a rule until in-sample looks incredible, then reveal out-of-sample          | `tune-param`    |
-| 9.6     | **Your journal** — analytics over the trades _you_ logged in Ch 3–8, split by asset class          | dashboard       |
-| **9.B** | **BOSS:** 3 backtest reports on 3 assets — one overfit, one under-sampled, one survivorship-biased | `spot-the-flaw` |
+| #       | Level                                                                                                       | Kind            |
+| ------- | ----------------------------------------------------------------------------------------------------------- | --------------- |
+| 9.1     | **Was it worth taking** — expectancy from 24 outcomes, 9 wins, and a positive answer                        | `sizing-calc`   |
+| 9.2     | **How much of that was luck** — the binomial for five flips, with your own 1.B accuracy marked on it        | `classify`      |
+| 9.3     | **How deep does a good year get** — guess the drawdown of a +51.7R curve, in R, then see it                 | `probe`         |
+| 9.4     | **You already know it worked** — the outcome first, then rewind and plan it; the plan alone is scored        | `replay-trade`  |
+| 9.5     | **Tune it until it looks brilliant** — sweep 26 lookbacks on four markets; the later window is the reveal    | `probe`         |
+| 9.6     | **Your own record** — the journal you actually wrote, split by asset class, and what it will not support     | `classify`      |
+| **9.B** | **BOSS:** three backtest reports on three markets — one overfit, one under-sampled, one survivorship-biased | `composite`     |
 
 > **9.5 is the most important level in the game.** Build it before Ch 10's backtester, because the backtester has to be honest enough to support it.
 >
 > **9.6 is only possible because there are no accounts.** The journal is genuinely the player's own.
+
+### Where Chapter 9 diverged from this plan, and why
+
+Longer than Chapter 8's, because **four of the seven specified kinds could not hold and the
+milestone's own gate was unmeetable when it was written.**
+
+- **The gate could not be met, and finding out was the first day's work.** Issue #27 asks that 9.6
+  read real journal data split by asset class. Only `replay-trade` carried a journal hook and only
+  three levels had it as their top-level kind, so four composite bosses silently discarded the
+  trade their `replay-trade` stage produced and 7.B's ten sized trades wrote nothing at all. **A
+  perfect playthrough of Chapters 1–8 logged three entries across two asset classes**, and the two
+  classes that appear only in bosses — fx and futures — never appeared. Fixing that came before any
+  Chapter 9 content; `lib/levels/journal-coverage.test.ts` now states the gate mechanically and
+  every number in it was wrong before M9.
+- **And the fix exposed a distinction the epic's own example sentence depended on.** Of the
+  eighteen entries a fixed journal holds, **eleven are gold and ten of those are 7.B's, where the
+  entry, stop and target were authored and the only decision was size.** Pooling them would make
+  _"your average loss is 1.4R, not the 1R you set"_ — the epic's headline promise — a claim about
+  the author's stops. `JournalEntry` gained a `planned` discriminator and every headline figure is
+  computed over the player's own plans, of which a full playthrough leaves **eight**.
+- **9.6 is a `classify`, not a `dashboard`.** A kind that cannot be graded cannot satisfy the
+  winnability guard, which makes it a page rather than a level. The tables live in a component that
+  reads the store — which a component may do — and the graded question is what the record supports.
+  Its answer is **structurally guaranteed**: the largest per-class cell of planned trades any player
+  can reach is four, so "too small to split by asset class" is true for every possible player, and
+  the chapter's claims test _computes_ that from the coverage rather than asserting a constant.
+- **9.2 and 9.3's `predict-next` could not hold, for different reasons.** A grader may not read the
+  store, and `predictions["1-B"]` is absent on a fresh save, after `resetProgress`, and in private
+  mode where storage degrades to memory — so 9.2's graded question is the binomial arithmetic and
+  the player's own 1.B accuracy is a marker beside it, degrading to "no 1.B score recorded". 9.3
+  asks for a magnitude and `predict-next`'s attempt is a list of directions, so it became a `probe`
+  with the answer hidden until commit. The chapter carries an invariant with its own test: **no
+  Chapter 9 level's graded answer depends on the store.**
+- **9.5 is a `probe`, not a `tune-param`, and it must score exploration rather than a target.**
+  `tune-param.config.indicator` literally _is_ `(value) => IndicatorSpec`, and a two-window sweep
+  is not an indicator on one window — the same argument that produced `probe` in M8. A `target`
+  would award three stars for finding the overfit parameter and print "correct: 9" on the
+  correction screen, which is the habit the level exists to break.
+- **Chapter 9 may not say "out-of-sample".** `public/data/oos/` is Chapter 10's and a live guard
+  forbids any Ch 1–9 level from naming an `-oos` series. So 9.5 splits 70/30 _inside_ the
+  in-sample data and calls it **"the later third"**, because 10.6 uses "out-of-sample" for bars the
+  game has never shown and a game with two meanings for its most load-bearing term has none.
+- **The sweep produced a better lesson than the one specified, and it survives its own
+  counter-example.** Tuning the breakout lookback across 26 values and measuring the held-back
+  window: the index's best in-sample setting placed **25th of 26** later, gold's 21st, Bitcoin's
+  13th — and **Apple's placed 3rd**. So the rule is not "the optimum always collapses" but "how
+  excited the backtest made you predicts how much it will cost you", and Apple is why the level
+  shows four markets. A single-asset version would have taught a new false rule in place of the old.
+- **"A replay you already solved" cannot be graded**, because the player may have skipped it or
+  scored zero and a graded level may not depend on their history. The honest inverse is: show the
+  outcome, rewind, ask for the plan, score the plan alone. `replay-trade` gained
+  `outcomeWeight`, set to 0 here and defaulting to the existing 0.3 everywhere else.
+- **The boss is a `composite` of three `spot-the-flaw` stages, not one.** A single stage renders
+  `data[0]` and scores one flat `f1` over every claim, so a player who dismantles the first report
+  and ignores the third earns credit that hides the miss. It surfaced three shipped defects:
+  `Composite.tsx` paired stage slices with loaded series **by index** (so all three reports would
+  have charted the index); `spot-the-flaw` rendered each claim's note — which is a _verdict_ —
+  beside its checkbox, meaning 6.5 and 8.5 printed their answers next to the question from M6
+  onward; and the kind never drew the market its claims were about, though both levels declare and
+  label a window.
+- **Survivorship did not need a dead ticker after all.** `DATA.md` concedes none is obtainable, so
+  the third report was always going to be the constructed one. It is not: a universe defined by
+  _holding a complete record_ is a universe chosen after the outcomes were known, and this game's
+  own data is the proof — all three equities run unbroken from January 2005 to April 2023. The
+  chapter ends by turning its lesson on the dataset the player has trusted for eight chapters.
+- **The skill radar has ten axes, not the seven the epic listed.** Mapping the seven onto chapters
+  leaves Chapter 1, Chapter 6 and — by the same oversight — Chapter 9 itself with no axis, and a
+  radar that omits the chapter a beginner spends longest in cannot tell a beginner what to
+  practise. `discipline` deliberately has no chapter: it is the one axis measured from behaviour
+  rather than answers, which is why the epic wanted it and why it needs the journal.
+
+> **Chapter 10 was unreachable until this chapter existed.** `e2e/chapter9.spec.ts` asserts the
+> chain in both directions, without a `localStorage` fixture standing in for a playthrough.
 
 ## Ch 10 — Build Your Own Strategy
 

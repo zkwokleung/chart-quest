@@ -187,7 +187,9 @@ A composite step is a `Level` without its identity, so every existing kind compo
 
 Weight the stages. `predict-next` scores participation rather than accuracy, so an equal share would hand over free marks and lower the bar for the stages actually being tested; 2.B gives it 0.10 against 0.30/0.35/0.25. There is no per-step floor: a boss should test the chapter, not wall a player weak at one thing.
 
-Step data may narrow a range but **must not swap the series** — the player loads the boss's series once and the grader pairs them by position.
+Step data may narrow a range and **may name any series the boss itself loads**, but never one it does not — the player fetches the boss's slices once, and a stage naming anything else has no data.
+
+That rule used to be stricter, and why is worth knowing before you loosen anything else: a step's series had to be a positional _prefix_ of the boss's, because `Composite.tsx` paired step slices with loaded series **by index**. A stage naming the boss's second series was handed its first — silently, with a chart of the wrong market. The pairing now looks each slice up by id (`stepSources`), which is what lets 9.B put a different backtest report on each of three markets. `lib/levels/kinds/composite/steps.test.ts` pins it, and fails under the pairing it replaced.
 
 For trade bosses, **score R achieved and stop-placement quality separately** (see Ch 3.B in [`CURRICULUM.md`](CURRICULUM.md)). A profitable trade with a stop in a stupid place must not score 3 stars — that would teach outcome-chasing, which is the exact habit the game exists to cure.
 
@@ -263,6 +265,19 @@ profitable trade with a stop in a stupid place gets one star. Note which mechani
 actually enforcing that in your level: at Chapter 3's thresholds the 0.3 outcome
 weight already caps a weak plan below two stars, and `PLAN_FLOOR` is a backstop for
 when #32 retunes thresholds.
+
+**`outcomeWeight` sets that share, and 0 is a real option.** It defaults to 0.3, which every
+replay level and stage before 9.4 uses. Set it to 0 when the player already knows what happened:
+9.4 shows the outcome first, rewinds, and asks for the plan, so scoring the outcome would be
+scoring something it handed over. If you set it, **say so in the brief** — a hidden zero is a
+grader that disagrees with the correction screen. And keep it 0.3 elsewhere: a level that quietly
+stops scoring outcomes stops teaching that a plan has to survive contact with the market.
+
+`setup` is required on every trade level's config, from a closed vocabulary of three:
+`continuation`, `reversal`, `level`. It is what the journal groups by, and it is authored rather
+than derived — `AUTHORING`'s usual "measure it" instinct is wrong here, because a setup is a claim
+about intent and nothing in the data records intent. Three ids rather than one per level, so at
+least one `bySetup` cell reaches n≥3; a guard fails CI if any id goes unused.
 
 ---
 
@@ -356,6 +371,21 @@ Scored with `f1`, the same measure `mark-bars` uses, so finding two of three fla
 false positive scores sensibly. Marking everything is scored, and scored badly — which
 matters for a level about over-confluence.
 
+**`note` is a verdict, and it is shown only after committing** — the same as `ClassifyOption.note`.
+Say so out loud because the component got it wrong for three chapters: notes rendered beside the
+checkboxes, so 6.5 and 8.5 printed "The premise is true and the conclusion is not" next to the
+claim the player was being asked to find. Write notes as corrections, and if you need a player to
+know something _before_ they answer, it belongs in the `label` or the `brief`.
+
+**The market is drawn where the level names one.** `data[0]` renders as a chart above the claims —
+6.5's Bitcoin window is the setup the argument is about and 8.5's is the market being backtested.
+The claims are still the artefact; the chart is the context for them. A level with nothing to show
+uses `data: []`.
+
+**With two flawed claims out of five, marking everything scores about 0.55**, which clears the usual
+0.5 first threshold. If that is not acceptable for your level, raise it: 9.B uses `[0.6, 0.8, 0.92]`
+so a player who marked every sentence in all three reports earns nothing.
+
 **Every flawed claim must be recomputable**, which is what makes the answer measurable rather
 than a matter of taste. Two ways, depending on the kind of flaw:
 
@@ -394,10 +424,15 @@ config: {
   focus: 'BTCUSDT-1d',        // the row the question is about
   scoring: 'target',
   exploreFraction: 0.6,
+  revealOnCommit: true,       // optional: hold the answer back until they commit
 },
 target: { value: 6 },         // derived from the artefact, not authored
 tolerance: { slop: 2 },
 ```
+
+`measure` is one of `variance-ratio`, `edge-sweep` or `drawdown`. The switch in `Probe.tsx` is exhaustive, so **a new `measure` without a readout is a compile error** — add both together.
+
+**`revealOnCommit` is the difference between measuring and being told.** 8.2 shows its whole table from the first paint, because the question is which horizon crosses 1.0 and the player has to sweep to find it. 9.5's held-back column and 9.3's measured drawdown are the *answers*, and a player who can see them while sweeping is being shown the thing they are being asked. Where the readout is the answer, set it — and assert it in the chapter's claims test, because nothing else can.
 
 For a question a chart cannot answer: does *this market* behave differently, and by how much.
 `tune-param` could not carry it — its config **is** `(value) => IndicatorSpec` — and a variance
@@ -416,6 +451,12 @@ variance ratio is a number nobody measured. Assert it in the chapter's claims te
 outside the cross-asset boss guard — which is what lets a chapter measure all six markets while
 its boss runs on one of them. Same call `sizing-calc` makes with `data: []`.
 
+**And that privilege has a condition: a readout must never draw an asset's price chart from
+`config.assets`.** A *derived* curve is fine — 9.3 draws the cumulative R of a rule on Apple, and R
+is not a price — but the moment a readout renders candles for a series that is not in `level.data`,
+the boss guard has been evaded rather than satisfied. It is the next thing somebody does by
+accident, and no guard catches it, because the guard only reads `level.data`.
+
 **Accuracy is capped by the sweep, not averaged with it.** A player who drags straight to the
 answer has read a number off a table; the level is about measuring. The commit button stays
 disabled until they have swept, which is clearer than a score explained afterwards.
@@ -429,7 +470,7 @@ config: {
   prompt: '...',
   equity: 50_000,
   riskPct: 0.01,
-  answer: 'units',           // or 'riskCurrency'
+  answer: 'units',           // or 'riskCurrency', or 'expectancy'
   positions: [
     { instrument: 'GC-1d', entry: 1_900, stop: 1_862, label: 'Gold · 100-ounce contracts' },
   ],
@@ -451,6 +492,18 @@ is a real answer and the ratio is undefined.
 **`answer: 'riskCurrency'` needs `units` on the position**, or the question answers itself: with
 no size stated, "what does this position risk" is the risk budget restated. State the size and
 the question becomes 7.1's, which is what one R costs.
+
+**`answer: 'expectancy'` takes `outcomes` and no `positions`**, and a guard pairs the two so
+neither can be forgotten. This is the one kind M9 bent rather than replaced, and the argument for
+bending: `sizing-calc`'s identity is _type a number, derived from the config rather than authored,
+graded on relative tolerance_, and an expectancy over a list of R outcomes is exactly that. Compare
+9.5, where the rejection was structural — `tune-param.config.indicator` literally _is_ a function
+returning an `IndicatorSpec`, so there was nothing to extend.
+
+`answersFor` returns the mean R, and the mean is all it returns: every trade in the game risks 1R
+by construction, so `winRate·avgWin − lossRate·avgLoss` _equals_ the mean. Computing both would
+create two sources for one number and a way for them to drift. 9.1's claims test asserts they
+agree, which is the right place for that check — once, in a test, rather than twice in the grader.
 
 **Cite the contract terms.** A multiplier cannot be re-derived from price data, so `specFor`
 carries a `source` naming the venue's own definition, and Chapter 7's claims test asserts every

@@ -239,18 +239,27 @@ This is enforced by a test, not by discipline (§7).
 
 ### Ch 9 — Edge & Probability · _unlocks: journal analytics_
 
-| #       | Level                                                                                              | Kind            |
-| ------- | -------------------------------------------------------------------------------------------------- | --------------- |
-| 9.1     | Expectancy from a trade list                                                                       | `sizing-calc`   |
-| 9.2     | Sample size — coin-flip sim vs your 10 trades. How much was luck? Recall your 1.B score.           | `predict-next`  |
-| 9.3     | Guess the max drawdown of a +40%/yr equity curve, then see it                                      | `predict-next`  |
-| 9.4     | Hindsight bias — a replay you already solved, re-shown honestly                                    | `replay-trade`  |
-| 9.5     | **Overfitting** — tune a rule until in-sample looks incredible, then reveal out-of-sample          | `tune-param`    |
-| 9.6     | **Your journal** — analytics over the trades _you_ logged in Ch 3–8, split by asset class          | dashboard       |
-| **9.B** | **BOSS:** 3 backtest reports on 3 assets — one overfit, one under-sampled, one survivorship-biased | `spot-the-flaw` |
+| #       | Level                                                                                                       | Kind            |
+| ------- | ----------------------------------------------------------------------------------------------------------- | --------------- |
+| 9.1     | **Was it worth taking** — expectancy from 24 outcomes, 9 wins, and a positive answer                        | `sizing-calc`   |
+| 9.2     | **How much of that was luck** — the binomial for five flips, with your own 1.B accuracy marked on it        | `classify`      |
+| 9.3     | **How deep does a good year get** — guess the drawdown of a +51.7R curve, in R, then see it                 | `probe`         |
+| 9.4     | **You already know it worked** — the outcome first, then rewind and plan it; the plan alone is scored        | `replay-trade`  |
+| 9.5     | **Tune it until it looks brilliant** — sweep 26 lookbacks on four markets; the later window is the reveal    | `probe`         |
+| 9.6     | **Your own record** — the journal you actually wrote, split by asset class, and what it will not support     | `classify`      |
+| **9.B** | **BOSS:** three backtest reports on three markets — one overfit, one under-sampled, one survivorship-biased | `composite`     |
 
 > 9.5 is the most important level in the game; build it before Ch 10's backtester, because the backtester has to be honest enough to support it.
-> 9.6 is only possible _because_ there are no accounts — the journal is genuinely the player's own. It reports things like "you're +0.6R on trend continuation and −0.9R counter-trend; your average loss is 1.4R, not the 1R you set; you're profitable on BTC and negative on everything else."
+> 9.6 is only possible _because_ there are no accounts — the journal is genuinely the player's own.
+>
+> **The kinds above are what shipped, and four of them changed.** `dashboard` was never built — a
+> kind that cannot be graded cannot satisfy the winnability guard, so it is a page rather than a
+> level. The reasoning for every divergence is in `CURRICULUM.md` under "Where Chapter 9 diverged".
+>
+> **The headline promise had to be split.** "Your average loss is 1.4R, not the 1R you set" is only
+> honest over trades the player planned themselves; ten of the eighteen a full playthrough logs come
+> from 7.B, where the stops were authored and only the size was chosen. Those are shown, separately
+> and labelled, and no headline figure pools them.
 
 ### Ch 10 — Build Your Own Strategy
 

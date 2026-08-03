@@ -6,7 +6,7 @@ An interactive game that teaches technical analysis, from "what is a candle" to 
 
 **Live:** <https://chart-quest.vercel.app>
 
-**Status:** pre-alpha. **Chapters 1 through 8 are playable end to end** — 58 levels across twelve interaction kinds, including draw tools, a replay engine, a graded first trade with a journal, indicators with a price/percent/ATR y-axis, pattern base rates measured per asset with sample sizes and confidence intervals, multi-timeframe levels running two live panes from one clock, position sizing across crypto, shares, futures contracts and FX lots from real contract specifications, and a chapter that has you measure each market's character yourself — trend persistence, volatility, correlation and which edges survive being moved — rather than taking any of it on faith. Journal analytics are next. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
+**Status:** pre-alpha. **Chapters 1 through 9 are playable end to end** — 65 levels across twelve interaction kinds, including draw tools, a replay engine, indicators with a price/percent/ATR y-axis, pattern base rates measured per asset with sample sizes and confidence intervals, multi-timeframe levels running two live panes from one clock, position sizing across crypto, shares, futures contracts and FX lots from real contract specifications, a chapter that has you measure each market's character yourself — trend persistence, volatility, correlation and which edges survive being moved — and a chapter that reads your own trade journal back to you and tells you what it will not support. It also has you tune a rule until the backtest looks brilliant, then shows you where that setting ranked on the years you did not tune on: 25th of 26 on the index, 3rd of 26 on Apple, because overfitting sometimes goes unpunished and that is exactly why the final chapter requires three markets. Building your own strategy is next. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
 
 ---
 
@@ -29,7 +29,7 @@ So the level built on those numbers asks a different question than planned: not 
 - **One sizing formula, four instrument classes** — spot crypto, shares, futures contracts, FX lots. Same math, different `valuePerPoint`.
 - **Per-asset base rates** — a distribution across five markets, never a single number.
 
-The game also teaches you to distrust your own results. The Chapter 1 boss is a coin flip you score ~50% on. Chapter 9 makes you overfit a rule until it looks brilliant, then reveals the out-of-sample collapse.
+The game also teaches you to distrust your own results. The Chapter 1 boss is a coin flip you score ~50% on. Chapter 9 has you tune a rule until the backtest looks brilliant, then shows you where that setting ranked on the years you did not tune on — and finishes by turning the same scepticism on the game's own data, which contains no delisted company because no data provider will sell you one.
 
 ---
 
@@ -47,7 +47,7 @@ Ten chapters, ~73 levels. Full breakdown in [`docs/CURRICULUM.md`](docs/CURRICUL
 | 6   | Confluence & Multi-Timeframe | Full MTF replay trade                               |
 | 7   | Risk, R & Sizing             | 10 trades; scored on expectancy, not profit         |
 | 8   | Asset Character              | Measuring trend-persistence yourself, per asset     |
-| 9   | Edge & Probability           | Spotting overfit and under-sampled backtests        |
+| 9   | Edge & Probability           | Three backtest reports, three ways of being wrong   |
 | 10  | Build Your Own Strategy      | An exported playbook that works on ≥2 asset classes |
 
 ---
@@ -96,7 +96,7 @@ Twelve committed series spanning crypto, an index, a single stock, FX, gold and 
 
 `npm run data:fetch` regenerates them, but **the committed JSON is the source of truth** — levels address it by bar index, so a series is immutable once committed. Two series are rolling-window snapshots that upstream cannot serve twice identically. Read [`docs/DATA.md`](docs/DATA.md) before touching anything under `public/data/`.
 
-`npm run data:rates` regenerates the per-asset pattern base rates, `npm run data:resample` the derived higher-timeframe series, and `npm run data:character` the trend-persistence, correlation and edge measurements Chapter 8 rests on. All three write committed artefacts that a test recomputes, so a stale file fails CI rather than quietly teaching last month's numbers.
+`npm run data:rates` regenerates the per-asset pattern base rates, `npm run data:resample` the derived higher-timeframe series, `npm run data:character` the trend-persistence, correlation and edge measurements Chapter 8 rests on, and `npm run data:sweep` the two-window parameter sweep Chapter 9 rests on. All four write committed artefacts that a test recomputes, so a stale file fails CI rather than quietly teaching last month's numbers.
 
 One series is drawn as a close-only line rather than as candles. Yahoo reports the EURUSD daily open within a pip or two of the same bar's close after 2010, so 72% of that series has effectively no body — the high and the low are sound, so only the body is fiction. `RENDER_AS_LINE` in `lib/chart/types.ts` holds the list, and `integrity.test.ts` asserts it equals the set of series whose open fails a health check, so membership has to be earned by measurement rather than chosen.
 

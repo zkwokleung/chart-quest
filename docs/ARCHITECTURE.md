@@ -301,7 +301,31 @@ type Persisted = {
 - `migrate(persisted)` runs on read whenever `version` is behind.
 - **Export/import JSON** is a real feature, not a nicety: with no cloud sync it's the only way to move devices, and it protects ten chapters of progress against a cleared cache.
 
-The journal is what makes Ch 9.6 possible — because progress is local, the trade log is genuinely the player's own, so the game can tell them _"you're +0.6R on trend continuation and −0.9R counter-trend; your average loss is 1.4R, not the 1R you set."_
+The journal is what makes Ch 9.6 possible — because progress is local, the trade log is genuinely the player's own.
+
+### What the journal records, and the discriminator it needed
+
+**Every trade the player commits is logged, not one in six.** Until M9 only `replay-trade` carried a journal hook, so four composite bosses discarded the trade their `replay-trade` stage produced and 7.B's ten sized trades wrote nothing: a perfect playthrough of Chapters 1–8 left **three entries across two asset classes**, and the two classes that appear only in bosses never appeared at all. The hook is now `journalEntries(attempt, level, grade): JournalDraft[]` — plural, an array, no `null`, because a `Draft | Draft[] | null` union pushes a normalisation branch into the dispatcher and every test. It deliberately does not take `data`, or the composite would have to re-grade its steps to build the journal: a second grading pass whose only purpose is to be able to disagree with the first.
+
+`composite/grade.ts` therefore returns `reference: { kind: "steps", steps: OverlaySpec[] }`, one per stage, and `journalEntriesComposite` reads each `replay-trade` stage's own `trade` overlay out of it. That preserves the invariant `replay-trade` already stated — the journal is read off the grade's own overlay rather than recomputed, so the journal and the score card cannot disagree.
+
+**`JournalEntry.planned` is what keeps 9.6 honest.** Of the eighteen entries a full playthrough leaves, ten come from 7.B, where the entry, stop and target were authored and the only decision was size. Pooling those into _"your average loss is 1.4R, not the 1R you set"_ would make it a claim about the author's stops — the exact error Chapter 9 exists to cure. `planned` and `setup` are both optional so pre-M9 saves stay valid and `SCHEMA_VERSION` need not move, the same call `attemptNo` made in M5; undefined reads as planned, because every entry written before M9 came from a level where the plan was the player's.
+
+**`logTrades(entries)` takes a batch, with one `attemptNo` for all of it.** Per entry, 7.B's ten trades would number 1…10 within a single attempt. Ids carry an index because ten entries share an ISO millisecond. And `JOURNAL_LIMIT` eviction is **per attempt, not per entry** — evicting oldest-first by entry can leave five of 7.B's ten in the record, which 9.6 would read as a five-trade run at a ten-trade level.
+
+`lib/levels/journal-coverage.test.ts` walks every authored level, grades its reference attempt and pins what the journal holds: eighteen entries, four asset classes at 2/4/1/11, exactly eight planned. Every number in it was wrong before M9.
+
+### Analytics live in `lib/journal/`, not in the store
+
+`reportOn(journal)` and `disciplineScore(journal)` are pure — no store import, no React. Analytics over the journal is computation, not store code.
+
+Two things the module argues rather than leaving to be discovered. **Expectancy is the mean R, and the textbook formula is not computed beside it**: every trade here risks exactly 1R by construction, so `winRate·avgWin − lossRate·avgLoss` _equals_ the mean, and computing both would create two sources for one number and a way for them to drift. **Max drawdown is of the cumulative R curve, in R** — there is no equity curve, because the trades come from nine levels with different notional accounts and are sequential in none of them, so the label carries its unit rather than inviting a reading as a percentage of an account that never existed.
+
+`UNDERPOWERED_BELOW = 20`, and the report **names** the cells beneath it rather than leaving them to be noticed. The n=1 fx cell is not a defect to hide; it is 9.2's sample-size lesson turned on the player, and the report is built for it.
+
+### The skill radar
+
+`lib/levels/skills.ts` maps each teaching chapter to one of nine axes and takes a tenth, `discipline`, from the journal. Two decisions in it are declarations with a test behind them rather than inferences: **Chapter 10 has no axis**, because the capstone composes all nine and a tenth would score the same skills twice; and **an unattempted axis is `null`, never zero**, because a chapter scored badly and a chapter never opened are the same number of stars and completely different facts.
 
 ---
 
@@ -337,11 +361,15 @@ lib/
   instruments/  specs, sizing
   levels/       schema, registry, graders/, content/ch1..ch10
   backtest/     engine, metrics, guards
-  store/        game, journal, strategies, persist
+  journal/      analytics                 # pure; reads no store, imports no React
+  store/        game, strategies, persist
   chart/        coords, geometry, hit-test
-scripts/        fetch-data.ts, compute-base-rates.ts
-public/data/    series/*.json, oos/*.json, base-rates.json, manifest.json
+scripts/        fetch-data.ts, compute-base-rates.ts, compute-edge-sweep.ts
+public/data/    series/*.json, oos/*.json, base-rates.json,
+                asset-character.json, edge-sweep.json, manifest.json
 ```
+
+`store/journal` was specified and is not built. Reading the journal back is computation over an array — a report with intervals, per-cell sample sizes and a drawdown curve — and putting it in the store would make it the one part of the analytics that cannot be tested without a store. The store's job is to hold the entries and write them; `lib/journal/analytics.ts` does the rest.
 
 ## 11. The replay feed, and what the seal proves
 
