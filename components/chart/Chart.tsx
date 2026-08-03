@@ -29,10 +29,12 @@ import {
 import {
   clampRange,
   toCandlestickData,
+  toCloseLineData,
   toLineData,
   toVolumeData,
 } from "@/lib/chart/to-lwc";
-import type { BarRange, Series } from "@/lib/chart/types";
+import { RENDER_AS_LINE } from "@/lib/chart/types";
+import type { BarRange, Series, SeriesId } from "@/lib/chart/types";
 import { formatMode, toMode, type YAxisMode } from "@/lib/ta/normalize";
 import { DrawingsPrimitive, type RenderableDrawing } from "./DrawingPrimitive";
 
@@ -87,10 +89,16 @@ const CANDLE_DOWN = "#e2603f";
  * `logicalToCoordinate` returns plausible pixels for bars that do not exist, and
  * the guards there are what reject them.
  */
-function scaleAdapterFor(
-  chart: IChartApi,
-  series: ISeriesApi<"Candlestick">,
-): ScaleAdapter {
+/**
+ * The price series, whichever shape it is drawn in.
+ *
+ * Everything below needs only `coordinateToPrice`, `priceToCoordinate`, `setData`,
+ * `attachPrimitive` and `priceScale`, all of which both series types have — so drawing a
+ * series as a line costs a union here rather than a second code path.
+ */
+type PriceSeries = ISeriesApi<"Candlestick"> | ISeriesApi<"Line">;
+
+function scaleAdapterFor(chart: IChartApi, series: PriceSeries): ScaleAdapter {
   return {
     coordinateToLogical: (x) => chart.timeScale().coordinateToLogical(x),
     // `Logical` is a nominal brand over number; validation lives in the guards.
@@ -115,7 +123,7 @@ export function Chart({
 }: ChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const candlesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const candlesRef = useRef<PriceSeries | null>(null);
   const volumeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
 
   const { from, to } = clampRange(series, range);
@@ -185,15 +193,27 @@ export function Chart({
     });
 
     // v5 takes a series definition rather than the v4 addCandlestickSeries().
-    const candles = chart.addSeries(CandlestickSeries, {
-      upColor: CANDLE_UP,
-      downColor: "transparent",
-      borderUpColor: CANDLE_UP,
-      borderDownColor: CANDLE_DOWN,
-      wickUpColor: CANDLE_UP,
-      wickDownColor: CANDLE_DOWN,
-      borderVisible: true,
-    });
+    //
+    // A few series are drawn as a line because their candle bodies would be fiction — see
+    // `RENDER_AS_LINE`. The decision is the data's, not the level's, so it is read from the
+    // series id here rather than passed in: a level cannot ask for an honest series to be
+    // flattened, and cannot forget to ask for a dishonest one to be.
+    const asLine = RENDER_AS_LINE.has(series.id as SeriesId);
+    const candles: PriceSeries = asLine
+      ? chart.addSeries(LineSeries, {
+          color: CANDLE_UP,
+          lineWidth: 2,
+          priceLineVisible: false,
+        })
+      : chart.addSeries(CandlestickSeries, {
+          upColor: CANDLE_UP,
+          downColor: "transparent",
+          borderUpColor: CANDLE_UP,
+          borderDownColor: CANDLE_DOWN,
+          wickUpColor: CANDLE_UP,
+          wickDownColor: CANDLE_DOWN,
+          borderVisible: true,
+        });
 
     // The volume series is created here, alongside the chart, so its lifetime
     // matches the chart's. Creating it in the data effect instead meant that on
@@ -326,7 +346,13 @@ export function Chart({
     const candles = candlesRef.current;
     if (!chart || !candles) return;
 
-    candles.setData(toCandlestickData(series, { from, to }));
+    if (RENDER_AS_LINE.has(series.id as SeriesId)) {
+      (candles as ISeriesApi<"Line">).setData(toCloseLineData(series, { from, to }));
+    } else {
+      (candles as ISeriesApi<"Candlestick">).setData(
+        toCandlestickData(series, { from, to }),
+      );
+    }
     volumeRef.current?.setData(toVolumeData(series, { from, to }));
 
     // Indicator values come from the same `series` the candles do — which on a

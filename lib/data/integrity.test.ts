@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
+import { RENDER_AS_LINE } from "@/lib/chart/types";
 import type { OosSeriesId, Series, SeriesId } from "@/lib/chart/types";
 import type { SeriesManifest } from "@/lib/data/manifest-types";
 import { ALL_LEVELS } from "@/lib/levels/content/all";
@@ -292,6 +293,14 @@ describe("open-price health", () => {
       expect(degenerateBodyShare(id)).toBeGreaterThan(0.5);
     },
   );
+
+  it("draws exactly the unreliable-open series as lines, and no others", () => {
+    // `RENDER_AS_LINE` decides what a player sees, so it has to be a statement about the
+    // data rather than about taste. Tying it to the same measurement means no series can be
+    // flattened to hide a rendering bug, and none with a broken open can be left drawing
+    // candles that are fiction — which is what six levels did until M8.
+    expect([...RENDER_AS_LINE].sort()).toEqual([...OPEN_UNRELIABLE].sort());
+  });
 
   it("keeps no level's body- or gap-based claim pointed at an unreliable open", () => {
     // 1.6 is the level that reads opens directly; it used to read this one.

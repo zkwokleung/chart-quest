@@ -1,4 +1,5 @@
 import type {
+  LineData,
   CandlestickData,
   HistogramData,
   UTCTimestamp,
@@ -23,6 +24,26 @@ export function clampRange(series: Series<string>, range?: BarRange): BarRange {
 
 function toTimestamp(ms: number): UTCTimestamp {
   return Math.floor(ms / 1000) as UTCTimestamp;
+}
+
+/**
+ * Closes only, for series in `RENDER_AS_LINE`.
+ *
+ * Uses the close rather than a midpoint or a typical price: the close is the one price in
+ * these bars that is not in question, and every indicator in the codebase already reads it.
+ */
+export function toCloseLineData(
+  series: Series<string>,
+  range?: BarRange,
+): LineData<UTCTimestamp>[] {
+  const { from, to } = clampRange(series, range);
+  const out: LineData<UTCTimestamp>[] = [];
+  for (let i = from; i < to; i += 1) {
+    const bar = barAt(series, i);
+    if (!bar) continue;
+    out.push({ time: toTimestamp(bar.t), value: bar.c });
+  }
+  return out;
 }
 
 export function toCandlestickData(

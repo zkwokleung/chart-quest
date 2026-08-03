@@ -81,6 +81,23 @@ export type Series<Id extends string = SeriesId> = {
   v: number[];
 };
 
+/**
+ * Series whose candle bodies would be a lie, drawn as a close-only line instead.
+ *
+ * Membership is a statement about the *data*, never about taste. `EURUSD-1d` is here because
+ * Yahoo reports its open within a pip or two of the same bar's close for everything after
+ * November 2010: 72% of the series has a body under a tenth of its range, against about 11%
+ * for every other series in the spine. The high and the low are sound, so the range a chart
+ * draws is correct — only the body is fiction, and a wall of near-bodyless candles tells a
+ * player something false about how FX trades. Issue #58 has the measurements.
+ *
+ * Refetching cannot fix it; 64 of the last 67 bars Yahoo serves have the same shape.
+ *
+ * `integrity.test.ts` owns the open-health guard that decides who belongs here, so a series
+ * cannot be added to hide a rendering bug — it has to be defective in the way this describes.
+ */
+export const RENDER_AS_LINE: ReadonlySet<SeriesId> = new Set<SeriesId>(["EURUSD-1d"]);
+
 export type Bar = {
   t: number;
   o: number;
