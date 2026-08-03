@@ -1,0 +1,1734 @@
+{
+  "definition": "One rule — close above the highest high of the previous n bars, a stop 2 ATR below entry and a target 2R above, entering only when flat. The first 70% of each market's history is for tuning; the rest is held back and measured once. `rankLater` is where a lookback's later-window total placed among all 26 swept, best first — so rank 1 is the best of the twenty-six and rank 26 the worst. It is the honest statistic here, because a total can be explained away by a shorter window and a rank cannot.",
+  "lookbacks": [
+    5,
+    7,
+    9,
+    11,
+    13,
+    15,
+    17,
+    19,
+    21,
+    23,
+    25,
+    27,
+    29,
+    31,
+    33,
+    35,
+    37,
+    39,
+    41,
+    43,
+    45,
+    47,
+    49,
+    51,
+    53,
+    55
+  ],
+  "inSampleFraction": 0.7,
+  "assets": [
+    {
+      "asset": "GC-1d",
+      "splitBar": 3224,
+      "splitDate": "2017-10-31",
+      "cells": [
+        {
+          "n": 5,
+          "inSample": {
+            "trades": 132,
+            "totalR": 28.250999468425377,
+            "perTradeR": 0.2140227232456468,
+            "maxDrawdownR": 18.486211922658782
+          },
+          "later": {
+            "trades": 55,
+            "totalR": 14.198338776604343,
+            "perTradeR": 0.258151614120079,
+            "maxDrawdownR": 8.685822935522777
+          },
+          "rankLater": 15
+        },
+        {
+          "n": 7,
+          "inSample": {
+            "trades": 123,
+            "totalR": 31.363328636997487,
+            "perTradeR": 0.2549864116829064,
+            "maxDrawdownR": 13.095240723871129
+          },
+          "later": {
+            "trades": 54,
+            "totalR": 9.394105888189776,
+            "perTradeR": 0.17396492385536622,
+            "maxDrawdownR": 9.20802756829139
+          },
+          "rankLater": 23
+        },
+        {
+          "n": 9,
+          "inSample": {
+            "trades": 118,
+            "totalR": 35.42006116916652,
+            "perTradeR": 0.30017000990819087,
+            "maxDrawdownR": 12.281456548836303
+          },
+          "later": {
+            "trades": 48,
+            "totalR": 10.939310393854987,
+            "perTradeR": 0.22790229987197888,
+            "maxDrawdownR": 7.04266058400092
+          },
+          "rankLater": 19
+        },
+        {
+          "n": 11,
+          "inSample": {
+            "trades": 109,
+            "totalR": 35.87701107906198,
+            "perTradeR": 0.32914689063359615,
+            "maxDrawdownR": 10.795586840596023
+          },
+          "later": {
+            "trades": 46,
+            "totalR": 10.05219430819181,
+            "perTradeR": 0.2185259632215611,
+            "maxDrawdownR": 6.090513344737124
+          },
+          "rankLater": 21
+        },
+        {
+          "n": 13,
+          "inSample": {
+            "trades": 100,
+            "totalR": 32.688389303925135,
+            "perTradeR": 0.32688389303925136,
+            "maxDrawdownR": 8.139274215345527
+          },
+          "later": {
+            "trades": 43,
+            "totalR": 9.21354940084926,
+            "perTradeR": 0.21426859071742466,
+            "maxDrawdownR": 8.821354796861865
+          },
+          "rankLater": 24
+        },
+        {
+          "n": 15,
+          "inSample": {
+            "trades": 93,
+            "totalR": 26.601539314956693,
+            "perTradeR": 0.28603805715007197,
+            "maxDrawdownR": 11.181482998770989
+          },
+          "later": {
+            "trades": 42,
+            "totalR": 9.968552432989947,
+            "perTradeR": 0.23734648649976064,
+            "maxDrawdownR": 7.819292941191764
+          },
+          "rankLater": 22
+        },
+        {
+          "n": 17,
+          "inSample": {
+            "trades": 92,
+            "totalR": 22.095552135232655,
+            "perTradeR": 0.24016904494818103,
+            "maxDrawdownR": 15.181482998770989
+          },
+          "later": {
+            "trades": 39,
+            "totalR": 13.03195620345804,
+            "perTradeR": 0.3341527231655908,
+            "maxDrawdownR": 6.75900084074685
+          },
+          "rankLater": 17
+        },
+        {
+          "n": 19,
+          "inSample": {
+            "trades": 88,
+            "totalR": 26.86154235355222,
+            "perTradeR": 0.3052447994721843,
+            "maxDrawdownR": 15.486738620340386
+          },
+          "later": {
+            "trades": 38,
+            "totalR": 10.925630316302714,
+            "perTradeR": 0.28751658727112406,
+            "maxDrawdownR": 5.718322874645153
+          },
+          "rankLater": 20
+        },
+        {
+          "n": 21,
+          "inSample": {
+            "trades": 81,
+            "totalR": 31.480315295345616,
+            "perTradeR": 0.38864586784377303,
+            "maxDrawdownR": 14.486738620340375
+          },
+          "later": {
+            "trades": 36,
+            "totalR": 7.565783230318379,
+            "perTradeR": 0.21016064528662165,
+            "maxDrawdownR": 8.718322874645146
+          },
+          "rankLater": 26
+        },
+        {
+          "n": 23,
+          "inSample": {
+            "trades": 81,
+            "totalR": 18.652363373654794,
+            "perTradeR": 0.23027609103277524,
+            "maxDrawdownR": 15.486738620340375
+          },
+          "later": {
+            "trades": 35,
+            "totalR": 8.56578323031838,
+            "perTradeR": 0.24473666372338226,
+            "maxDrawdownR": 7.718322874645146
+          },
+          "rankLater": 25
+        },
+        {
+          "n": 25,
+          "inSample": {
+            "trades": 77,
+            "totalR": 20.521958303139385,
+            "perTradeR": 0.2665189390018102,
+            "maxDrawdownR": 13.384795659588505
+          },
+          "later": {
+            "trades": 31,
+            "totalR": 12.812842053847794,
+            "perTradeR": 0.41331748560799336,
+            "maxDrawdownR": 6.7183228746451515
+          },
+          "rankLater": 18
+        },
+        {
+          "n": 27,
+          "inSample": {
+            "trades": 74,
+            "totalR": 23.47933535231971,
+            "perTradeR": 0.31728831557188797,
+            "maxDrawdownR": 11.427418610408182
+          },
+          "later": {
+            "trades": 30,
+            "totalR": 14.046435461094921,
+            "perTradeR": 0.4682145153698307,
+            "maxDrawdownR": 5.437525773195876
+          },
+          "rankLater": 16
+        },
+        {
+          "n": 29,
+          "inSample": {
+            "trades": 73,
+            "totalR": 21.16678120831567,
+            "perTradeR": 0.2899559069632283,
+            "maxDrawdownR": 12.363972743120637
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 15.04643546109492,
+            "perTradeR": 0.5188426021067214,
+            "maxDrawdownR": 4.437525773195876
+          },
+          "rankLater": 12
+        },
+        {
+          "n": 31,
+          "inSample": {
+            "trades": 68,
+            "totalR": 22.573071691901767,
+            "perTradeR": 0.3319569366456142,
+            "maxDrawdownR": 9.363972743120637
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 15.04643546109492,
+            "perTradeR": 0.5188426021067214,
+            "maxDrawdownR": 4.437525773195876
+          },
+          "rankLater": 13
+        },
+        {
+          "n": 33,
+          "inSample": {
+            "trades": 68,
+            "totalR": 21.027011359414885,
+            "perTradeR": 0.309220755285513,
+            "maxDrawdownR": 13.366093633894756
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 15.04643546109492,
+            "perTradeR": 0.5188426021067214,
+            "maxDrawdownR": 4.437525773195876
+          },
+          "rankLater": 14
+        },
+        {
+          "n": 35,
+          "inSample": {
+            "trades": 65,
+            "totalR": 21.81982835953613,
+            "perTradeR": 0.33568966706978665,
+            "maxDrawdownR": 11.363972743120637
+          },
+          "later": {
+            "trades": 28,
+            "totalR": 17.594711323163935,
+            "perTradeR": 0.6283825472558549,
+            "maxDrawdownR": 3.437525773195876
+          },
+          "rankLater": 9
+        },
+        {
+          "n": 37,
+          "inSample": {
+            "trades": 64,
+            "totalR": 22.49786192856228,
+            "perTradeR": 0.3515290926337856,
+            "maxDrawdownR": 11.363972743120637
+          },
+          "later": {
+            "trades": 27,
+            "totalR": 18.594711323163935,
+            "perTradeR": 0.6886930119690347,
+            "maxDrawdownR": 3.437525773195876
+          },
+          "rankLater": 6
+        },
+        {
+          "n": 39,
+          "inSample": {
+            "trades": 64,
+            "totalR": 16.497861928562273,
+            "perTradeR": 0.2577790926337855,
+            "maxDrawdownR": 11.363972743120637
+          },
+          "later": {
+            "trades": 26,
+            "totalR": 19.594711323163935,
+            "perTradeR": 0.7536427431986129,
+            "maxDrawdownR": 3.437525773195876
+          },
+          "rankLater": 3
+        },
+        {
+          "n": 41,
+          "inSample": {
+            "trades": 61,
+            "totalR": 19.497861928562266,
+            "perTradeR": 0.3196370807961027,
+            "maxDrawdownR": 9.363972743120645
+          },
+          "later": {
+            "trades": 26,
+            "totalR": 18.9532370963598,
+            "perTradeR": 0.7289706575523,
+            "maxDrawdownR": 4.079000000000013
+          },
+          "rankLater": 4
+        },
+        {
+          "n": 43,
+          "inSample": {
+            "trades": 61,
+            "totalR": 19.464257040578566,
+            "perTradeR": 0.3190861809930913,
+            "maxDrawdownR": 8.363972743120645
+          },
+          "later": {
+            "trades": 26,
+            "totalR": 18.95323709635977,
+            "perTradeR": 0.728970657552299,
+            "maxDrawdownR": 4.079000000000013
+          },
+          "rankLater": 5
+        },
+        {
+          "n": 45,
+          "inSample": {
+            "trades": 61,
+            "totalR": 19.781657468729016,
+            "perTradeR": 0.32428946670047565,
+            "maxDrawdownR": 8.363972743120645
+          },
+          "later": {
+            "trades": 25,
+            "totalR": 21.018040854188598,
+            "perTradeR": 0.840721634167544,
+            "maxDrawdownR": 2.3296787420373954
+          },
+          "rankLater": 2
+        },
+        {
+          "n": 47,
+          "inSample": {
+            "trades": 59,
+            "totalR": 18.644644729273775,
+            "perTradeR": 0.31601092761480976,
+            "maxDrawdownR": 9.469014759927369
+          },
+          "later": {
+            "trades": 25,
+            "totalR": 21.032237096359786,
+            "perTradeR": 0.8412894838543914,
+            "maxDrawdownR": 2.3296787420373954
+          },
+          "rankLater": 1
+        },
+        {
+          "n": 49,
+          "inSample": {
+            "trades": 59,
+            "totalR": 19.253133693620093,
+            "perTradeR": 0.326324299891866,
+            "maxDrawdownR": 9.469014759927369
+          },
+          "later": {
+            "trades": 24,
+            "totalR": 17.48396123429079,
+            "perTradeR": 0.7284983847621161,
+            "maxDrawdownR": 2.3296787420373954
+          },
+          "rankLater": 10
+        },
+        {
+          "n": 51,
+          "inSample": {
+            "trades": 59,
+            "totalR": 19.092256641616878,
+            "perTradeR": 0.3235975701968962,
+            "maxDrawdownR": 9.469014759927369
+          },
+          "later": {
+            "trades": 24,
+            "totalR": 17.454432897249937,
+            "perTradeR": 0.727268037385414,
+            "maxDrawdownR": 2.3592070790782422
+          },
+          "rankLater": 11
+        },
+        {
+          "n": 53,
+          "inSample": {
+            "trades": 58,
+            "totalR": 20.44990788716848,
+            "perTradeR": 0.3525846187442841,
+            "maxDrawdownR": 9.469014759927369
+          },
+          "later": {
+            "trades": 23,
+            "totalR": 18.505280354877087,
+            "perTradeR": 0.8045774067337864,
+            "maxDrawdownR": 2.3083596214511117
+          },
+          "rankLater": 7
+        },
+        {
+          "n": 55,
+          "inSample": {
+            "trades": 58,
+            "totalR": 20.449907887168475,
+            "perTradeR": 0.35258461874428404,
+            "maxDrawdownR": 9.469014759927376
+          },
+          "later": {
+            "trades": 23,
+            "totalR": 18.505280354877087,
+            "perTradeR": 0.8045774067337864,
+            "maxDrawdownR": 2.3083596214511117
+          },
+          "rankLater": 8
+        }
+      ],
+      "bestInSample": 11,
+      "bestInSampleRankLater": 21
+    },
+    {
+      "asset": "SPY-1d",
+      "splitBar": 3228,
+      "splitDate": "2017-10-27",
+      "cells": [
+        {
+          "n": 5,
+          "inSample": {
+            "trades": 95,
+            "totalR": 19.362861086174657,
+            "perTradeR": 0.20381959038078587,
+            "maxDrawdownR": 10.208644701254443
+          },
+          "later": {
+            "trades": 46,
+            "totalR": 10.149720641061453,
+            "perTradeR": 0.22064610089264028,
+            "maxDrawdownR": 8.37128996551781
+          },
+          "rankLater": 1
+        },
+        {
+          "n": 7,
+          "inSample": {
+            "trades": 89,
+            "totalR": 21.330794741922816,
+            "perTradeR": 0.23967185103284064,
+            "maxDrawdownR": 9.618718023991534
+          },
+          "later": {
+            "trades": 48,
+            "totalR": 0.06265784189320023,
+            "perTradeR": 0.001305371706108338,
+            "maxDrawdownR": 7.267923498381099
+          },
+          "rankLater": 26
+        },
+        {
+          "n": 9,
+          "inSample": {
+            "trades": 80,
+            "totalR": 26.23070476779404,
+            "perTradeR": 0.3278838095974255,
+            "maxDrawdownR": 9.618718023991534
+          },
+          "later": {
+            "trades": 45,
+            "totalR": 4.25214697240812,
+            "perTradeR": 0.09449215494240266,
+            "maxDrawdownR": 5.167948990529962
+          },
+          "rankLater": 25
+        },
+        {
+          "n": 11,
+          "inSample": {
+            "trades": 78,
+            "totalR": 24.304325488126228,
+            "perTradeR": 0.3115939165144388,
+            "maxDrawdownR": 8.901935590650726
+          },
+          "later": {
+            "trades": 44,
+            "totalR": 4.983512475345002,
+            "perTradeR": 0.11326164716693186,
+            "maxDrawdownR": 5.253563391006009
+          },
+          "rankLater": 21
+        },
+        {
+          "n": 13,
+          "inSample": {
+            "trades": 77,
+            "totalR": 21.684577717927205,
+            "perTradeR": 0.281617892440613,
+            "maxDrawdownR": 8.714524080394389
+          },
+          "later": {
+            "trades": 42,
+            "totalR": 7.073268739667454,
+            "perTradeR": 0.1684111604682727,
+            "maxDrawdownR": 4.999999999999991
+          },
+          "rankLater": 11
+        },
+        {
+          "n": 15,
+          "inSample": {
+            "trades": 75,
+            "totalR": 19.105103789679568,
+            "perTradeR": 0.25473471719572754,
+            "maxDrawdownR": 6.729147913547915
+          },
+          "later": {
+            "trades": 39,
+            "totalR": 6.546387417204369,
+            "perTradeR": 0.16785608762062484,
+            "maxDrawdownR": 5.133136094674553
+          },
+          "rankLater": 12
+        },
+        {
+          "n": 17,
+          "inSample": {
+            "trades": 72,
+            "totalR": 14.92669964917257,
+            "perTradeR": 0.20731527290517457,
+            "maxDrawdownR": 6.651322352032866
+          },
+          "later": {
+            "trades": 37,
+            "totalR": 4.795100702739318,
+            "perTradeR": 0.12959731629025184,
+            "maxDrawdownR": 4.133136094674553
+          },
+          "rankLater": 22
+        },
+        {
+          "n": 19,
+          "inSample": {
+            "trades": 69,
+            "totalR": 15.176929203387516,
+            "perTradeR": 0.21995549570126835,
+            "maxDrawdownR": 6.651322352032866
+          },
+          "later": {
+            "trades": 36,
+            "totalR": 5.93295454444931,
+            "perTradeR": 0.16480429290136972,
+            "maxDrawdownR": 5
+          },
+          "rankLater": 17
+        },
+        {
+          "n": 21,
+          "inSample": {
+            "trades": 68,
+            "totalR": 16.376166178365526,
+            "perTradeR": 0.24082597321125773,
+            "maxDrawdownR": 6.651322352032866
+          },
+          "later": {
+            "trades": 36,
+            "totalR": 5.948184832336822,
+            "perTradeR": 0.1652273564538006,
+            "maxDrawdownR": 5
+          },
+          "rankLater": 16
+        },
+        {
+          "n": 23,
+          "inSample": {
+            "trades": 66,
+            "totalR": 14.971500794842061,
+            "perTradeR": 0.2268409211339706,
+            "maxDrawdownR": 4.651322352032866
+          },
+          "later": {
+            "trades": 34,
+            "totalR": 7.784280815110981,
+            "perTradeR": 0.22894943573855828,
+            "maxDrawdownR": 4
+          },
+          "rankLater": 2
+        },
+        {
+          "n": 25,
+          "inSample": {
+            "trades": 65,
+            "totalR": 14.562643187911892,
+            "perTradeR": 0.22404066442941373,
+            "maxDrawdownR": 4.651322352032866
+          },
+          "later": {
+            "trades": 35,
+            "totalR": 5.513540511335642,
+            "perTradeR": 0.15752972889530406,
+            "maxDrawdownR": 4.0118562874251475
+          },
+          "rankLater": 18
+        },
+        {
+          "n": 27,
+          "inSample": {
+            "trades": 64,
+            "totalR": 13.617893128117581,
+            "perTradeR": 0.2127795801268372,
+            "maxDrawdownR": 5.690064225182823
+          },
+          "later": {
+            "trades": 34,
+            "totalR": 6.4961365467464125,
+            "perTradeR": 0.1910628396101886,
+            "maxDrawdownR": 5.034773143058315
+          },
+          "rankLater": 13
+        },
+        {
+          "n": 29,
+          "inSample": {
+            "trades": 65,
+            "totalR": 9.888134605390322,
+            "perTradeR": 0.15212514777523573,
+            "maxDrawdownR": 6
+          },
+          "later": {
+            "trades": 34,
+            "totalR": 6.489192789195538,
+            "perTradeR": 0.1908586114469276,
+            "maxDrawdownR": 5.034773143058315
+          },
+          "rankLater": 14
+        },
+        {
+          "n": 31,
+          "inSample": {
+            "trades": 64,
+            "totalR": 8.447625838535021,
+            "perTradeR": 0.1319941537271097,
+            "maxDrawdownR": 8.08905111624778
+          },
+          "later": {
+            "trades": 33,
+            "totalR": 7.155781359032844,
+            "perTradeR": 0.21684185936463163,
+            "maxDrawdownR": 5.365252595113109
+          },
+          "rankLater": 10
+        },
+        {
+          "n": 33,
+          "inSample": {
+            "trades": 63,
+            "totalR": 7.860769335794979,
+            "perTradeR": 0.12477411644119014,
+            "maxDrawdownR": 8.089051116247777
+          },
+          "later": {
+            "trades": 32,
+            "totalR": 5.194820398071867,
+            "perTradeR": 0.16233813743974584,
+            "maxDrawdownR": 4.365252595113109
+          },
+          "rankLater": 20
+        },
+        {
+          "n": 35,
+          "inSample": {
+            "trades": 63,
+            "totalR": 7.860769335794979,
+            "perTradeR": 0.12477411644119014,
+            "maxDrawdownR": 8.089051116247777
+          },
+          "later": {
+            "trades": 31,
+            "totalR": 6.250502339564109,
+            "perTradeR": 0.20162910772787448,
+            "maxDrawdownR": 4.365252595113109
+          },
+          "rankLater": 15
+        },
+        {
+          "n": 37,
+          "inSample": {
+            "trades": 62,
+            "totalR": 8.993429114577456,
+            "perTradeR": 0.1450553082996364,
+            "maxDrawdownR": 8.089051116247777
+          },
+          "later": {
+            "trades": 30,
+            "totalR": 7.288917453707393,
+            "perTradeR": 0.24296391512357976,
+            "maxDrawdownR": 4.10823509056859
+          },
+          "rankLater": 8
+        },
+        {
+          "n": 39,
+          "inSample": {
+            "trades": 60,
+            "totalR": 10.957543458154793,
+            "perTradeR": 0.1826257243025799,
+            "maxDrawdownR": 8.089051116247777
+          },
+          "later": {
+            "trades": 30,
+            "totalR": 7.288917453707393,
+            "perTradeR": 0.24296391512357976,
+            "maxDrawdownR": 4.10823509056859
+          },
+          "rankLater": 9
+        },
+        {
+          "n": 41,
+          "inSample": {
+            "trades": 59,
+            "totalR": 13.53311425877248,
+            "perTradeR": 0.22937481794529627,
+            "maxDrawdownR": 8.089051116247777
+          },
+          "later": {
+            "trades": 30,
+            "totalR": 7.288917453707411,
+            "perTradeR": 0.24296391512358037,
+            "maxDrawdownR": 4.10823509056859
+          },
+          "rankLater": 4
+        },
+        {
+          "n": 43,
+          "inSample": {
+            "trades": 60,
+            "totalR": 8.886930751444577,
+            "perTradeR": 0.1481155125240763,
+            "maxDrawdownR": 8.089051116247777
+          },
+          "later": {
+            "trades": 30,
+            "totalR": 7.288917453707411,
+            "perTradeR": 0.24296391512358037,
+            "maxDrawdownR": 4.10823509056859
+          },
+          "rankLater": 5
+        },
+        {
+          "n": 45,
+          "inSample": {
+            "trades": 59,
+            "totalR": 9.886930751444577,
+            "perTradeR": 0.16757509748211147,
+            "maxDrawdownR": 7.089051116247776
+          },
+          "later": {
+            "trades": 30,
+            "totalR": 7.288917453707411,
+            "perTradeR": 0.24296391512358037,
+            "maxDrawdownR": 4.10823509056859
+          },
+          "rankLater": 6
+        },
+        {
+          "n": 47,
+          "inSample": {
+            "trades": 59,
+            "totalR": 9.886930751444577,
+            "perTradeR": 0.16757509748211147,
+            "maxDrawdownR": 7.089051116247776
+          },
+          "later": {
+            "trades": 30,
+            "totalR": 7.288917453707418,
+            "perTradeR": 0.2429639151235806,
+            "maxDrawdownR": 4.108235090568588
+          },
+          "rankLater": 3
+        },
+        {
+          "n": 49,
+          "inSample": {
+            "trades": 57,
+            "totalR": 11.569786790657318,
+            "perTradeR": 0.202978715625567,
+            "maxDrawdownR": 7.089051116247776
+          },
+          "later": {
+            "trades": 30,
+            "totalR": 7.288917453707407,
+            "perTradeR": 0.24296391512358023,
+            "maxDrawdownR": 4.108235090568588
+          },
+          "rankLater": 7
+        },
+        {
+          "n": 51,
+          "inSample": {
+            "trades": 56,
+            "totalR": 8.934344014606905,
+            "perTradeR": 0.15954185740369473,
+            "maxDrawdownR": 7.089051116247777
+          },
+          "later": {
+            "trades": 30,
+            "totalR": 4.259174335921011,
+            "perTradeR": 0.1419724778640337,
+            "maxDrawdownR": 5.365252595113109
+          },
+          "rankLater": 23
+        },
+        {
+          "n": 53,
+          "inSample": {
+            "trades": 55,
+            "totalR": 10.375616402806322,
+            "perTradeR": 0.18864757096011495,
+            "maxDrawdownR": 7.089051116247777
+          },
+          "later": {
+            "trades": 30,
+            "totalR": 4.259174335921011,
+            "perTradeR": 0.1419724778640337,
+            "maxDrawdownR": 5.365252595113109
+          },
+          "rankLater": 24
+        },
+        {
+          "n": 55,
+          "inSample": {
+            "trades": 55,
+            "totalR": 10.39707983029349,
+            "perTradeR": 0.1890378150962453,
+            "maxDrawdownR": 7.089051116247777
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 5.259174335921011,
+            "perTradeR": 0.18135083916969003,
+            "maxDrawdownR": 4.365252595113109
+          },
+          "rankLater": 19
+        }
+      ],
+      "bestInSample": 9,
+      "bestInSampleRankLater": 25
+    },
+    {
+      "asset": "AAPL-1d",
+      "splitBar": 3228,
+      "splitDate": "2017-10-27",
+      "cells": [
+        {
+          "n": 5,
+          "inSample": {
+            "trades": 116,
+            "totalR": 51.69506130575879,
+            "perTradeR": 0.44564708022205857,
+            "maxDrawdownR": 8.191839735758567
+          },
+          "later": {
+            "trades": 49,
+            "totalR": 29.25425250562729,
+            "perTradeR": 0.5970255613393324,
+            "maxDrawdownR": 4
+          },
+          "rankLater": 3
+        },
+        {
+          "n": 7,
+          "inSample": {
+            "trades": 114,
+            "totalR": 37.714819634092066,
+            "perTradeR": 0.3308317511762462,
+            "maxDrawdownR": 9.473712199453788
+          },
+          "later": {
+            "trades": 47,
+            "totalR": 31.38357408089543,
+            "perTradeR": 0.6677356187424559,
+            "maxDrawdownR": 4
+          },
+          "rankLater": 2
+        },
+        {
+          "n": 9,
+          "inSample": {
+            "trades": 111,
+            "totalR": 41.05783189552967,
+            "perTradeR": 0.3698903774372042,
+            "maxDrawdownR": 6.801829268292689
+          },
+          "later": {
+            "trades": 43,
+            "totalR": 34.64793486708511,
+            "perTradeR": 0.8057659271415143,
+            "maxDrawdownR": 3.7589928057553976
+          },
+          "rankLater": 1
+        },
+        {
+          "n": 11,
+          "inSample": {
+            "trades": 108,
+            "totalR": 45.731061040184215,
+            "perTradeR": 0.4234357503720761,
+            "maxDrawdownR": 6.801829268292689
+          },
+          "later": {
+            "trades": 39,
+            "totalR": 28.241453440577683,
+            "perTradeR": 0.7241398318096842,
+            "maxDrawdownR": 3.0395186653904034
+          },
+          "rankLater": 6
+        },
+        {
+          "n": 13,
+          "inSample": {
+            "trades": 101,
+            "totalR": 46.40554288264259,
+            "perTradeR": 0.4594608206202237,
+            "maxDrawdownR": 5.4915032679738545
+          },
+          "later": {
+            "trades": 41,
+            "totalR": 26.694606182588572,
+            "perTradeR": 0.651087955672892,
+            "maxDrawdownR": 4.007332722273141
+          },
+          "rankLater": 12
+        },
+        {
+          "n": 15,
+          "inSample": {
+            "trades": 95,
+            "totalR": 49.10924022628123,
+            "perTradeR": 0.5169393708029603,
+            "maxDrawdownR": 5.75
+          },
+          "later": {
+            "trades": 41,
+            "totalR": 27.335192826515616,
+            "perTradeR": 0.6667120201589175,
+            "maxDrawdownR": 5.016389326046726
+          },
+          "rankLater": 10
+        },
+        {
+          "n": 17,
+          "inSample": {
+            "trades": 95,
+            "totalR": 41.872592297054084,
+            "perTradeR": 0.44076412944267457,
+            "maxDrawdownR": 7.641423125794159
+          },
+          "later": {
+            "trades": 39,
+            "totalR": 26.224745065321592,
+            "perTradeR": 0.6724293606492716,
+            "maxDrawdownR": 4.016389326046727
+          },
+          "rankLater": 15
+        },
+        {
+          "n": 19,
+          "inSample": {
+            "trades": 91,
+            "totalR": 43.90401845551952,
+            "perTradeR": 0.48246174126944524,
+            "maxDrawdownR": 7.241423125794157
+          },
+          "later": {
+            "trades": 38,
+            "totalR": 26.96969192634084,
+            "perTradeR": 0.7097287349037064,
+            "maxDrawdownR": 4.016389326046727
+          },
+          "rankLater": 11
+        },
+        {
+          "n": 21,
+          "inSample": {
+            "trades": 89,
+            "totalR": 42.83431336168573,
+            "perTradeR": 0.4812844197942217,
+            "maxDrawdownR": 7.241423125794157
+          },
+          "later": {
+            "trades": 37,
+            "totalR": 27.591889298901307,
+            "perTradeR": 0.7457267378081435,
+            "maxDrawdownR": 3.007332722273141
+          },
+          "rankLater": 8
+        },
+        {
+          "n": 23,
+          "inSample": {
+            "trades": 86,
+            "totalR": 40.12291331299381,
+            "perTradeR": 0.4665455036394629,
+            "maxDrawdownR": 7.241423125794157
+          },
+          "later": {
+            "trades": 37,
+            "totalR": 27.591185073549198,
+            "perTradeR": 0.7457077046905188,
+            "maxDrawdownR": 3.007332722273141
+          },
+          "rankLater": 9
+        },
+        {
+          "n": 25,
+          "inSample": {
+            "trades": 82,
+            "totalR": 43.538029790526465,
+            "perTradeR": 0.5309515828112984,
+            "maxDrawdownR": 7.241423125794157
+          },
+          "later": {
+            "trades": 38,
+            "totalR": 26.099123343726294,
+            "perTradeR": 0.6868190353612182,
+            "maxDrawdownR": 3.344344904815234
+          },
+          "rankLater": 17
+        },
+        {
+          "n": 27,
+          "inSample": {
+            "trades": 79,
+            "totalR": 43.54475860424254,
+            "perTradeR": 0.5511994760030701,
+            "maxDrawdownR": 7.241423125794157
+          },
+          "later": {
+            "trades": 36,
+            "totalR": 28.040052255318084,
+            "perTradeR": 0.7788903404255023,
+            "maxDrawdownR": 3.344344904815234
+          },
+          "rankLater": 7
+        },
+        {
+          "n": 29,
+          "inSample": {
+            "trades": 75,
+            "totalR": 44.41113557727192,
+            "perTradeR": 0.5921484743636256,
+            "maxDrawdownR": 7.241423125794157
+          },
+          "later": {
+            "trades": 35,
+            "totalR": 23.14186478321734,
+            "perTradeR": 0.6611961366633525,
+            "maxDrawdownR": 3.344344904815234
+          },
+          "rankLater": 24
+        },
+        {
+          "n": 31,
+          "inSample": {
+            "trades": 73,
+            "totalR": 47.38560425559607,
+            "perTradeR": 0.6491178665150147,
+            "maxDrawdownR": 7.241423125794157
+          },
+          "later": {
+            "trades": 35,
+            "totalR": 23.14186478321734,
+            "perTradeR": 0.6611961366633525,
+            "maxDrawdownR": 3.344344904815234
+          },
+          "rankLater": 25
+        },
+        {
+          "n": 33,
+          "inSample": {
+            "trades": 72,
+            "totalR": 46.242750595275744,
+            "perTradeR": 0.6422604249343853,
+            "maxDrawdownR": 7.241423125794157
+          },
+          "later": {
+            "trades": 32,
+            "totalR": 26.14016817717687,
+            "perTradeR": 0.8168802555367772,
+            "maxDrawdownR": 2.4721845318860254
+          },
+          "rankLater": 16
+        },
+        {
+          "n": 35,
+          "inSample": {
+            "trades": 71,
+            "totalR": 47.242750595275744,
+            "perTradeR": 0.6653908534545879,
+            "maxDrawdownR": 6.241423125794157
+          },
+          "later": {
+            "trades": 30,
+            "totalR": 28.28788500218453,
+            "perTradeR": 0.9429295000728177,
+            "maxDrawdownR": 2.1104477611940275
+          },
+          "rankLater": 4
+        },
+        {
+          "n": 37,
+          "inSample": {
+            "trades": 70,
+            "totalR": 49.4841737210699,
+            "perTradeR": 0.7069167674438557,
+            "maxDrawdownR": 4
+          },
+          "later": {
+            "trades": 30,
+            "totalR": 28.28788500218453,
+            "perTradeR": 0.9429295000728177,
+            "maxDrawdownR": 2.1104477611940275
+          },
+          "rankLater": 5
+        },
+        {
+          "n": 39,
+          "inSample": {
+            "trades": 70,
+            "totalR": 50.24899603326066,
+            "perTradeR": 0.7178428004751523,
+            "maxDrawdownR": 4
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 26.392410864253502,
+            "perTradeR": 0.9100831332501208,
+            "maxDrawdownR": 2.1104477611940275
+          },
+          "rankLater": 14
+        },
+        {
+          "n": 41,
+          "inSample": {
+            "trades": 72,
+            "totalR": 42.508425857822054,
+            "perTradeR": 0.5903948035808618,
+            "maxDrawdownR": 4
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 26.392410864253517,
+            "perTradeR": 0.9100831332501212,
+            "maxDrawdownR": 2.1104477611940275
+          },
+          "rankLater": 13
+        },
+        {
+          "n": 43,
+          "inSample": {
+            "trades": 71,
+            "totalR": 43.13617916178681,
+            "perTradeR": 0.6075518191800959,
+            "maxDrawdownR": 4
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 23.44574419758686,
+            "perTradeR": 0.8084739378478227,
+            "maxDrawdownR": 2.1104477611940275
+          },
+          "rankLater": 18
+        },
+        {
+          "n": 45,
+          "inSample": {
+            "trades": 71,
+            "totalR": 41.40674933722541,
+            "perTradeR": 0.5831936526369776,
+            "maxDrawdownR": 4
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 23.44574419758686,
+            "perTradeR": 0.8084739378478227,
+            "maxDrawdownR": 2.1104477611940275
+          },
+          "rankLater": 19
+        },
+        {
+          "n": 47,
+          "inSample": {
+            "trades": 70,
+            "totalR": 42.77899603326065,
+            "perTradeR": 0.6111285147608664,
+            "maxDrawdownR": 4
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 23.44574419758686,
+            "perTradeR": 0.8084739378478227,
+            "maxDrawdownR": 2.1104477611940275
+          },
+          "rankLater": 20
+        },
+        {
+          "n": 49,
+          "inSample": {
+            "trades": 69,
+            "totalR": 40.21949792720007,
+            "perTradeR": 0.5828912743072473,
+            "maxDrawdownR": 5.723437499999996
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 23.44574419758686,
+            "perTradeR": 0.8084739378478227,
+            "maxDrawdownR": 2.1104477611940275
+          },
+          "rankLater": 21
+        },
+        {
+          "n": 51,
+          "inSample": {
+            "trades": 70,
+            "totalR": 40.851724813601386,
+            "perTradeR": 0.5835960687657341,
+            "maxDrawdownR": 4.091210613598676
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 23.44574419758686,
+            "perTradeR": 0.8084739378478227,
+            "maxDrawdownR": 2.1104477611940275
+          },
+          "rankLater": 22
+        },
+        {
+          "n": 53,
+          "inSample": {
+            "trades": 68,
+            "totalR": 42.62006556107335,
+            "perTradeR": 0.6267656700157846,
+            "maxDrawdownR": 4
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 23.44574419758685,
+            "perTradeR": 0.8084739378478225,
+            "maxDrawdownR": 2.1104477611940275
+          },
+          "rankLater": 23
+        },
+        {
+          "n": 55,
+          "inSample": {
+            "trades": 68,
+            "totalR": 41.994578473921706,
+            "perTradeR": 0.6175673304988486,
+            "maxDrawdownR": 4
+          },
+          "later": {
+            "trades": 28,
+            "totalR": 21.342642772607817,
+            "perTradeR": 0.7622372418788507,
+            "maxDrawdownR": 2.5752859568650655
+          },
+          "rankLater": 26
+        }
+      ],
+      "bestInSample": 5,
+      "bestInSampleRankLater": 3
+    },
+    {
+      "asset": "BTCUSDT-1d",
+      "splitBar": 1944,
+      "splitDate": "2022-12-13",
+      "cells": [
+        {
+          "n": 5,
+          "inSample": {
+            "trades": 61,
+            "totalR": 13.020459021532034,
+            "perTradeR": 0.21345014789396777,
+            "maxDrawdownR": 12
+          },
+          "later": {
+            "trades": 30,
+            "totalR": 7.879998151319492,
+            "perTradeR": 0.26266660504398304,
+            "maxDrawdownR": 8
+          },
+          "rankLater": 9
+        },
+        {
+          "n": 7,
+          "inSample": {
+            "trades": 59,
+            "totalR": 7.131303018717247,
+            "perTradeR": 0.12086954269012283,
+            "maxDrawdownR": 10.379070034356964
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 4.000000000000003,
+            "perTradeR": 0.1379310344827587,
+            "maxDrawdownR": 6
+          },
+          "rankLater": 22
+        },
+        {
+          "n": 9,
+          "inSample": {
+            "trades": 57,
+            "totalR": 8.206010658969657,
+            "perTradeR": 0.14396509928016943,
+            "maxDrawdownR": 10
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 3.9999999999999893,
+            "perTradeR": 0.13793103448275826,
+            "maxDrawdownR": 6
+          },
+          "rankLater": 23
+        },
+        {
+          "n": 11,
+          "inSample": {
+            "trades": 55,
+            "totalR": 7.620929965643043,
+            "perTradeR": 0.1385623630116917,
+            "maxDrawdownR": 9
+          },
+          "later": {
+            "trades": 29,
+            "totalR": 3.9999999999999893,
+            "perTradeR": 0.13793103448275826,
+            "maxDrawdownR": 6
+          },
+          "rankLater": 24
+        },
+        {
+          "n": 13,
+          "inSample": {
+            "trades": 46,
+            "totalR": 13.620929965643047,
+            "perTradeR": 0.2961071731661532,
+            "maxDrawdownR": 8
+          },
+          "later": {
+            "trades": 27,
+            "totalR": 2.9999999999999876,
+            "perTradeR": 0.11111111111111065,
+            "maxDrawdownR": 5
+          },
+          "rankLater": 26
+        },
+        {
+          "n": 15,
+          "inSample": {
+            "trades": 44,
+            "totalR": 9.620929965643038,
+            "perTradeR": 0.21865749921915995,
+            "maxDrawdownR": 7
+          },
+          "later": {
+            "trades": 25,
+            "totalR": 4.999999999999989,
+            "perTradeR": 0.19999999999999957,
+            "maxDrawdownR": 5
+          },
+          "rankLater": 19
+        },
+        {
+          "n": 17,
+          "inSample": {
+            "trades": 41,
+            "totalR": 9.620929965643036,
+            "perTradeR": 0.23465682843031796,
+            "maxDrawdownR": 7
+          },
+          "later": {
+            "trades": 25,
+            "totalR": 4.999999999999989,
+            "perTradeR": 0.19999999999999957,
+            "maxDrawdownR": 5
+          },
+          "rankLater": 20
+        },
+        {
+          "n": 19,
+          "inSample": {
+            "trades": 39,
+            "totalR": 11.620929965643036,
+            "perTradeR": 0.2979725632216163,
+            "maxDrawdownR": 6
+          },
+          "later": {
+            "trades": 23,
+            "totalR": 6.999999999999989,
+            "perTradeR": 0.30434782608695604,
+            "maxDrawdownR": 5
+          },
+          "rankLater": 11
+        },
+        {
+          "n": 21,
+          "inSample": {
+            "trades": 40,
+            "totalR": 8.000000000000002,
+            "perTradeR": 0.20000000000000004,
+            "maxDrawdownR": 7
+          },
+          "later": {
+            "trades": 21,
+            "totalR": 6.8604870153512,
+            "perTradeR": 0.3266898578738667,
+            "maxDrawdownR": 4
+          },
+          "rankLater": 12
+        },
+        {
+          "n": 23,
+          "inSample": {
+            "trades": 38,
+            "totalR": 10,
+            "perTradeR": 0.2631578947368421,
+            "maxDrawdownR": 7
+          },
+          "later": {
+            "trades": 21,
+            "totalR": 5.740485166670708,
+            "perTradeR": 0.27335643650812896,
+            "maxDrawdownR": 5
+          },
+          "rankLater": 16
+        },
+        {
+          "n": 25,
+          "inSample": {
+            "trades": 35,
+            "totalR": 13.000000000000004,
+            "perTradeR": 0.37142857142857155,
+            "maxDrawdownR": 5
+          },
+          "later": {
+            "trades": 21,
+            "totalR": 5.740485166670694,
+            "perTradeR": 0.2733564365081283,
+            "maxDrawdownR": 5
+          },
+          "rankLater": 18
+        },
+        {
+          "n": 27,
+          "inSample": {
+            "trades": 35,
+            "totalR": 13.000000000000004,
+            "perTradeR": 0.37142857142857155,
+            "maxDrawdownR": 5
+          },
+          "later": {
+            "trades": 21,
+            "totalR": 5.740485166670697,
+            "perTradeR": 0.27335643650812846,
+            "maxDrawdownR": 5
+          },
+          "rankLater": 17
+        },
+        {
+          "n": 29,
+          "inSample": {
+            "trades": 34,
+            "totalR": 14.000000000000007,
+            "perTradeR": 0.41176470588235314,
+            "maxDrawdownR": 4
+          },
+          "later": {
+            "trades": 20,
+            "totalR": 3.7404851666707146,
+            "perTradeR": 0.18702425833353573,
+            "maxDrawdownR": 5
+          },
+          "rankLater": 25
+        },
+        {
+          "n": 31,
+          "inSample": {
+            "trades": 33,
+            "totalR": 15.000000000000007,
+            "perTradeR": 0.45454545454545475,
+            "maxDrawdownR": 4
+          },
+          "later": {
+            "trades": 19,
+            "totalR": 4.740485166670705,
+            "perTradeR": 0.24949921929845817,
+            "maxDrawdownR": 4
+          },
+          "rankLater": 21
+        },
+        {
+          "n": 33,
+          "inSample": {
+            "trades": 32,
+            "totalR": 16.000000000000014,
+            "perTradeR": 0.5000000000000004,
+            "maxDrawdownR": 4
+          },
+          "later": {
+            "trades": 17,
+            "totalR": 6.740485166670705,
+            "perTradeR": 0.39649912745121796,
+            "maxDrawdownR": 4
+          },
+          "rankLater": 13
+        },
+        {
+          "n": 35,
+          "inSample": {
+            "trades": 32,
+            "totalR": 16.000000000000014,
+            "perTradeR": 0.5000000000000004,
+            "maxDrawdownR": 4
+          },
+          "later": {
+            "trades": 17,
+            "totalR": 6.740485166670705,
+            "perTradeR": 0.39649912745121796,
+            "maxDrawdownR": 4
+          },
+          "rankLater": 14
+        },
+        {
+          "n": 37,
+          "inSample": {
+            "trades": 31,
+            "totalR": 11.000000000000014,
+            "perTradeR": 0.3548387096774198,
+            "maxDrawdownR": 3
+          },
+          "later": {
+            "trades": 17,
+            "totalR": 6.740485166670705,
+            "perTradeR": 0.39649912745121796,
+            "maxDrawdownR": 4
+          },
+          "rankLater": 15
+        },
+        {
+          "n": 39,
+          "inSample": {
+            "trades": 31,
+            "totalR": 10.62092996564305,
+            "perTradeR": 0.3426106440530016,
+            "maxDrawdownR": 3
+          },
+          "later": {
+            "trades": 16,
+            "totalR": 7.740485166670705,
+            "perTradeR": 0.4837803229169191,
+            "maxDrawdownR": 3
+          },
+          "rankLater": 10
+        },
+        {
+          "n": 41,
+          "inSample": {
+            "trades": 31,
+            "totalR": 10.62092996564305,
+            "perTradeR": 0.3426106440530016,
+            "maxDrawdownR": 3
+          },
+          "later": {
+            "trades": 15,
+            "totalR": 8.740485166670705,
+            "perTradeR": 0.5826990111113803,
+            "maxDrawdownR": 2.139512984648789
+          },
+          "rankLater": 2
+        },
+        {
+          "n": 43,
+          "inSample": {
+            "trades": 31,
+            "totalR": 10.620929965643047,
+            "perTradeR": 0.3426106440530015,
+            "maxDrawdownR": 3
+          },
+          "later": {
+            "trades": 15,
+            "totalR": 8.740485166670705,
+            "perTradeR": 0.5826990111113803,
+            "maxDrawdownR": 2.139512984648789
+          },
+          "rankLater": 3
+        },
+        {
+          "n": 45,
+          "inSample": {
+            "trades": 29,
+            "totalR": 12.62092996564304,
+            "perTradeR": 0.4352044815738979,
+            "maxDrawdownR": 3
+          },
+          "later": {
+            "trades": 15,
+            "totalR": 8.740485166670705,
+            "perTradeR": 0.5826990111113803,
+            "maxDrawdownR": 2.139512984648789
+          },
+          "rankLater": 4
+        },
+        {
+          "n": 47,
+          "inSample": {
+            "trades": 27,
+            "totalR": 14.620929965643043,
+            "perTradeR": 0.541515924653446,
+            "maxDrawdownR": 3
+          },
+          "later": {
+            "trades": 15,
+            "totalR": 8.740485166670705,
+            "perTradeR": 0.5826990111113803,
+            "maxDrawdownR": 2.139512984648789
+          },
+          "rankLater": 5
+        },
+        {
+          "n": 49,
+          "inSample": {
+            "trades": 26,
+            "totalR": 12.620929965643043,
+            "perTradeR": 0.4854203832939632,
+            "maxDrawdownR": 3
+          },
+          "later": {
+            "trades": 15,
+            "totalR": 8.740485166670705,
+            "perTradeR": 0.5826990111113803,
+            "maxDrawdownR": 2.139512984648789
+          },
+          "rankLater": 6
+        },
+        {
+          "n": 51,
+          "inSample": {
+            "trades": 26,
+            "totalR": 12.620929965643043,
+            "perTradeR": 0.4854203832939632,
+            "maxDrawdownR": 3
+          },
+          "later": {
+            "trades": 15,
+            "totalR": 8.740485166670705,
+            "perTradeR": 0.5826990111113803,
+            "maxDrawdownR": 2.139512984648789
+          },
+          "rankLater": 7
+        },
+        {
+          "n": 53,
+          "inSample": {
+            "trades": 26,
+            "totalR": 9.620929965643043,
+            "perTradeR": 0.37003576790934783,
+            "maxDrawdownR": 3
+          },
+          "later": {
+            "trades": 15,
+            "totalR": 8.740485166670705,
+            "perTradeR": 0.5826990111113803,
+            "maxDrawdownR": 2.139512984648789
+          },
+          "rankLater": 8
+        },
+        {
+          "n": 55,
+          "inSample": {
+            "trades": 25,
+            "totalR": 10.620929965643043,
+            "perTradeR": 0.4248371986257217,
+            "maxDrawdownR": 3
+          },
+          "later": {
+            "trades": 14,
+            "totalR": 9.740485166670705,
+            "perTradeR": 0.695748940476479,
+            "maxDrawdownR": 2.139512984648789
+          },
+          "rankLater": 1
+        }
+      ],
+      "bestInSample": 33,
+      "bestInSampleRankLater": 13
+    }
+  ]
+}

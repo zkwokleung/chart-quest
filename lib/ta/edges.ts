@@ -35,7 +35,17 @@ export const MAX_BARS = 60;
 /** Bars of history each rule needs before its first possible signal. */
 const WARMUP = 210;
 
-export type EdgeId = "breakout-20" | "pullback-ma" | "revert-3down" | "gap-fill";
+/**
+ * A rule id. The four Chapter 8 rules are concrete; the swept breakout is a template.
+ *
+ * Widening this to `string` would have been easier and would have cost the exhaustiveness that
+ * caught two mislabelled cells while Chapter 8 was authored.
+ */
+export type EdgeId =
+  | "pullback-ma"
+  | "revert-3down"
+  | "gap-fill"
+  | `breakout-${number}`;
 
 export type Edge = {
   id: EdgeId;
@@ -57,18 +67,32 @@ function sma(series: Series<string>, i: number, n: number): number | null {
   return total / n;
 }
 
-export const EDGES: readonly Edge[] = [
-  {
-    id: "breakout-20",
-    label: "Breakout",
-    definition:
-      "Close above the highest high of the previous 20 bars. Chapter 2's break, mechanised.",
+/**
+ * The breakout rule at any lookback, so Chapter 9.5 can sweep it.
+ *
+ * Chapter 8's `breakout-20` is this at n = 20, and `edges.test.ts` pins that it reproduces the
+ * committed figures on all six markets — because 8.3, 8.5, 8.6 and 8.B all quote them, and a
+ * refactor that moved them by a hundredth would make four levels quietly wrong.
+ *
+ * The lookback is the *only* thing 9.5 varies. One knob is what makes the overfit lesson
+ * legible: a player who tunes twenty parameters knows they cheated, and a player who tunes one
+ * believes they discovered something.
+ */
+export function breakoutN(n: number): Edge {
+  return {
+    id: `breakout-${n}`,
+    label: n === 20 ? "Breakout" : `Breakout of ${n} bars`,
+    definition: `Close above the highest high of the previous ${n} bars. Chapter 2's break, mechanised.`,
     triggers: (s, i) => {
       let highest = -Infinity;
-      for (let k = i - 20; k < i; k += 1) highest = Math.max(highest, s.h[k]!);
+      for (let k = i - n; k < i; k += 1) highest = Math.max(highest, s.h[k]!);
       return s.c[i]! > highest;
     },
-  },
+  };
+}
+
+export const EDGES: readonly Edge[] = [
+  breakoutN(20),
   {
     id: "pullback-ma",
     label: "Pullback to the average",
@@ -110,6 +134,14 @@ export const EDGES: readonly Edge[] = [
 ];
 
 export type EdgeResult = {
+  /**
+   * Each trade's R, in order.
+   *
+   * Added for 9.5, which needs a drawdown and therefore the order rather than a total. Additive
+   * on purpose: `runEdge` feeds Chapter 8's committed artefact, whose shape four levels' claims
+   * tests pin, so the alternative was a second copy of this loop that could drift from it.
+   */
+  rs: number[];
   trades: number;
   totalR: number;
   perTradeR: number;
@@ -168,6 +200,7 @@ export function runEdge(
 
   const totalR = rs.reduce((total, r) => total + r, 0);
   return {
+    rs,
     trades: rs.length,
     totalR,
     perTradeR: rs.length === 0 ? 0 : totalR / rs.length,

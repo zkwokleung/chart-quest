@@ -15,6 +15,7 @@
     "data:fetch": "node scripts/fetch-data.ts",
     "data:rates": "tsx scripts/compute-base-rates.ts",
     "data:resample": "tsx scripts/resample-data.ts",
+    "data:sweep": "tsx scripts/compute-edge-sweep.ts",
     "dev": "next dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
