@@ -1,6 +1,11 @@
 import type { Series } from "@/lib/chart/types";
 import { diagnose, starsFor, type Grade } from "../../grade";
 import type { Attempt, Level } from "../../schema";
+import {
+  exploredFraction as sweepFraction,
+  scoreAgainstTarget,
+  scoreExploration,
+} from "../slider";
 
 /**
  * Scoring a slider, two different ways, because two different questions are being
@@ -15,20 +20,21 @@ import type { Attempt, Level } from "../../schema";
  * about not trusting indicators. So it scores **exploration** — whether the player
  * moved across enough of the range to have seen the effect — the same call
  * `predict-next` makes in scoring participation rather than accuracy.
+ *
+ * The arithmetic lives in `../slider.ts` because `probe` grades the same two ways for the
+ * same reasons, and two copies of a decay curve diverge the first time one is tuned.
  */
-
-/** Full marks inside `slop`, then a linear decay to zero at three times it. */
-const DECAY_MULTIPLE = 2;
 
 export function exploredFraction(
   attempt: Attempt["tune-param"],
   level: Level<"tune-param">,
 ): number {
-  const { min, max } = level.config;
-  const span = max - min;
-  if (span <= 0) return 0;
-  const seen = attempt.visited.length > 0 ? attempt.visited : [attempt.value];
-  return (Math.max(...seen) - Math.min(...seen)) / span;
+  return sweepFraction(
+    attempt.visited,
+    attempt.value,
+    level.config.min,
+    level.config.max,
+  );
 }
 
 export function gradeTuneParam(
@@ -40,8 +46,7 @@ export function gradeTuneParam(
   const diagnosis = diagnose(attempt, level, data);
 
   if (level.config.scoring === "exploration") {
-    const required = level.config.exploreFraction ?? 0.6;
-    const score = Math.max(0, Math.min(1, explored / required));
+    const score = scoreExploration(explored, level.config.exploreFraction ?? 0.6);
     return {
       score,
       stars: starsFor(score, level.stars, attempt.hintsUsed),
@@ -62,15 +67,8 @@ export function gradeTuneParam(
   }
 
   const target = level.target.value;
-  const slop = Math.max(level.tolerance.slop, 0);
   const distance = Math.abs(attempt.value - target);
-  const score =
-    distance <= slop
-      ? 1
-      : Math.max(
-          0,
-          1 - (distance - slop) / Math.max(slop * DECAY_MULTIPLE, 1e-9),
-        );
+  const score = scoreAgainstTarget(attempt.value, target, level.tolerance.slop);
 
   return {
     score,

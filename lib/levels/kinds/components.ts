@@ -60,6 +60,9 @@ const KIND_COMPONENTS: { [K in LevelKind]: ComponentType<KindProps<K>> } = {
       default: m.TradeSequence,
     })),
   ),
+  probe: lazy(() =>
+    import("./probe/Probe").then((m) => ({ default: m.Probe })),
+  ),
   "tune-param": lazy(() =>
     import("./tune-param/TuneParam").then((m) => ({ default: m.TuneParam })),
   ),

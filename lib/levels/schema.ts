@@ -23,10 +23,19 @@ export type LevelKind =
   | "spot-the-flaw"
   | "sizing-calc"
   | "trade-sequence"
+  | "probe"
   | "composite";
 
-/** Every kind a composite step may use. Nesting is excluded by construction. */
-export type StepKind = Exclude<LevelKind, "composite">;
+/**
+ * Every kind a composite step may use.
+ *
+ * Nesting is excluded by construction, and `probe` by judgement: it reads the whole data
+ * spine rather than the level's own slices, so a probe stage would quietly widen what a boss
+ * is testing — which is the thing the "composite steps stay on the boss's series" guard exists
+ * to prevent. Excluding it also keeps the composite chunk from importing the probe component,
+ * since `step-components.ts` is eager.
+ */
+export type StepKind = Exclude<LevelKind, "composite" | "probe">;
 
 export type ToolId =
   "crosshair" | "timeframe" | "log-scale" | "y-axis-mode" | "measure";
@@ -120,6 +129,20 @@ export type Attempt = {
     kind: "sizing-calc";
     /** One entry per position asked about, in order. `null` means left blank. */
     values: (number | null)[];
+    hintsUsed: number;
+  };
+  probe: {
+    kind: "probe";
+    /** Where the control was left. */
+    value: number;
+    /**
+     * Every resting position, in order.
+     *
+     * The same reason `tune-param` keeps them: 8.2's answer is worthless unless the player
+     * swept to find it, because a lucky landing on the crossing horizon teaches nothing
+     * about horizons.
+     */
+    visited: number[];
     hintsUsed: number;
   };
   "trade-sequence": {
@@ -253,6 +276,47 @@ export type KindConfig = {
     /** Share of the range that must be covered, for `exploration`. Default 0.6. */
     exploreFraction?: number;
   };
+  probe: {
+    prompt: string;
+    /**
+     * The measurement the control drives, named rather than passed as a function.
+     *
+     * A function in a level file would put the computation somewhere no test can recompute
+     * it and would ship the estimator to the client. The numbers come from
+     * `public/data/asset-character.json`, exactly as `sort-rank` and `spot-the-flaw` name
+     * their reveals rather than carrying them.
+     */
+    measure: "variance-ratio";
+    /** What the control moves. Labels it, and heads the readout column. */
+    label: string;
+    /**
+     * The control's range, which **must** reproduce the artefact's own grid.
+     *
+     * The readout reads a committed table, so a value between two grid points would have to
+     * be interpolated — and an interpolated variance ratio is a number nobody measured. The
+     * chapter's claims test asserts these land exactly on the artefact's horizons.
+     */
+    min: number;
+    max: number;
+    step: number;
+    initial: number;
+    /**
+     * The markets the readout covers, in the order shown.
+     *
+     * Named here rather than in `level.data` because none of them is *displayed*: a probe
+     * renders a table of measurements, not a chart of bars. Same call `sizing-calc` makes
+     * with `data: []`, and it has the same consequence — these series stay outside the
+     * cross-asset boss guard, which is what lets the chapter measure all six while its boss
+     * runs on one of them.
+     */
+    assets: SeriesId[];
+    /** The row the graded question is about. Marked in the readout. */
+    focus: SeriesId;
+    /** `target` when the reading has a measured answer, `exploration` when it does not. */
+    scoring: "target" | "exploration";
+    /** Share of the range that must be covered before full marks. Default 0.6. */
+    exploreFraction?: number;
+  };
   "trade-sequence": {
     prompt: string;
     /** Starting account, in the series' quote currency. */
@@ -382,6 +446,8 @@ export type KindTarget = {
    * series, so the sequence cannot drift from what the data did. What the player is scored on
    * is their sizing, and that is judged against `tolerance` rather than against an answer.
    */
+  /** The measured control value. Ignored entirely when scoring is `exploration`. */
+  probe: { value: number };
   "trade-sequence": Record<string, never>;
   /**
    * No authored target: the answer is whatever the sizing formula gives for the instrument,
@@ -417,6 +483,8 @@ export type KindTarget = {
 
 export type KindTolerance = {
   classify: Record<string, never>;
+  /** How far off the measured crossing still counts, in the control's own units. */
+  probe: { slop: number };
   "mark-bars": {
     /** A mark this many bars either side of a target still counts. */
     barSlop: number;
@@ -622,6 +690,7 @@ export type AnyLevel =
   | Level<"spot-the-flaw">
   | Level<"sizing-calc">
   | Level<"trade-sequence">
+  | Level<"probe">
   | Level<"composite">;
 
 export function isKind<K extends LevelKind>(

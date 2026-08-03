@@ -24,6 +24,7 @@ import {
   gradeTradeSequence,
   perfectTradeSequence,
 } from "./trade-sequence/grade";
+import { gradeProbe, perfectProbe } from "./probe/grade";
 import { gradeTuneParam, perfectTuneParam } from "./tune-param/grade";
 
 /**
@@ -126,6 +127,11 @@ export const KIND_BEHAVIOUR: { [K in LevelKind]: KindBehaviour<K> } = {
     kind: "trade-sequence",
     grade: gradeTradeSequence,
     perfectAttempt: perfectTradeSequence,
+  },
+  probe: {
+    kind: "probe",
+    grade: gradeProbe,
+    perfectAttempt: perfectProbe,
   },
   "tune-param": {
     kind: "tune-param",
