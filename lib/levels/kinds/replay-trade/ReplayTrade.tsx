@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { yAxisFor } from "@/lib/levels/y-axis";
 import type { ChartHandle } from "@/components/chart/Chart";
 import type { RenderableDrawing } from "@/components/chart/DrawingPrimitive";
 import { ReplayControls } from "@/components/chart/ReplayControls";
@@ -166,7 +167,7 @@ function TradeOnChart({
           feed={context.feed}
           height={180}
           showVolume={false}
-          yAxis={level.yAxis}
+          yAxis={yAxisFor(level)}
         />
       ) : null}
 
@@ -181,7 +182,7 @@ function TradeOnChart({
           height={400}
           showVolume={false}
           drawings={drawings}
-          yAxis={level.yAxis}
+          yAxis={yAxisFor(level)}
         />
       </div>
 

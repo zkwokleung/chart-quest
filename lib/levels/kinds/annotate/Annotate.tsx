@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { yAxisFor } from "@/lib/levels/y-axis";
 import type { ChartHandle } from "@/components/chart/Chart";
 import type { RenderableDrawing } from "@/components/chart/DrawingPrimitive";
 import { FeedChart } from "@/components/level/FeedChart";
@@ -170,7 +171,7 @@ export function Annotate({
           height={380}
           showVolume={false}
           drawings={drawings}
-          yAxis={level.yAxis}
+          yAxis={yAxisFor(level)}
         />
       </div>
 

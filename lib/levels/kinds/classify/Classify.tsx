@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { yAxisFor } from "@/lib/levels/y-axis";
 import { FeedChart } from "@/components/level/FeedChart";
 import type { KindProps } from "@/lib/levels/kind-module";
 
@@ -59,7 +60,7 @@ export function Classify({
               feed={feed}
               height={level.data.length > 1 ? 260 : 360}
               scaleToggle={level.unlocks?.includes("log-scale") ?? false}
-              yAxis={level.yAxis}
+              yAxis={yAxisFor(level)}
             />
           );
         })}

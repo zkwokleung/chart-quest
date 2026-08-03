@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { FeedChart } from "@/components/level/FeedChart";
 import type { KindProps } from "@/lib/levels/kind-module";
+import { yAxisFor } from "@/lib/levels/y-axis";
 import { runSequence } from "./grade";
 
 /**
@@ -78,7 +79,13 @@ export function TradeSequence({
       <p className="text-sm font-medium">{prompt}</p>
 
       {slice && feed ? (
-        <FeedChart slice={slice} feed={feed} height={260} showVolume={false} />
+        <FeedChart
+          slice={slice}
+          feed={feed}
+          height={260}
+          showVolume={false}
+          yAxis={yAxisFor(level)}
+        />
       ) : null}
 
       <div className="flex flex-wrap gap-x-6 gap-y-1 rounded-lg border border-border bg-surface p-3 font-mono text-xs text-muted">

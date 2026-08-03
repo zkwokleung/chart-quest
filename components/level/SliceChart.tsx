@@ -11,6 +11,7 @@ import type { RenderableDrawing } from "@/components/chart/DrawingPrimitive";
 import type { IndicatorSpec } from "@/lib/chart/indicator-data";
 import { YAxisToggle } from "@/components/chart/YAxisToggle";
 import type { LevelSlice } from "@/lib/levels/schema";
+import type { YAxisOption } from "@/lib/levels/y-axis";
 import { useGameStore } from "@/lib/store/game";
 import type { YAxisMode } from "@/lib/ta/normalize";
 
@@ -26,13 +27,12 @@ type SliceChartProps = {
   drawings?: RenderableDrawing[];
   indicators?: readonly IndicatorSpec[];
   /**
-   * Offers the price / % / ATR toggle, and sets its starting mode.
+   * Whether to offer the price / % / ATR toggle, and what mode to open in.
    *
-   * A level opts in through `Level.yAxis`. Chapter 8 turns it on everywhere; before
-   * that only the levels whose lesson needs it show the control, so Chapter 1 is not
-   * cluttered with an axis mode nobody has been taught yet.
+   * Resolved by `yAxisFor`, which is where the rule lives — a level opts in through
+   * `Level.yAxis`, and Chapter 8 turns it on everywhere. Undefined means no control.
    */
-  yAxis?: YAxisMode;
+  yAxis?: YAxisOption;
   ref?: Ref<ChartHandle | null>;
 };
 
@@ -59,7 +59,7 @@ export function SliceChart({
   // The level's default, then the player's own preference, then price. The stored
   // setting has existed since M1 and until now was read by nothing.
   const stored = useGameStore((state) => state.profile.settings.yAxisMode);
-  const [yAxisMode, setYAxisMode] = useState<YAxisMode>(yAxis ?? stored);
+  const [yAxisMode, setYAxisMode] = useState<YAxisMode>(yAxis?.mode ?? stored);
 
   return (
     <figure className="flex flex-col gap-1.5">
@@ -68,7 +68,7 @@ export function SliceChart({
           {slice.label ?? slice.series}
         </figcaption>
         <span className="flex items-center gap-2">
-          {yAxis ? (
+          {yAxis?.toggle ? (
             <YAxisToggle mode={yAxisMode} onChange={setYAxisMode} />
           ) : null}
           {scaleToggle ? (

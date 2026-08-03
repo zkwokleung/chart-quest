@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { yAxisFor } from "@/lib/levels/y-axis";
 import type { ChartHandle } from "@/components/chart/Chart";
 import { FeedChart } from "@/components/level/FeedChart";
 import { xToBarIndex } from "@/lib/chart/coords";
@@ -127,7 +128,7 @@ function MarkBarsOnChart({
           feed={feed}
           ref={handleRef}
           height={360}
-          yAxis={level.yAxis}
+          yAxis={yAxisFor(level)}
         />
       </div>
 

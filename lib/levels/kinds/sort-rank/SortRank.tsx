@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { yAxisFor } from "@/lib/levels/y-axis";
 import { BaseRateTable } from "@/components/level/BaseRateTable";
 import { FeedChart } from "@/components/level/FeedChart";
 import type { KindProps } from "@/lib/levels/kind-module";
@@ -55,7 +56,7 @@ export function SortRank({
           feed={feed}
           height={200}
           showVolume={false}
-          yAxis={level.yAxis}
+          yAxis={yAxisFor(level)}
         />
       </span>
     );

@@ -7,7 +7,7 @@ import type { IndicatorSpec } from "@/lib/chart/indicator-data";
 import { SliceChart } from "@/components/level/SliceChart";
 import type { LevelSlice } from "@/lib/levels/schema";
 import type { ReplayFeed } from "@/lib/replay/feed";
-import type { YAxisMode } from "@/lib/ta/normalize";
+import type { YAxisOption } from "@/lib/levels/y-axis";
 import { useFeed } from "@/lib/replay/use-feed";
 
 type FeedChartProps = {
@@ -18,7 +18,7 @@ type FeedChartProps = {
   scaleToggle?: boolean;
   drawings?: RenderableDrawing[];
   indicators?: readonly IndicatorSpec[];
-  yAxis?: YAxisMode;
+  yAxis?: YAxisOption;
   ref?: Ref<ChartHandle | null>;
 };
 

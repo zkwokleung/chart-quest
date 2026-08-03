@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { yAxisFor } from "@/lib/levels/y-axis";
 import { FeedChart } from "@/components/level/FeedChart";
 import type { KindProps } from "@/lib/levels/kind-module";
 import { exploredFraction } from "./grade";
@@ -57,7 +58,7 @@ export function TuneParam({
         height={380}
         showVolume={false}
         indicators={[indicator(shown)]}
-        yAxis={level.yAxis}
+        yAxis={yAxisFor(level)}
       />
 
       <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-3">

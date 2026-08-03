@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { yAxisFor } from "@/lib/levels/y-axis";
 import { FeedChart } from "@/components/level/FeedChart";
 import type { KindProps } from "@/lib/levels/kind-module";
 import type { Direction } from "@/lib/levels/schema";
@@ -74,7 +75,7 @@ export function PredictNext({
         feed={feed}
         height={360}
         showVolume={false}
-        yAxis={level.yAxis}
+        yAxis={yAxisFor(level)}
       />
 
       {revealed ? (
