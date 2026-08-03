@@ -210,6 +210,14 @@ export type KindConfig = {
     multiple?: boolean;
     /** Bars to animate in after committing, revealing what happened next. */
     revealBars?: number;
+    /**
+     * A measured table to show once the answer is committed.
+     *
+     * Named rather than carried, like `sort-rank.reveal` and for the same reason: the numbers
+     * live in `public/data/asset-character.json`, and retyping them into a level file is how
+     * a level comes to disagree with the measurement it rests on.
+     */
+    reveal?: "asset-correlation";
   };
   "mark-bars": {
     prompt: string;
@@ -376,7 +384,7 @@ export type KindConfig = {
      */
     claims: { id: string; label: string; note?: string; signal?: SignalId }[];
     /** A measured table to show once the answer is committed. */
-    reveal?: "signal-correlation";
+    reveal?: "signal-correlation" | "rule-by-year";
   };
   "sort-rank": {
     prompt: string;

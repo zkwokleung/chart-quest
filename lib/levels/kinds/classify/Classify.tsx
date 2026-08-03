@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AssetCorrelationMatrix } from "@/components/level/AssetCorrelationMatrix";
 import { yAxisFor } from "@/lib/levels/y-axis";
 import { FeedChart } from "@/components/level/FeedChart";
 import type { KindProps } from "@/lib/levels/kind-module";
@@ -128,6 +129,12 @@ export function Classify({
           Commit answer
         </button>
       )}
+      {grade && level.config.reveal === "asset-correlation" ? (
+        <div className="rounded-lg border border-border bg-surface p-3">
+          <AssetCorrelationMatrix />
+        </div>
+      ) : null}
+
     </div>
   );
 }

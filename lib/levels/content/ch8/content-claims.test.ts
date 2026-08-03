@@ -81,7 +81,29 @@ describe("the chapter's structural rules", () => {
     expect([...probe.config.assets].sort()).toEqual([...SPINE].sort());
   });
 
-  it("shows every displayed window for the first time", () => {
+  /**
+   * Levels allowed to re-show bars an earlier chapter displayed, with the reason.
+   *
+   * The default is that Chapter 8 shows fresh windows — a chapter about recognising character
+   * should not be recognising windows. 8.4 is a deliberate exception: its subject is March
+   * 2020, and the player recognising the crash is what makes the lesson bite. They know what
+   * happened, they have measured that these markets are barely correlated, and they get to
+   * watch the two facts fail to fit together. A crash nobody recognised would make the same
+   * statistical point and land softer.
+   */
+  const MAY_REUSE_WINDOWS: Record<string, string> = {
+    "8-4": "March 2020 has to be recognisable for the lesson to bite",
+    "8-5": "the chart is context for a report; the claims are measured elsewhere",
+  };
+
+  it("names an exemption only for a level that exists", () => {
+    // So the list cannot outlive its reason and quietly excuse a future level.
+    for (const id of Object.keys(MAY_REUSE_WINDOWS)) {
+      expect(getAuthoredLevel(id), `${id} is exempted but not authored`).toBeDefined();
+    }
+  });
+
+  it("shows every displayed window for the first time, bar the stated exceptions", () => {
     // A chapter about recognising character should not be recognising windows.
     const earlier = new Map<string, boolean[]>();
     for (const level of ALL_LEVELS) {
@@ -98,6 +120,7 @@ describe("the chapter's structural rules", () => {
     }
 
     for (const level of chapter8()) {
+      if (MAY_REUSE_WINDOWS[level.id]) continue;
       for (const slice of level.data) {
         const marks = earlier.get(slice.series);
         if (!marks) continue;
@@ -349,5 +372,212 @@ describe("8-3 the ranking that does not pay", () => {
     // And the spread is the replacement lesson.
     const values = SPINE.map((id) => breakout.byAsset[id]!.perTradeR);
     expect(Math.max(...values) / Math.min(...values)).toBeGreaterThan(20);
+  });
+});
+
+describe("8-4 one bet, four names", () => {
+  const level = need("8-4", "classify");
+
+  it("shows the same calendar range on every pane", () => {
+    // Four markets at four price scales are only comparable if they cover one period. Bitcoin
+    // trades weekends, so the bar counts differ and the dates must not.
+    for (const slice of level.data) {
+      const s = series(slice.series);
+      expect(
+        new Date(s.t[slice.from]!).toISOString().slice(0, 7),
+        slice.series,
+      ).toBe("2020-01");
+      expect(new Date(s.t[slice.to]!).toISOString().slice(0, 7), slice.series).toBe(
+        "2020-04",
+      );
+    }
+    expect(level.yAxis).toBe("pct");
+  });
+
+  it("has Bitcoin falling hardest of the four, which is the whole level", () => {
+    const drop = (seriesId: string) => {
+      const slice = level.data.find((d) => d.series === seriesId)!;
+      const window = series(seriesId).c.slice(slice.from, slice.to + 1);
+      return Math.min(...window) / Math.max(...window) - 1;
+    };
+    const falls = level.data
+      .map((slice) => ({ id: slice.series, drop: drop(slice.series) }))
+      .sort((a, b) => a.drop - b.drop);
+
+    expect(falls[0]!.id).toBe("BTCUSDT-1d");
+    expect(falls[0]!.drop).toBeLessThan(-0.5);
+    // And gold, the boring one, held up best.
+    expect(falls.at(-1)!.id).toBe("GC-1d");
+    expect(falls.at(-1)!.drop).toBeGreaterThan(-0.2);
+  });
+
+  it("rests on a spine that really is diversified on average", () => {
+    // If the averages showed a correlated book, the level would be arguing with a straw man.
+    const m = committed.correlation.allDays;
+    const pairs: number[] = [];
+    for (let i = 0; i < m.assets.length; i += 1) {
+      for (let j = i + 1; j < m.assets.length; j += 1) {
+        if (m.assets[i] === "SPY-1d" && m.assets[j] === "AAPL-1d") continue;
+        pairs.push(Math.abs(m.rows[i]![j]!));
+      }
+    }
+    expect(Math.max(...pairs)).toBeLessThan(0.35);
+    expect(
+      Math.abs(m.rows[m.assets.indexOf("SPY-1d")]![m.assets.indexOf("AAPL-1d")]!),
+    ).toBeGreaterThan(0.75);
+  });
+
+  it("has Bitcoin converging on the index and on gold, and not everything converging", () => {
+    const all = committed.correlation.allDays;
+    const worst = committed.correlation.indexWorstDecile;
+    const calm = committed.correlation.calmDays;
+    const at = (m: typeof all, a: string, b: string) =>
+      m.rows[m.assets.indexOf(a)]![m.assets.indexOf(b)]!;
+
+    expect(at(calm, "BTCUSDT-1d", "SPY-1d")!).toBeLessThan(0.15);
+    expect(at(worst, "BTCUSDT-1d", "SPY-1d")!).toBeGreaterThan(0.4);
+    expect(
+      at(worst, "BTCUSDT-1d", "GC-1d")! - at(all, "BTCUSDT-1d", "GC-1d")!,
+    ).toBeGreaterThan(0.2);
+
+    // The two counter-examples the level names, which keep it from being a slogan.
+    expect(at(worst, "SPY-1d", "AAPL-1d")!).toBeLessThan(at(all, "SPY-1d", "AAPL-1d")!);
+    expect(at(worst, "LAKE-1d", "SPY-1d")!).toBeLessThan(0.1);
+  });
+});
+
+describe("8-5 the report, and what it leaves out", () => {
+  const level = need("8-5", "spot-the-flaw");
+  const breakout = committed.edges.find((e) => e.id === "breakout-20")!;
+  const pooled = SPINE.reduce(
+    (total, id) => ({
+      trades: total.trades + breakout.byAsset[id]!.trades,
+      r: total.r + breakout.byAsset[id]!.totalR,
+    }),
+    { trades: 0, r: 0 },
+  );
+
+  it("quotes a sample and a total that are both correct", () => {
+    expect(pooled.trades).toBe(557);
+    expect(pooled.r).toBeCloseTo(157.2, 0);
+    const labels = level.config.claims.map((c) => c.label).join(" ");
+    expect(labels).toContain("557");
+    expect(labels).toContain("157.2");
+  });
+
+  it("marks the four claims that do not follow, and only those", () => {
+    expect([...level.target.flawed].sort()).toEqual([
+      "all-six",
+      "crypto-theory",
+      "euro-robust",
+      "every-year",
+    ]);
+  });
+
+  it("has a fiftyfold spread, so all-six does not imply the edge is in the rule", () => {
+    const per = SPINE.map((id) => breakout.byAsset[id]!.perTradeR);
+    for (const value of per) expect(value).toBeGreaterThan(0);
+    expect(Math.max(...per) / Math.min(...per)).toBeGreaterThan(20);
+  });
+
+  it("has the euro standing still rather than travelling", () => {
+    const euro = breakout.byAsset["EURUSD-1d"]!;
+    expect(euro.totalR).toBeLessThan(1);
+    expect(euro.trades).toBeGreaterThan(60);
+  });
+
+  it("does not have Bitcoin performing best, which the theory claim asserts", () => {
+    const ranked = SPINE.map((id) => ({
+      id,
+      per: breakout.byAsset[id]!.perTradeR,
+    })).sort((a, b) => b.per - a.per);
+    expect(ranked[0]!.id).toBe("AAPL-1d");
+    expect(ranked.findIndex((r) => r.id === "BTCUSDT-1d")).toBe(2);
+  });
+
+  it("loses money in forty-one market-years, so every-year hides its own composition", () => {
+    const losing = SPINE.flatMap((id) =>
+      Object.entries(breakout.byYear[id]!).filter(([, v]) => v < 0),
+    );
+    expect(losing.length).toBe(41);
+
+    const years = [
+      ...new Set(SPINE.flatMap((id) => Object.keys(breakout.byYear[id]!))),
+    ];
+    const clean = years.filter((y) =>
+      SPINE.every((id) => {
+        const v = breakout.byYear[id]![y];
+        return v === undefined || v > 0;
+      }),
+    );
+    expect(years.length).toBe(21);
+    expect(clean.length).toBe(3);
+  });
+
+  it("keeps the sound-but-damning claim sound", () => {
+    // `concentration` is true, and marking it costs the player. So it had better be true.
+    const apple = breakout.byAsset["AAPL-1d"]!;
+    expect(apple.totalR / pooled.r).toBeCloseTo(0.43, 2);
+    expect(apple.trades / pooled.trades).toBeCloseTo(0.23, 2);
+    expect(level.target.flawed).not.toContain("concentration");
+  });
+});
+
+describe("8-6 the edge that cannot travel", () => {
+  const level = need("8-6", "sort-rank");
+  const BY_ITEM: Record<string, string> = {
+    breakout: "breakout-20",
+    "three-down": "revert-3down",
+    pullback: "pullback-ma",
+    "gap-fill": "gap-fill",
+  };
+
+  const portability = (edgeId: string) => {
+    const edge = committed.edges.find((e) => e.id === edgeId)!;
+    const traded = SPINE.map((id) => edge.byAsset[id]!).filter((c) => c.trades > 0);
+    return {
+      markets: traded.length,
+      positive: traded.filter((c) => c.perTradeR > 0).length,
+      worst: Math.min(...traded.map((c) => c.perTradeR)),
+    };
+  };
+
+  it("orders by markets survived, with the worst cell as the tiebreak", () => {
+    const measured = Object.keys(BY_ITEM).sort((a, b) => {
+      const x = portability(BY_ITEM[a]!);
+      const y = portability(BY_ITEM[b]!);
+      return y.positive - x.positive || y.worst - x.worst;
+    });
+    expect(level.target.order).toEqual(measured);
+  });
+
+  it("finds no setups at all for the gap rule on a market that never closes", () => {
+    // **The chapter's only claim with no sample size attached.** Not a weak edge but an absent
+    // one, which no amount of further data could soften.
+    const gap = committed.edges.find((e) => e.id === "gap-fill")!;
+    expect(gap.byAsset["BTCUSDT-1d"]!.trades).toBe(0);
+    expect(portability("gap-fill").markets).toBe(5);
+    for (const id of SPINE.filter((x) => x !== "BTCUSDT-1d")) {
+      expect(gap.byAsset[id]!.trades, id).toBeGreaterThan(50);
+    }
+    // And it ranks last for that reason rather than for its numbers, which are not the worst.
+    expect(level.target.order.at(-1)).toBe("gap-fill");
+    expect(portability("gap-fill").worst).toBeGreaterThan(
+      portability("pullback-ma").worst,
+    );
+  });
+
+  it("has one rule that survives every market", () => {
+    const best = portability("breakout-20");
+    expect(best.positive).toBe(6);
+    expect(best.markets).toBe(6);
+    expect(level.target.order[0]).toBe("breakout");
+  });
+
+  it("quotes each rule's real market count in its note", () => {
+    for (const item of level.config.items) {
+      const p = portability(BY_ITEM[item.id]!);
+      expect(item.note, item.id).toContain(String(p.positive));
+    }
   });
 });

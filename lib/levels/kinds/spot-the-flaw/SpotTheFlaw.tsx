@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { EdgeMatrix } from "@/components/level/EdgeMatrix";
 import { CorrelationMatrix } from "@/components/level/CorrelationMatrix";
 import type { KindProps } from "@/lib/levels/kind-module";
 import type { SignalId } from "@/lib/ta/correlation";
@@ -121,6 +122,12 @@ export function SpotTheFlaw({
             from={slice.from}
             to={slice.to}
           />
+        </div>
+      ) : null}
+
+      {committed && level.config.reveal === "rule-by-year" ? (
+        <div className="rounded-lg border border-border bg-surface p-3">
+          <EdgeMatrix only={["breakout-20"]} byYear="breakout-20" />
         </div>
       ) : null}
     </div>

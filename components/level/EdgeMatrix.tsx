@@ -33,7 +33,20 @@ const LABELS: Partial<Record<SeriesId, string>> = {
   "LAKE-1d": "Small-cap",
 };
 
-export function EdgeMatrix({ only }: { only?: string[] }) {
+export function EdgeMatrix({
+  only,
+  byYear,
+}: {
+  only?: string[];
+  /**
+   * Also break one rule down by calendar year.
+   *
+   * 8.5 needs it because "profitable in every year tested" is a claim about years, and a
+   * per-market table cannot refute it. The years are the same measurement sliced differently,
+   * so they come from the same artefact rather than a second computation.
+   */
+  byYear?: string;
+}) {
   const [file, setFile] = useState<AssetCharacterFile | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -141,6 +154,78 @@ export function EdgeMatrix({ only }: { only?: string[] }) {
         Per trade, in multiples of the risk taken, with the number of trades in brackets.
         Every rule uses the same 2 ATR stop and 2R target, entering only when flat.
       </p>
+
+      {byYear ? <ByYear file={file} edgeId={byYear} /> : null}
+    </div>
+  );
+}
+
+/**
+ * One rule, year by year, with every losing market-year marked.
+ *
+ * A total hides its own composition, which is the whole subject of 8.5: the breakout rule made
+ * +157.2R across 557 trades and did it while losing money in 41 separate market-years. Three
+ * of the twenty-one years were positive on every market that traded in them.
+ */
+function ByYear({ file, edgeId }: { file: AssetCharacterFile; edgeId: string }) {
+  const edge = file.edges.find((e) => e.id === edgeId);
+  if (!edge) return null;
+
+  const years = [
+    ...new Set(file.assets.flatMap((id) => Object.keys(edge.byYear[id] ?? {}))),
+  ].sort();
+
+  return (
+    <div className="flex flex-col gap-2 border-t border-border/60 pt-3">
+      <p className="font-mono text-xs text-muted">
+        {edge.label}, total R by year — a dash means the market had no bars that year
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[34rem] border-collapse text-sm">
+          <caption className="sr-only">Total R by year and market</caption>
+          <thead>
+            <tr className="font-mono text-xs text-muted">
+              <th scope="col" className="py-1 text-left font-normal">
+                year
+              </th>
+              {file.assets.map((id) => (
+                <th key={id} scope="col" className="py-1 text-right font-normal">
+                  {LABELS[id as SeriesId] ?? id}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {years.map((year) => (
+              <tr key={year} className="border-t border-border/40">
+                <th scope="row" className="py-1 pr-3 text-left font-mono text-xs font-normal">
+                  {year}
+                </th>
+                {file.assets.map((id) => {
+                  const value = edge.byYear[id]?.[year];
+                  return (
+                    <td key={id} className="py-1 text-right font-mono text-xs">
+                      {value === undefined ? (
+                        <span className="text-muted">–</span>
+                      ) : (
+                        <span
+                          style={{
+                            color:
+                              value > 0 ? "var(--color-up)" : "var(--color-down)",
+                          }}
+                        >
+                          {value >= 0 ? "+" : ""}
+                          {value.toFixed(1)}
+                        </span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
