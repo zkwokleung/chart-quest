@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Chart Quest">
+  <!--
+    A single candle, up, with both wicks. The game's first level is what a candle is made of, and the
+    body-plus-wicks shape is the one thing the whole curriculum rests on — so it is the mark.
+
+    Drawn rather than fetched: an icon is the one asset that must never depend on a network, and at
+    32px an SVG stays crisp where a raster would not. Colours are the app's own tokens, hard-coded
+    because a favicon renders outside the document and cannot read CSS variables.
+  -->
+  <rect width="32" height="32" rx="7" fill="#0b0e14" />
+  <!-- Wicks: the range the market actually reached. -->
+  <rect x="15" y="5" width="2" height="22" rx="1" fill="#3fbf9f" />
+  <!-- Body: open to close, hollow-free because this one closed up. -->
+  <rect x="10" y="11" width="12" height="11" rx="1.5" fill="#3fbf9f" />
+</svg>

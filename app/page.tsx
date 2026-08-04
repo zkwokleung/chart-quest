@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ChapterMap } from "@/components/ChapterMap";
-import { Disclaimer } from "@/components/ui/Disclaimer";
 
 export default function Home() {
   return (
@@ -54,10 +53,6 @@ export default function Home() {
         </h2>
         <ChapterMap />
       </section>
-
-      <footer className="max-w-prose border-t border-border pt-4">
-        <Disclaimer />
-      </footer>
     </main>
   );
 }
