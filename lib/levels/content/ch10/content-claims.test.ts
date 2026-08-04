@@ -435,7 +435,7 @@ describe("10-7 does it travel", () => {
     expect(result.failing).toEqual([]);
   });
 
-  it("would refuse three equities, which is the mistake it exists to prevent", () => {
+  it("refuses three equities, which is the mistake it exists to prevent", () => {
     // Constructed rather than authored: the level cannot show this, so the test does.
     const threeEquities = ["SPY-1d", "AAPL-1d", "LAKE-1d"] as SeriesId[];
     const runs = threeEquities.map((id) => {
@@ -445,5 +445,79 @@ describe("10-7 does it travel", () => {
     const result = scoreObjective(runs, level.config.objective);
     expect(result.classesPassing).toEqual(["equity"]);
     expect(result.verdict).not.toBe("passed");
+  });
+});
+
+describe("10-B two markets you never tuned on", () => {
+  const level = need("10-B", "build-rules");
+
+  it("runs on the two markets the chapter never taught, per the cross-asset rule", () => {
+    // The boss rule applied to the chapter that exists to enforce it. Generic guards check this too;
+    // asserted here because *which* two matters — they are the least like what the player tuned on.
+    const taught = chapter10()
+      .filter((other) => other.id !== "10-B")
+      .flatMap((other) => other.data.map((slice) => slice.series));
+    for (const slice of level.data) {
+      expect(taught, `${slice.series} was taught on`).not.toContain(slice.series);
+    }
+    expect(level.data.map((slice) => slice.series)).toEqual(["LAKE-1d", "EURUSD-1d"]);
+  });
+
+  it("spans two asset classes, so there is nowhere to hide", () => {
+    expect(level.config.objective.minClassesPassing).toBe(2);
+    expect([...level.data.map((slice) => assetClassOf(slice.series))].sort()).toEqual([
+      "equity",
+      "fx",
+    ]);
+  });
+
+  it("has a small-cap whose baseline actually loses money", () => {
+    // **The best cell in the chapter.** Entering at random on LAKE-1d loses −0.02R a trade, so
+    // anything the rule earns there is the rule rather than the market's drift. It is the one market in
+    // the spine where that is true, which is why the boss runs on it.
+    const lake = measure("LAKE-1d", level.target.reference.entry);
+    expect(lake.baseline.perTradeR).toBeLessThan(0);
+    expect(lake.rule.perTradeR).toBeGreaterThan(0);
+    expect(lake.rule.perTradeR).toBeCloseTo(0.131, 2);
+    expect(lake.baseline.perTradeR).toBeCloseTo(-0.022, 2);
+  });
+
+  it("clears its own objective on both, with the counts it honestly has", () => {
+    const runs = level.data.map((slice) => {
+      const { rule, baseline } = measure(slice.series, level.target.reference.entry);
+      return { asset: slice.series, run: rule, baseline };
+    });
+    const result = scoreObjective(runs, level.config.objective);
+
+    expect(result.verdict).toBe("passed");
+    expect(result.passing).toEqual(["LAKE-1d", "EURUSD-1d"]);
+    expect([...result.classesPassing].sort()).toEqual(["equity", "fx"]);
+
+    // Twenty-one and twenty-five: above the threshold and not by much, which the closing message says
+    // out loud rather than rounding up.
+    expect(runs[0]!.run.trades).toBe(21);
+    expect(runs[1]!.run.trades).toBe(25);
+    expect(level.config.objective.minTrades).toBe(20);
+    const closing = level.misconceptions.at(-1)!.message;
+    expect(closing).toContain("twenty-one and twenty-five");
+  });
+
+  it("asking for thirty trades would fail correct content, which is why it asks for twenty", () => {
+    // Recorded as a test because the threshold looks arbitrary and is not: the small-cap cannot supply
+    // thirty trades from a selective rule in eighteen years.
+    const runs = level.data.map((slice) => {
+      const { rule, baseline } = measure(slice.series, level.target.reference.entry);
+      return { asset: slice.series, run: rule, baseline };
+    });
+    const stricter = scoreObjective(runs, {
+      ...level.config.objective,
+      minTrades: 30,
+    });
+    expect(stricter.verdict).not.toBe("passed");
+  });
+
+  it("prints the playbook, which is the last thing the game does", () => {
+    expect(level.config.playbook).toBe(true);
+    expect(level.hints).toEqual([]);
   });
 });

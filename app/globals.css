@@ -30,3 +30,57 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+/**
+ * The PDF path.
+ *
+ * Issue #28 asked for "markdown + PDF" and this is the PDF half: the browser's own Save-as-PDF, which
+ * costs nothing, sets better type than a generated document, and works offline like the rest of the
+ * game. A library would have been 100 KB or more against a shared bundle already at 94% of budget.
+ *
+ * When a playbook is on the page, printing produces *only* the playbook — light-on-white, at a
+ * readable size, with the interface removed. Everything else on the route is hidden rather than
+ * restyled, because the artefact the player keeps should not have navigation in it.
+ */
+@media print {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    background: #fff;
+    color: #111;
+  }
+
+  /* Only the document survives. `.playbook` is set by PlaybookExport. */
+  body:has(.playbook) > * {
+    display: none;
+  }
+
+  body:has(.playbook) .playbook,
+  body:has(.playbook) .playbook * {
+    display: revert;
+  }
+
+  body:has(.playbook) .playbook {
+    display: block;
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: #fff;
+    padding: 0;
+  }
+
+  .playbook .playbook-document {
+    /* Wraps rather than scrolls, or a printed page would truncate the table it exists to carry. */
+    max-height: none;
+    overflow: visible;
+    white-space: pre-wrap;
+    font-size: 10pt;
+    line-height: 1.45;
+    color: #111;
+    background: transparent;
+    border: 0;
+    padding: 0;
+  }
+}

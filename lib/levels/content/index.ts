@@ -92,6 +92,7 @@ export const LEVEL_LOADERS = {
   "10-5": () => import("./ch10/10-5"),
   "10-6": () => import("./ch10/10-6"),
   "10-7": () => import("./ch10/10-7"),
+  "10-B": () => import("./ch10/10-B"),
 } satisfies Record<string, () => Promise<{ level: AnyLevel }>>;
 
 export type AuthoredLevelId = keyof typeof LEVEL_LOADERS;

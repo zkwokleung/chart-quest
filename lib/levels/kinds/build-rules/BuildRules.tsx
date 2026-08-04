@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { BlockPalette } from "@/components/strategy/BlockPalette";
+import { PlaybookExport } from "@/components/strategy/PlaybookExport";
 import { RunReadout } from "@/components/strategy/RunReadout";
 import { resolvePalette } from "@/lib/backtest/palette";
 import type { Block } from "@/lib/backtest/blocks";
@@ -147,6 +148,15 @@ export function BuildRules({
       )}
 
       {run ? <RunReadout run={run} objective={objective} /> : null}
+
+      {run && level.config.playbook ? (
+        <PlaybookExport
+          run={run}
+          blocks={shown}
+          exit={shownExit}
+          risk={attempt?.risk ?? risk}
+        />
+      ) : null}
     </div>
   );
 }

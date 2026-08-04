@@ -375,6 +375,14 @@ export type KindConfig = {
      * this a player's earlier choices would silently change what a later level was grading.
      */
     fixed?: Partial<{ exit: ExitRule; risk: RiskRule; side: TradeSide }>;
+    /**
+     * Show the exportable playbook once the run is committed. 10.B only.
+     *
+     * A flag rather than a separate kind, because everything the playbook needs is already in the
+     * grade: the rule, the per-market figures with their trade counts, and the drawdowns. What makes
+     * 10.B a boss is the markets it runs on, not the document it prints.
+     */
+    playbook?: boolean;
   };
   composite: {
     /** Walked in order; each is graded on commit before the next appears. */

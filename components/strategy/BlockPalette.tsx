@@ -1,6 +1,7 @@
 "use client";
 
-import type { Block, BlockKind, Signal } from "@/lib/backtest/blocks";
+import type { Block, BlockKind } from "@/lib/backtest/blocks";
+import { describeBlock } from "@/lib/backtest/describe";
 import { PALETTE } from "@/lib/backtest/palette";
 
 /**
@@ -35,51 +36,6 @@ const STARTERS: Record<BlockKind, Block> = {
   },
   volatility: { kind: "volatility", atrPct: { op: "<", value: 2 } },
 };
-
-function describeSignal(signal: Signal): string {
-  switch (signal.kind) {
-    case "close":
-      return "the close";
-    case "sma":
-      return `the ${signal.period}-bar average`;
-    case "ema":
-      return `the ${signal.period}-bar exponential average`;
-    case "rsi":
-      return `RSI(${signal.period})`;
-    case "atr-pct":
-      return "ATR as a % of price";
-    case "bollinger":
-      return `the ${signal.band} Bollinger band`;
-    case "macd":
-      return `the MACD ${signal.line}`;
-  }
-}
-
-/** A block in the words the chapters used for it. A rule the player cannot read is not theirs. */
-export function describeBlock(block: Block): string {
-  switch (block.kind) {
-    case "structure":
-      return {
-        "bos-up": "price breaks above the last swing high",
-        "bos-down": "price breaks below the last swing low",
-        "swing-high": "a swing high has just confirmed",
-        "swing-low": "a swing low has just confirmed",
-        retest: "price comes back to a level it already broke",
-      }[block.event];
-    case "zone":
-      return `price is at ${block.touching === "support" ? "support" : "resistance"}`;
-    case "cross":
-      return `${describeSignal(block.fast)} crosses ${
-        block.dir === "above" ? "above" : "below"
-      } ${describeSignal(block.slow)}`;
-    case "compare":
-      return `${describeSignal(block.left)} is ${
-        block.op === ">" ? "above" : "below"
-      } ${typeof block.right === "number" ? block.right : describeSignal(block.right)}`;
-    case "volatility":
-      return `ATR is ${block.atrPct.op === ">" ? "above" : "below"} ${block.atrPct.value}% of price`;
-  }
-}
 
 export function BlockPalette({
   available,
