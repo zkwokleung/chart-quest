@@ -6,7 +6,7 @@ An interactive game that teaches technical analysis, from "what is a candle" to 
 
 **Live:** <https://chart-quest.vercel.app>
 
-**Status:** beta. **All ten chapters are playable end to end** — 73 levels across thirteen interaction kinds, ending with a strategy composer you build from the blocks the earlier chapters unlocked, a backtester with no look-ahead and no invented fills, and a playbook you export at the end. Along the way: draw tools, a replay engine, indicators with a price/percent/ATR y-axis, pattern base rates measured per asset with sample sizes and confidence intervals, multi-timeframe levels running two live panes from one clock, position sizing across crypto, shares, futures contracts and FX lots from real contract specifications, a chapter that has you measure each market's character yourself, and a chapter that reads your own trade journal back and tells you what it will not support.
+**Status:** 1.0. **All ten chapters are playable end to end** — 73 levels across thirteen interaction kinds, ending with a strategy composer you build from the blocks the earlier chapters unlocked, a backtester with no look-ahead and no invented fills, and a playbook you export at the end. Along the way: draw tools, a replay engine, indicators with a price/percent/ATR y-axis, pattern base rates measured per asset with sample sizes and confidence intervals, multi-timeframe levels running two live panes from one clock, position sizing across crypto, shares, futures contracts and FX lots from real contract specifications, a chapter that has you measure each market's character yourself, and a chapter that reads your own trade journal back and tells you what it will not support.
 
 The last chapter is the one that decides whether any of it worked. Your rule has to beat **entering on every single bar** with the same stop and target — because on this data doing exactly nothing pays a quarter of an R a trade, so a profitable backtest is not on its own an edge. Then it runs on data held back since the day it was committed, which yields nine trades, and asks you what nine trades can prove. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for what remains.
 
@@ -30,6 +30,8 @@ So the level built on those numbers asks a different question than planned: not 
 - **Normalized measurement** — a y-axis toggle (price → % → ATR-multiples) means every measurement you make is already unit-free.
 - **One sizing formula, four instrument classes** — spot crypto, shares, futures contracts, FX lots. Same math, different `valuePerPoint`.
 - **Per-asset base rates** — a distribution across five markets, never a single number.
+
+Because there are no accounts, everything lives in your browser — so the game can hand it back to you. **Progress export and import** is on the Progress page: a readable JSON file you can move between machines, and the only protection ten chapters have against a cleared cache. Nothing is ever sent anywhere, because there is nowhere to send it.
 
 The game also teaches you to distrust your own results. The Chapter 1 boss is a coin flip you score ~50% on. Chapter 9 has you tune a rule until the backtest looks brilliant, then shows you where that setting ranked on the years you did not tune on — and turns the same scepticism on the game's own data, which contains no delisted company because no data provider will sell you one. Chapter 10 finishes the job: your own strategy has to beat entering at random, and then it is judged on nine trades it has never seen.
 
@@ -59,7 +61,7 @@ Ten chapters, 73 levels, all authored. Full breakdown in [`docs/CURRICULUM.md`](
 - **Next.js 16** App Router, TypeScript, fully client-side and static
 - **lightweight-charts** + an overlay canvas for draw tools and grading visuals
 - **Zustand** + `persist` for state and `localStorage`
-- **Tailwind v4** and `motion` for reveal animations. No component library: every control is a native element, which is how keyboard support stayed free across thirteen kinds (shadcn is issue #30, deferred to the accessibility pass)
+- **Tailwind v4**, and no animation or component library at all: one `requestAnimationFrame` loop drives the replay and every control is a native element, which is how keyboard support stayed free across thirteen kinds and Lighthouse accessibility sits at 100
 - Own pure-TS indicators and backtester in `lib/ta/` and `lib/backtest/` — no TA dependency
 - **Vitest** for graders/indicators/backtester, **Playwright** for smoke tests
 - Deployed on Vercel

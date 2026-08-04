@@ -500,14 +500,21 @@ doing it twice. When CI fails the budget, that is the fix, not a bigger number.
 
 ## 14. Accessibility
 
-Non-negotiable for a chart-driven game:
+Non-negotiable for a chart-driven game, and measured in M11 rather than asserted. **Lighthouse accessibility is 100 with no failing audits** on every route; the target was ≥ 95.
 
-- Keyboard anchor placement for draw tools (arrow keys + enter)
-- Direction encoded by more than red/green — fill and shape too
-- `prefers-reduced-motion` honored by the replay engine
-- Every `classify` level reachable without a pointer
+| Guarantee | How it is met, and what holds it |
+| --- | --- |
+| Every kind completable without a pointer | Native `radio`/`checkbox`/`range`/`number` wherever the kind allows it, and a `role="application"` surface with arrow, shift, enter and escape handling where the interaction is a canvas. `e2e/keyboard.spec.ts` drives eleven cases through real key events — the only thing that makes this a fact rather than a claim. |
+| Draw tools from the keyboard | `annotate` moves a cursor by bar, snaps its price to the bar's extreme so a keyboard user lands on wicks rather than nudging a price axis, and announces its position with the date and price. Its `aria-label` teaches the keys, because a focusable box that explains nothing is not operable. |
+| Chart data without sight | `lib/chart/summary.ts` → `ChartData`: a summary line plus ~20 evenly spaced bars, never the whole window. A screen reader reads linearly, so 250 rows is a way to make the page unusable while technically providing the data. |
+| Direction beyond colour | Fill and shape carry it too — hollow for down. A `CONVENTIONS.md` invariant since M3. |
+| `prefers-reduced-motion` | Honoured completely, because there is **exactly one animation site** in the codebase (`ReplayControls`) and no CSS transitions or keyframes anywhere. `useReducedMotion` is tri-state: an explicit in-game choice beats the OS, and `/settings` is where that choice is made. |
 
-Target Lighthouse a11y ≥ 95.
+**One rule worth stating on its own, because it cost a real defect.** Any third-party library that renders its own DOM into a container we label must have that container `aria-hidden`. `lightweight-charts` lays itself out in a `<table>`; `role="img"` is supposed to make a node a leaf and Chrome exposes the descendants anyway — so a screen reader met the chart's label and then a table of empty cells, on every charted level, from M3 until M11. The label now lives on a wrapper and the library owns an `aria-hidden` child inside it.
+
+The corollary: anything that *should* be reachable must be a **sibling** of that wrapper rather than a child. The data summary is, for exactly this reason.
+
+Measuring it again: `npx lighthouse <url> --only-categories=accessibility --chrome-flags="--headless=new"`, **one route per invocation** — successive runs in a shell loop fail silently on Chrome profile contention.
 
 ---
 

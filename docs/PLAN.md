@@ -300,7 +300,7 @@ Ranked by how much they carry the product.
 7. **Correlation matrix** (Ch 8+) — live over the bundled spine, used to flag concentrated risk in the composer.
 8. **Backtester with anti-overfit guards** — forced in/out-of-sample split, cross-asset requirement, and a visible variant counter that warns past ~10 tries.
 9. **Skill radar** — seven axes (structure, zones, patterns, indicators, risk, asset-character, discipline) from level scores; drives "practice this."
-10. **Endless drill mode** per skill, against your own best.
+10. **Endless drill mode** per skill, against your own best. _Not built — cut from M11 and tracked for after launch. It is the only cross-cutting feature that is neither an accessibility fix nor a launch blocker, and it is the largest; ten complete chapters ship better than nine and a drill mode._
 11. **Playbook export** — markdown + PDF. The artifact the player leaves with.
 12. **Progress export/import JSON** — no accounts means no cloud sync. Also protects 10 chapters against a cleared cache.
 
@@ -489,7 +489,7 @@ All paths relative to the repository root.
 app/
   page.tsx                      # chapter map
   chapter/[n]/page.tsx   level/[id]/page.tsx      # dispatches on level.kind
-  practice/  strategy/  progress/
+  strategy/  progress/  settings/   # `practice/` awaits the drill mode; see above
 components/
   chart/        Chart, OverlayCanvas, ReplayControls, IndicatorPane,
                 MtfSplit, YAxisModeToggle, CorrelationMatrix

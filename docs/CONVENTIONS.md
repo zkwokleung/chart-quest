@@ -19,6 +19,9 @@ Orientation for anyone working in this repo. An interactive game teaching techni
 - Every level's own `target` must score 3 stars through its own grader.
 - The y-axis mode toggle (price/%/ATR) must never change grading.
 - Every pattern in `base-rates.json` needs ≥3 assets and a reported `n`.
+- **Every level kind is completable without a pointer**, and `e2e/keyboard.spec.ts` is where that stops being a claim. A kind whose interaction is a canvas provides a `role="application"` surface that announces where its cursor is; everything else uses the native element that already has the behaviour.
+- **A library that renders its own DOM into a container we label gets `aria-hidden` on that container.** `role="img"` does not stop Chrome exposing descendants — `lightweight-charts` announced a table of empty cells inside every chart from M3 until M11 because of it. Anything that should be reachable goes beside the wrapper, not inside it.
+- **Imported saves are validated before they are migrated.** `migratePersisted` fills gaps from `initialPersisted`, which is right for our own storage and wrong for a file: it would accept a text file as an empty save and replace ten chapters with it. `lib/store/transfer.ts` checks the shape first and never partially applies.
 
 ## Architecture in one paragraph
 

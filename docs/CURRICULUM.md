@@ -519,7 +519,7 @@ Ranked by how much they carry the product.
 7. **Correlation matrix** (Ch 8+) — live over the spine; flags concentrated risk in the composer.
 8. **Backtester with anti-overfit guards** — forced in/out-of-sample split, cross-asset requirement, visible variant counter warning past ~10 tries.
 9. **Skill radar** — seven axes (structure, zones, patterns, indicators, risk, asset-character, discipline).
-10. **Endless drill mode** per skill, against your own best.
+10. **Endless drill mode** per skill, against your own best. _Not built — cut from M11 and tracked for after launch. It is the only cross-cutting feature that is neither an accessibility fix nor a launch blocker, and it is the largest; ten complete chapters ship better than nine and a drill mode._
 11. **Playbook export** — markdown + PDF. The artifact the player leaves with.
 12. **Progress export/import JSON** — no accounts means no cloud sync.
 
