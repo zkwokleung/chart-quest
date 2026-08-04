@@ -13,7 +13,8 @@ Orientation for anyone working in this repo. An interactive game teaching techni
 
 - Graders are pure and deterministic — no `Date.now()`, `Math.random()`, DOM, or store access.
 - **No level's graded answer depends on the store.** The stronger form of the rule above, and the one Chapter 9 had to be designed around: a component may read the player's journal or their recalled scores — 9.6's whole point is that it does — but the _answer_ may not, because `journal` and `predictions` are empty on a fresh save, after `resetProgress`, and in private mode where storage degrades to memory. A level whose answer depends on them is unwinnable for those players and cannot satisfy the winnability guard. Read the store to show evidence; grade against the data.
-- The backtester never reads a bar index `> current`, and never fills inside a market-closed gap (`spec.hours`).
+- **One execution path: every simulated fill goes through `simulate`.** The backtester drives it per trade rather than resolving fills itself, `runEdge` is an adapter over the same engine, and `npm run data:character && npm run data:sweep` must leave `public/data/` byte-identical. Two implementations would give the game two answers for one rule, and they would disagree in the fifth decimal on gapped bars — where nobody would look.
+- The backtester never reads a bar index `> current`, asserted by prefix invariance: truncating the series cannot change a trade that already closed. A gap past the stop fills at the **open** rather than at the stop, which satisfies the market-closed-gap rule without a trading calendar (`spec.hours` was specified and is not needed).
 - No level in Ch 1–9 references `public/data/oos/` — that data is Ch 10's out-of-sample set.
 - Every level's own `target` must score 3 stars through its own grader.
 - The y-axis mode toggle (price/%/ATR) must never change grading.
@@ -21,7 +22,7 @@ Orientation for anyone working in this repo. An interactive game teaching techni
 
 ## Architecture in one paragraph
 
-~73 levels must not be ~73 components. Twelve **level kinds**, each one React component + one pure grader, and every level is _data_ (`lib/levels/content/ch<N>/`) referencing bar indices into a committed price series. `app/level/[id]/page.tsx` dispatches on `level.kind` and contains no kind-specific logic. Adding a level means adding a data file.
+73 levels must not be 73 components. Thirteen **level kinds**, each one React component + one pure grader, and every level is _data_ (`lib/levels/content/ch<N>/`) referencing bar indices into a committed price series. `app/level/[id]/page.tsx` dispatches on `level.kind` and contains no kind-specific logic. Adding a level means adding a data file.
 
 ## Verification
 

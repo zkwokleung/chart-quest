@@ -132,6 +132,27 @@ Three layers keep the holdback separate:
 
 The level-content scan (`no level in Ch 1–9 references an oos series`) belongs with the authoring guards, since levels do not exist yet to scan.
 
+### What the holdback can and cannot answer, measured
+
+**No level names an `-oos` series, including Chapter 10's**, and that is worth recording because M10 came close to changing it. Level 10.6 runs the player's strategy on the holdback, and the obvious build was a `build-rules` level whose `data` named the slices — which needed `LevelSlice.series` widened from `SeriesId` to include `OosSeriesId`, removing layer 1 above from all seventy-three levels to serve one. The holdback is loaded by a *component* instead, through `load-oos.ts`, and the graded question is the reading rather than the result. All three layers survived.
+
+And the reading is the level, because of how little the holdback can say. Sequential breakout, 2 ATR stop, 2R target:
+
+| Series | bars | trades (n = 9 / 20 / 55) |
+| --- | --- | --- |
+| GC-1d-oos | 813 | **33** / 25 / 19 |
+| EURUSD-1h-oos | 1,263 | **31** / 18 / 7 |
+| BTCUSDT-4h-oos | 985 | 23 / 22 / 11 |
+| AAPL-1d-oos | 813 | 22 / 15 / 10 |
+| SPY-1d-oos | 813 | 21 / 17 / 18 |
+| LAKE-1d-oos | 813 | 19 / 16 / 7 |
+| EURUSD-1d-oos | 839 | 14 / 11 / 6 |
+| BTCUSDT-1d-oos | 490 | 12 / 9 / 3 |
+
+Against 39 to 166 in-sample. Chapter 10's own reference strategy produces **nine trades on the index, three on gold and nine on Bitcoin's four-hour series.** So the holdback can **refute** a strategy and cannot **confirm** one, `lib/backtest/guards.ts` has a third verdict for it, and 10.6 asks about the asymmetry rather than about survival. **The intraday holdbacks are the useful ones** — four-hour Bitcoin gives 23 trades against daily Bitcoin's 9 — which is why 10.6 runs on `BTCUSDT-4h-oos`.
+
+This is a property of an honest holdback rather than a shortcoming of this one. Making it larger would mean tuning on less, and the trade counts would still be a fraction of the in-sample ones.
+
 ## Integrity guard
 
 `lib/data/integrity.test.ts` checks the committed files against the manifest: hashes, bar counts, first and last bar, column alignment, strictly increasing timestamps, every bar's range containing its own open and close, the size ceiling, and the absence of any `-oos` id from the main manifest. Verified by tampering with a single close price — three independent checks caught it.

@@ -1,6 +1,6 @@
 # Curriculum
 
-**10 chapters, ~73 levels.** Bosses need ≥2 stars to unlock the next chapter; regular levels unlock in order. A chapter-select screen lets returning players jump back.
+**10 chapters, 73 levels, all authored.** Bosses need ≥2 stars to unlock the next chapter; regular levels unlock in order. A chapter-select screen lets returning players jump back.
 
 ---
 
@@ -441,18 +441,68 @@ milestone's own gate was unmeetable when it was written.**
 
 ## Ch 10 — Build Your Own Strategy
 
-| #        | Level                                                                                                                                                          | Objective |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| 10.1     | Pick market + timeframe — constrained to your journal's best-performing context                                                                                |
-| 10.2     | State a falsifiable edge hypothesis (structured, not free text)                                                                                                |
-| 10.3     | Compose entry rules from unlocked blocks                                                                                                                       |
-| 10.4     | Add invalidation and sizing — via `InstrumentSpec`, so it's tradeable in your actual market                                                                    |
-| 10.5     | In-sample backtest — expectancy > 0 over ≥30 trades                                                                                                            |
-| 10.6     | **Out-of-sample** on data held back and revealed only now — must not collapse                                                                                  |
-| 10.7     | **Cross-asset validation** — ≥3 assets from different classes. Positive expectancy on ≥2, reported per asset. A BTC-2020-only strategy is flagged, not passed. |
-| **10.B** | **FINAL: export your playbook** — rules, per-asset stats, both samples, journal stats, known failure modes, review cadence                                     |
+| #        | Level                                                                                                       | Kind          |
+| -------- | ----------------------------------------------------------------------------------------------------------- | ------------- |
+| 10.1     | **Where to build it** — your record beside the question, and history as the thing that decides              | `classify`    |
+| 10.2     | **Something you could be wrong about** — which hypotheses this engine could refute                          | `classify`    |
+| 10.3     | **Build the entry** — compose from the blocks your progress unlocked; beat doing nothing on two markets     | `build-rules` |
+| 10.4     | **Where it is wrong** — the exit is yours now, and the comparison moves with it                             | `build-rules` |
+| 10.5     | **Everything you are allowed to see** — three markets, thirty trades each, all three clearing the baseline  | `build-rules` |
+| 10.6     | **What the held-back data can tell you** — your rule on unseen bars, and the asymmetry of what nine trades prove | `classify` |
+| 10.7     | **Does it travel** — one equity, one commodity, one crypto; two *asset classes* must clear it               | `build-rules` |
+| **10.B** | **FINAL: two markets you never tuned on** — a micro-cap and a currency, then the game writes your playbook  | `build-rules` |
 
 > **10.7 is the change that makes the whole game's promise true.** "Works on one series" would have certified overfit strategies as finished work.
+
+### Where Chapter 10 diverged from this plan, and why
+
+The shortest of these sections, and only because Chapter 9 had already forced the two rules that
+would have caused most of the trouble. One measurement still rewrote two levels.
+
+- **"Expectancy > 0 over ≥30 trades" is a bar that entering at random clears.** With a 2 ATR stop and
+  a 2R target, a trade on *every flat bar* returns **+0.265R on the index, +0.395R on Apple, +0.337R
+  on Bitcoin and +0.232R on gold** — four of six markets. Every two-block rule tried during
+  development cleared zero, including "buy breakdowns below the 200-bar average", which makes a
+  positive +0.03R on the index and is worse than doing nothing. Scored against zero it earned three
+  stars. So the objective became `beatBaseline`: the entry must beat the same exit with no entry
+  condition, on the same market, over the same window. What a naive backtest mostly shows you is the
+  exit and the market's drift, and this is the comparison that says so. The trade-count half of the
+  specified objective survived untouched.
+- **10.6 cannot ask whether the strategy survived, because the holdback cannot supply a sample.** The
+  most recent 15% of each series yields 33 trades on gold at its most generous lookback and 12 on
+  Bitcoin's daily series, against 39 to 166 in-sample; the chapter's own reference produces **nine
+  trades on the index, three on gold and nine on Bitcoin's four-hour series.** A player who has just
+  spent Chapter 9 learning that eighteen examples cannot distinguish a pattern from a coin cannot then
+  be told that nine validated their strategy. So the level asks what a sample this size can *do*, and
+  the answer is asymmetric: it can refute and it cannot confirm. That is the honest form of "must not
+  collapse".
+- **And the holdback's compile-time guarantee survived the level that needed to break it.** Building
+  10.6 as a `build-rules` level meant naming `-oos` slices in `level.data`, which meant widening
+  `LevelSlice.series` from `SeriesId` — removing one of `DATA.md`'s three layers from all seventy-three
+  levels to serve one. The holdback is loaded by a component instead and the graded question is the
+  reading, which is author-known for every player.
+- **10.1 cannot be graded on the journal**, by the invariant M9 established: `journal` is empty on a
+  fresh save, after `resetProgress` and in private mode. The journal marks the options and the data
+  decides the answer, exactly as 9.6 does.
+- **10.4 grades invalidation and only *shows* sizing.** Both were specified; sizing is already graded
+  five times in Chapter 7 from real contract terms, and this chapter has seven slots for eight ideas. A
+  sixth sizing level would be a Chapter 7 level wearing a Chapter 10 number.
+- **`spec.hours` was never built.** `ARCHITECTURE.md` §7 and issue #28 both ask the engine to avoid
+  fills inside a market-closed gap "using `spec.hours`", and `InstrumentSpec` has no such field.
+  `simulate` satisfies the rule structurally by filling a gap at the **open** — the market never traded
+  at the stop price — which is better than a trading calendar because it cannot be wrong about a
+  holiday.
+- **The playbook is markdown plus a print stylesheet, not a generated PDF.** A PDF library is 100 KB
+  or more against a shared bundle at 94% of budget, for worse typography than the browser's own
+  Save-as-PDF produces.
+- **shadcn (#30) stayed unadopted.** The composer needs a listbox, buttons and a removable list, all of
+  which this project has built natively across twelve kinds precisely so keyboard support is free.
+  Moved to M11's accessibility pass, where the weight can be measured rather than guessed.
+
+> **The engine is not new code.** `runEdge` was already a sequential backtester feeding two committed
+> artefacts whose numbers nine levels quote, so `lib/backtest/engine.ts` is that loop with the fixed
+> parts made parameters and `runEdge` is an adapter over it. The refactor was gated on
+> `npm run data:character && npm run data:sweep` leaving `public/data/` byte-identical.
 
 ---
 

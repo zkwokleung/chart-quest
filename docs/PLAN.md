@@ -26,7 +26,7 @@ Decisions locked with the user:
 | Chart data    | Bundled real historical OHLCV, committed as static JSON. Offline, deterministic.                               |
 | Data spine    | 6 series, contrast-picked so they disagree with each other (§4).                                               |
 | Feel          | Playable puzzle game. Every level is an interaction on a chart — draw, click, predict, trade. Minimal reading. |
-| Curriculum    | 10 chapters, ~73 levels. Asset Character is its own chapter after Risk.                                        |
+| Curriculum    | 10 chapters, 73 levels. Asset Character is its own chapter after Risk.                                        |
 | Sizing        | Four instrument classes: spot, shares, futures, FX.                                                            |
 | Final chapter | Real in-browser backtester; objective requires ≥2 of 3 asset _classes_ to work.                                |
 
@@ -105,7 +105,7 @@ Graders are pure and deterministic — the highest-value tests in the project.
 
 ## 2. Chapter and level breakdown
 
-**10 chapters, ~73 levels.** Bosses need ≥2 stars to unlock the next chapter; regular levels unlock in order. A chapter-select screen lets returning players jump back.
+**10 chapters, 73 levels, all authored.** Bosses need ≥2 stars to unlock the next chapter; regular levels unlock in order. A chapter-select screen lets returning players jump back.
 
 ### The cross-asset boss rule
 
@@ -263,18 +263,27 @@ This is enforced by a test, not by discipline (§7).
 
 ### Ch 10 — Build Your Own Strategy
 
-| #        | Level                                                                                                                                                                            | Objective |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| 10.1     | Pick market + timeframe — constrained to your journal's best-performing context                                                                                                  |
-| 10.2     | State a falsifiable edge hypothesis (structured, not free text)                                                                                                                  |
-| 10.3     | Compose entry rules from unlocked blocks                                                                                                                                         |
-| 10.4     | Add invalidation and sizing — via `InstrumentSpec`, so it's tradeable in your actual market                                                                                      |
-| 10.5     | In-sample backtest — expectancy > 0 over ≥30 trades                                                                                                                              |
-| 10.6     | **Out-of-sample** on data held back and revealed only now — must not collapse                                                                                                    |
-| 10.7     | **Cross-asset validation** — run on ≥3 assets from different classes. Objective: positive expectancy on ≥2, reported per asset. A BTC-2020-only strategy is flagged, not passed. |
-| **10.B** | **FINAL: export your playbook** — rules, per-asset stats, both samples, journal stats, known failure modes, review cadence                                                       |
+| #        | Level                                                                                                       | Kind          |
+| -------- | ----------------------------------------------------------------------------------------------------------- | ------------- |
+| 10.1     | **Where to build it** — your record beside the question, and history as the thing that decides              | `classify`    |
+| 10.2     | **Something you could be wrong about** — which hypotheses this engine could refute                          | `classify`    |
+| 10.3     | **Build the entry** — compose from the blocks your progress unlocked; beat doing nothing on two markets     | `build-rules` |
+| 10.4     | **Where it is wrong** — the exit is yours now, and the comparison moves with it                             | `build-rules` |
+| 10.5     | **Everything you are allowed to see** — three markets, thirty trades each, all three clearing the baseline  | `build-rules` |
+| 10.6     | **What the held-back data can tell you** — your rule on unseen bars, and what nine trades can prove         | `classify`    |
+| 10.7     | **Does it travel** — one equity, one commodity, one crypto; two *asset classes* must clear it               | `build-rules` |
+| **10.B** | **FINAL: two markets you never tuned on** — a micro-cap and a currency, then the game writes your playbook  | `build-rules` |
 
 > 10.7 is the change that makes the whole game's promise true. "Works on one series" was the old objective and it would have certified overfit strategies as finished work.
+>
+> **The objective is "beat doing nothing", not "expectancy > 0".** Measured: with a 2 ATR stop and a 2R
+> target, entering on every flat bar returns +0.265R a trade on the index, +0.395R on Apple and +0.337R
+> on Bitcoin. Zero is a bar a random entry clears, so scoring against it would have certified noise as
+> skill in the chapter that is the payoff for Chapter 9.
+>
+> **And 10.6 asks what the holdback can prove rather than whether the strategy survived**, because the
+> holdback produces nine trades on the index. Full reasoning in `CURRICULUM.md` under "Where Chapter 10
+> diverged".
 
 ---
 

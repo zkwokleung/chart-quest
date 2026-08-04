@@ -6,7 +6,9 @@ An interactive game that teaches technical analysis, from "what is a candle" to 
 
 **Live:** <https://chart-quest.vercel.app>
 
-**Status:** pre-alpha. **Chapters 1 through 9 are playable end to end** — 65 levels across twelve interaction kinds, including draw tools, a replay engine, indicators with a price/percent/ATR y-axis, pattern base rates measured per asset with sample sizes and confidence intervals, multi-timeframe levels running two live panes from one clock, position sizing across crypto, shares, futures contracts and FX lots from real contract specifications, a chapter that has you measure each market's character yourself — trend persistence, volatility, correlation and which edges survive being moved — and a chapter that reads your own trade journal back to you and tells you what it will not support. It also has you tune a rule until the backtest looks brilliant, then shows you where that setting ranked on the years you did not tune on: 25th of 26 on the index, 3rd of 26 on Apple, because overfitting sometimes goes unpunished and that is exactly why the final chapter requires three markets. Building your own strategy is next. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for the build order.
+**Status:** beta. **All ten chapters are playable end to end** — 73 levels across thirteen interaction kinds, ending with a strategy composer you build from the blocks the earlier chapters unlocked, a backtester with no look-ahead and no invented fills, and a playbook you export at the end. Along the way: draw tools, a replay engine, indicators with a price/percent/ATR y-axis, pattern base rates measured per asset with sample sizes and confidence intervals, multi-timeframe levels running two live panes from one clock, position sizing across crypto, shares, futures contracts and FX lots from real contract specifications, a chapter that has you measure each market's character yourself, and a chapter that reads your own trade journal back and tells you what it will not support.
+
+The last chapter is the one that decides whether any of it worked. Your rule has to beat **entering on every single bar** with the same stop and target — because on this data doing exactly nothing pays a quarter of an R a trade, so a profitable backtest is not on its own an edge. Then it runs on data held back since the day it was committed, which yields nine trades, and asks you what nine trades can prove. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for what remains.
 
 ---
 
@@ -29,13 +31,13 @@ So the level built on those numbers asks a different question than planned: not 
 - **One sizing formula, four instrument classes** — spot crypto, shares, futures contracts, FX lots. Same math, different `valuePerPoint`.
 - **Per-asset base rates** — a distribution across five markets, never a single number.
 
-The game also teaches you to distrust your own results. The Chapter 1 boss is a coin flip you score ~50% on. Chapter 9 has you tune a rule until the backtest looks brilliant, then shows you where that setting ranked on the years you did not tune on — and finishes by turning the same scepticism on the game's own data, which contains no delisted company because no data provider will sell you one.
+The game also teaches you to distrust your own results. The Chapter 1 boss is a coin flip you score ~50% on. Chapter 9 has you tune a rule until the backtest looks brilliant, then shows you where that setting ranked on the years you did not tune on — and turns the same scepticism on the game's own data, which contains no delisted company because no data provider will sell you one. Chapter 10 finishes the job: your own strategy has to beat entering at random, and then it is judged on nine trades it has never seen.
 
 ---
 
 ## Curriculum
 
-Ten chapters, ~73 levels. Full breakdown in [`docs/CURRICULUM.md`](docs/CURRICULUM.md).
+Ten chapters, 73 levels, all authored. Full breakdown in [`docs/CURRICULUM.md`](docs/CURRICULUM.md).
 
 | Ch  | Title                        | Ends with                                           |
 | --- | ---------------------------- | --------------------------------------------------- |
@@ -48,7 +50,7 @@ Ten chapters, ~73 levels. Full breakdown in [`docs/CURRICULUM.md`](docs/CURRICUL
 | 7   | Risk, R & Sizing             | 10 trades; scored on expectancy, not profit         |
 | 8   | Asset Character              | Measuring trend-persistence yourself, per asset     |
 | 9   | Edge & Probability           | Three backtest reports, three ways of being wrong   |
-| 10  | Build Your Own Strategy      | An exported playbook that works on ≥2 asset classes |
+| 10  | Build Your Own Strategy      | A rule that beats doing nothing on two asset classes |
 
 ---
 
@@ -57,7 +59,7 @@ Ten chapters, ~73 levels. Full breakdown in [`docs/CURRICULUM.md`](docs/CURRICUL
 - **Next.js 16** App Router, TypeScript, fully client-side and static
 - **lightweight-charts** + an overlay canvas for draw tools and grading visuals
 - **Zustand** + `persist` for state and `localStorage`
-- **Tailwind v4** + shadcn/ui, `motion` for reveal animations
+- **Tailwind v4** and `motion` for reveal animations. No component library: every control is a native element, which is how keyboard support stayed free across thirteen kinds (shadcn is issue #30, deferred to the accessibility pass)
 - Own pure-TS indicators and backtester in `lib/ta/` and `lib/backtest/` — no TA dependency
 - **Vitest** for graders/indicators/backtester, **Playwright** for smoke tests
 - Deployed on Vercel
@@ -88,6 +90,7 @@ npm run data:fetch   # rebuild public/data from upstream sources
 npm run data:rates   # recompute pattern base rates
 npm run data:resample # rebuild the derived higher-timeframe series
 npm run data:character # recompute the per-asset character measurements
+npm run data:sweep   # recompute the two-window parameter sweep Chapter 9 rests on
 ```
 
 ### Data
@@ -115,7 +118,7 @@ Both are worth revisiting once the plugin ecosystem catches up — tracked in [#
 | ---------------------------------------------- | -------------------------------------------------------------------- |
 | [`docs/PLAN.md`](docs/PLAN.md)                 | The full design plan — the source of truth for scope                 |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | The level-kind engine, schemas, grader contract, storage             |
-| [`docs/CURRICULUM.md`](docs/CURRICULUM.md)     | All 10 chapters and ~73 levels, plus the cross-asset boss rule       |
+| [`docs/CURRICULUM.md`](docs/CURRICULUM.md)     | All 10 chapters and 73 levels, plus the cross-asset boss rule        |
 | [`docs/DATA.md`](docs/DATA.md)                 | The six-series data spine, sources, format, out-of-sample rules      |
 | [`docs/AUTHORING.md`](docs/AUTHORING.md)       | How to add a level — the most-repeated task in the project           |
 | [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)   | Orientation: the invariants, code conventions, verification commands |

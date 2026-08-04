@@ -1,6 +1,6 @@
 # Architecture
 
-The central problem: **~73 levels must not be ~73 components.**
+The central problem: **73 levels must not be 73 components.**
 
 The solution is a small set of reusable interaction primitives ("level kinds"). Each kind is one React component plus one pure grader function. Every level is _data_ referencing a slice of a price series. Adding a level means adding a data file, not writing code.
 
@@ -8,7 +8,7 @@ The solution is a small set of reusable interaction primitives ("level kinds"). 
 
 ## 1. Level kinds
 
-Twelve kinds cover the whole curriculum.
+Thirteen kinds cover the whole curriculum.
 
 | Kind            | Interaction                                                                         | Teaches                                            |
 | --------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------- |
@@ -23,7 +23,7 @@ Twelve kinds cover the whole curriculum.
 | `spot-the-flaw` | A list of claims about a trade; check the ones that add nothing. Scored with `f1`.  | Anti-patterns, critical reading                    |
 | `trade-sequence`| Size N historical trades one at a time, account compounding between them.           | Risk of ruin, streaks, sizing discipline           |
 | `probe`         | A control over a statistic computed across the whole data spine, redrawn live.       | Asset character, measuring rather than believing    |
-| `build-rules`   | Block composer → multi-asset backtest → hit an objective.                           | Chapter 10                                         |
+| `build-rules`   | Compose blocks the chapters unlocked → multi-asset backtest → beat doing nothing.   | Chapter 10; the composed strategy *is* the attempt |
 
 Some levels are **composite** — a boss may chain `mark-bars` → `annotate` → `classify` → `predict-next` and average the scores. Composites are expressed as a sequence of kinds, not a new kind.
 
@@ -229,42 +229,53 @@ A tight trail costs 40% of the return **while raising the share of winning trade
 
 ## 7. Backtester
 
-`lib/backtest/engine.ts` is a bar-by-bar loop. Two hard rules, both asserted in tests:
+### One execution path, and why it is not new code
 
-1. **No look-ahead.** A decision at bar `i` may only read indices `≤ i`. Tested by spying on the series accessor and failing on any read of `> i`.
-2. **No fills inside a market-closed gap.** Uses `spec.hours`. A stop "at" a price the market gapped through fills at the open, not the stop.
+`lib/backtest/engine.ts` walks a rule through bars — and it is `runEdge`'s loop with the fixed parts made parameters, not a second implementation. Two things that did this already existed when Chapter 10 started: `lib/trade/simulate.ts` resolves a single trade's fills, and `runEdge` in `lib/ta/edges.ts` was a sequential backtester feeding **both** committed measurement artefacts, whose numbers 8.3, 8.5, 8.6, 8.B, 9.3, 9.5 and 9.B quote. A third loop would have disagreed with them quietly, in the fifth decimal, on gapped bars.
 
-Strategy representation:
+So `runEdge` is now an adapter over `runStrategy`, and the refactor's gate was not a passing test suite but a **byte-identical artefact diff**: `npm run data:character && npm run data:sweep` must leave `public/data/` unchanged.
+
+The two hard rules:
+
+1. **No look-ahead**, asserted by **prefix invariance** rather than by spying on the series accessor. A Proxy cannot distinguish the two forward reads the engine legitimately makes — the decision at bar `i` must not look past `i`, but `simulate` walks bars after the entry by design. Truncating the series draws the line exactly: a decision that peeked would change a trade that had already closed.
+2. **No fill at a price the market never traded at.** A gap past the stop fills at the **open**. `spec.hours` does not exist and is not needed — filling at the open satisfies the rule structurally, without a trading calendar that could be wrong about a holiday.
+
+Everything is in R. Position sizing is `InstrumentSpec`'s job at the point a player is asked to trade, which is 10.4's subject rather than the engine's.
+
+### Strategy representation
 
 ```ts
-type Block =
-  | {
-      kind: "cross";
-      fast: IndicatorRef;
-      slow: IndicatorRef;
-      dir: "above" | "below";
-    }
-  | {
-      kind: "compare";
-      left: IndicatorRef;
-      op: "<" | ">";
-      right: number | IndicatorRef;
-    }
-  | { kind: "structure"; event: "bos" | "retest" | "swing-high" | "swing-low" }
-  | { kind: "zone"; touching: "support" | "resistance" }
-  | { kind: "volatility"; atrPct: { op: "<" | ">"; value: number } }; // unlocked by Ch 8
+type Signal =                          // one number per bar; `IndicatorSpec` describes what to *draw*
+  | { kind: "close" }
+  | { kind: "sma" | "ema" | "rsi" | "atr-pct"; period: number }
+  | { kind: "bollinger"; period: number; deviations: number; band: "upper" | "mid" | "lower" }
+  | { kind: "macd"; line: "macd" | "signal" | "histogram"; params?: MacdParams };
 
-type Strategy = {
-  entry: { all: Block[] };
-  exit: { stop: StopRule; target: TargetRule; timeStop?: number };
-  risk: { perTradePct: number };
-  scope: { series: SeriesId; from: number; to: number }[]; // multi-asset
-};
+type Block =
+  | { kind: "cross"; fast: Signal; slow: Signal; dir: "above" | "below" }
+  | { kind: "compare"; left: Signal; op: "<" | ">"; right: number | Signal }
+  | { kind: "structure"; event: "bos-up" | "bos-down" | "swing-high" | "swing-low" | "retest" }
+  | { kind: "zone"; touching: "support" | "resistance" }
+  | { kind: "volatility"; atrPct: { op: "<" | ">"; value: number } };   // unlocked by Ch 8
 ```
 
-Blocks appear in the Ch 10 composer palette only once their chapter has unlocked them — **the palette is the player's progress made concrete.** Rules are expressed in ATR-relative terms wherever possible, so a strategy is portable across the data spine by construction.
+Two divergences from the original sketch, both forced. It referenced an `IndicatorRef`; the type that exists is `IndicatorSpec`, which describes what to **draw**, and Bollinger and MACD have three lines each — complete for drawing, ambiguous for deciding. And `event: "bos"` had no direction, which a composer that lets the player pick a side cannot leave to be inferred.
 
-Anti-overfit guards in `lib/backtest/guards.ts`: forced in-sample/out-of-sample split, the ≥2-of-3-asset-classes objective, and a visible variant counter that warns past ~10 attempts.
+`compileEntry(blocks)` is an **`all` conjunction**, and the conservative reading is also the pedagogically right one: Chapter 6 spent a chapter on over-confluence, so a player who stacks five conditions has to watch their trade count collapse. An empty stack fires on **nothing** — "no conditions" is an unfinished strategy, and a vacuous truth would hand out four thousand trades and a plausible expectancy.
+
+Indicators are computed once per series behind a `WeakMap`, not once per bar: `rsi(series, i)` builds its whole series per call, so the naive form is 21 million operations on `SPY-1d`. Reading index `i` out of a prebuilt array is also what makes the predicate structurally unable to look forward — it never chooses an index. `warmupFor(blocks)` derives the history a rule needs, giving smoothed indicators three periods rather than one, because their first *defined* value is not their converged one.
+
+Blocks appear in the composer palette only once their chapter has unlocked them — **the palette is the player's progress made concrete** — and `lib/backtest/palette.ts` declares that mapping with a test behind it, following `lib/levels/skills.ts`. It unlocks on an *attempt* rather than a pass: requiring stars would make the composer a second grading of chapters already graded and leave the weakest players unable to build anything.
+
+### The objective is "beat doing nothing", not "expectancy > 0"
+
+**The measurement that shaped Chapter 10.** With a 2 ATR stop and a 2R target, entering on *every flat bar* returns **+0.265R a trade on the index, +0.395R on Apple, +0.337R on Bitcoin and +0.232R on gold** — four of six markets. Zero is a bar a random entry clears, and every two-block rule tried during development cleared it, including one that is measurably worse than doing nothing. So `Objective.beatBaseline` compares a rule against the same exit with no entry condition, on the same market, over the same window. The comparison runs through the player's own exit, so widening the stop cannot inflate the benchmark — it moves both sides.
+
+`lib/backtest/guards.ts` holds the forced split, the objective and a variant counter that warns past ten attempts. Everything is a pure function over runs; the counter takes the count rather than reading it, because these are what Chapter 10 grades on.
+
+**A verdict of "confirmed" is not available.** The out-of-sample holdback cannot produce thirty trades on any daily series in the spine — 9 on Bitcoin, 21 on the index, 33 on gold at its most generous lookback — so the verdict is `passed | refuted | inconclusive`, and a test asserts the vocabulary never produces "confirmed" or "validated". `inconclusive` being a third outcome is load-bearing: an asset that took eleven trades has not failed, and counting it as one would make 10.7's cross-asset objective a measure of how much history a market happens to have.
+
+Objectives are stated over **per-asset** results and never over a pooled total — 8.5's flawed claim expressed as a return type. `poolMetrics` always returns `perAsset` beside `pooled`, and 10.7 counts distinct asset **classes**, so three equities are one class.
 
 ---
 
@@ -360,8 +371,9 @@ lib/
   ta/           indicators, swings, patterns, normalize, autocorr, correlation
   instruments/  specs, sizing
   levels/       schema, registry, graders/, content/ch1..ch10
-  backtest/     engine, metrics, guards
+  backtest/     engine, blocks, describe, palette, metrics, guards
   journal/      analytics                 # pure; reads no store, imports no React
+  playbook/     export                    # markdown from a run; pure and tested
   store/        game, strategies, persist
   chart/        coords, geometry, hit-test
 scripts/        fetch-data.ts, compute-base-rates.ts, compute-edge-sweep.ts

@@ -1,6 +1,6 @@
 # Authoring a level
 
-The most-repeated task in this project. ~73 levels exist as data; adding one should not require writing a component.
+The most-repeated task in this project. All 73 levels exist as data; adding one should not require writing a component.
 
 ---
 
@@ -98,7 +98,7 @@ These run on every level automatically. You don't write them; you satisfy them.
 
 | Guard                                                              | Why                                                                                                                     |
 | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| Level's own `target` scores 3 stars through its own grader         | Catches broken authoring across all ~73 levels for free. If the reference answer doesn't pass, the level is unwinnable. |
+| Level's own `target` scores 3 stars through its own grader         | Catches broken authoring across all 73 levels for free. If the reference answer doesn't pass, the level is unwinnable. |
 | `misconceptions.length >= 2`                                       | The teaching invariant                                                                                                  |
 | Chapter boss uses a different `SeriesId` than the chapter's levels | The cross-asset transfer guarantee                                                                                      |
 | No Ch 1–9 level references `public/data/oos/`                      | Keeps out-of-sample genuinely out-of-sample                                                                             |
@@ -407,6 +407,63 @@ report is not the same as learning to read one.
 **Leave out anything whose verdict depends on the market.** MACD's histogram runs 0.42 against
 RSI on Bitcoin and 0.80 against the ten-bar return on SPY, so whether it is redundant is not a
 fact — it is an argument, and a graded answer cannot rest on one.
+
+---
+
+## Composing a strategy (`build-rules`)
+
+```ts
+kind: 'build-rules',
+data: [                         // one slice per market; each is its own run
+  { series: 'SPY-1d', from: 210, to: 4612, label: 'S&P 500 · daily' },
+  { series: 'GC-1d',  from: 210, to: 4607, label: 'Gold · daily' },
+],
+config: {
+  prompt: '...',
+  palette: 'unlocked',          // or an explicit list, to stage what the level teaches
+  objective: { beatBaseline: true, minTrades: 30, minAssetsPassing: 2 },
+  fixed: { exit: { stopAtr: 2, targetR: 2, timeStopBars: 60 } },
+  playbook: true,               // 10.B only
+},
+target: { reference: { entry: [...], exit: {...}, risk: {...} } },
+tolerance: {},
+```
+
+**The composed strategy is the attempt.** The grader receives the blocks, runs them over `level.data`
+through the engine and reads the verdict off the result — so it touches no store and stays as pure as
+every other grader, which is what lets Chapter 10 exist alongside `CONVENTIONS.md`'s rule that no
+level's graded answer may depend on the store. `predict-next` is the precedent for the other half: no
+authored answer, because the answer is whatever the data did.
+
+**`target.reference` is never compared against, and authoring one means running it.** It exists so
+`perfectAttempt` has something to return, which is what lets the winnability guard prove three stars is
+reachable. A reference that does not clear its own objective is an unwinnable level, and the guard is
+where that gets found — as it did for 4.B in M7c.
+
+**Set `beatBaseline` unless you can argue against it.** Measured on this spine: with a 2 ATR stop and a
+2R target, entering on *every flat bar* returns +0.265R a trade on the index, +0.395R on Apple, +0.337R
+on Bitcoin and +0.232R on gold. An objective of "expectancy > 0" is therefore one a random entry clears,
+and every two-block rule tried while Chapter 10 was written cleared it — including one that is worse
+than doing nothing. The baseline runs through *the level's own exit*, so a player widening their stop
+cannot inflate the benchmark.
+
+**State the objective per asset, never as a pooled total.** `minAssetsPassing` and `minClassesPassing`
+are the fields that matter; a pooled objective passes a rule that made everything on one market, which
+is the sentence 8.5 asks the player to mark as not following. Count *classes* when the point is travel:
+three equities are one class.
+
+**Ask one question per level.** `fixed` pins the parts the level is not about — 10.3 fixes the exit and
+asks about the entry, 10.4 opens it — because a player's earlier choices would otherwise silently change
+what a later level grades.
+
+**Check the trade counts before choosing your markets.** A market that cannot supply `minTrades` comes
+back `inconclusive`, which is neither a pass nor a fail, and an objective that needs it to pass makes
+the level unclearable on the merits. 10.5 uses Apple rather than Bitcoin for exactly this reason: the
+reference takes 18 trades on `BTCUSDT-1d`.
+
+**`build-rules` cannot be a composite step.** It runs over a set of series chosen by its own config, so
+a boss stage of it would widen the boss's scope past anything the cross-asset guard can see — and the
+eager step map would give every boss the composer.
 
 ---
 
