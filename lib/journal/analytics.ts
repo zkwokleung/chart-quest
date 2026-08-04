@@ -41,14 +41,22 @@ import { wilsonInterval } from "@/lib/ta/base-rates";
 /** Below this, a cell cannot support a conclusion. `base-rates.json` calls n=34 "the lesson". */
 export const UNDERPOWERED_BELOW = 20;
 
-export type JournalStats = {
+/**
+ * What a list of R outcomes says, whoever produced them.
+ *
+ * Split out from `JournalStats` in M10 so the backtester and the journal share one arithmetic.
+ * `lib/backtest/metrics.ts` needs expectancy, the win rate with its interval, the drawdown and
+ * the worst losing streak over trades that came from the engine rather than from the player, and
+ * every one of those was already written and tested here. A second copy would have been a second
+ * answer — and there were already two drawdowns in the codebase before this, one of which this
+ * change deletes.
+ */
+export type RStats = {
   n: number;
-  /** Of `n`, how many had their entry, stop and target chosen by the player. */
-  planned: number;
   wins: number;
-  losses: number;
   /** A trade that ran out of bars can land at exactly 0.00R. Rare, real, and not a win. */
   scratches: number;
+  losses: number;
   winRate: number | null;
   /** Wilson score interval, as `base-rates.ts` uses. Null under three trades. */
   winRateCi95: [number, number] | null;
@@ -60,6 +68,12 @@ export type JournalStats = {
   /** Deepest peak-to-trough of the cumulative R curve, in R, reported positive. */
   maxDrawdownR: number;
   worstLosingStreak: number;
+};
+
+/** `RStats` plus the one thing only a journal knows: who chose the plan. */
+export type JournalStats = RStats & {
+  /** Of `n`, how many had their entry, stop and target chosen by the player. */
+  planned: number;
 };
 
 export type JournalCell = {
@@ -104,8 +118,15 @@ function usable(journal: readonly JournalEntry[]): JournalEntry[] {
 const mean = (xs: number[]): number | null =>
   xs.length === 0 ? null : xs.reduce((t, x) => t + x, 0) / xs.length;
 
-export function statsFor(entries: readonly JournalEntry[]): JournalStats {
-  const rs = entries.map((e) => e.r as number);
+/**
+ * The statistics of a run of R outcomes, in the order they happened.
+ *
+ * **Order matters and is the caller's responsibility.** The drawdown and the losing streak are
+ * properties of a sequence rather than of a set, so handing this a shuffled list produces numbers
+ * that are arithmetically correct and mean nothing. `statsFor` sorts by `at` before calling;
+ * the engine's `rs` are already in trade order.
+ */
+export function statsForRs(rs: readonly number[]): RStats {
   const wins = rs.filter((r) => r > 0);
   const losses = rs.filter((r) => r < 0);
   const scratches = rs.filter((r) => r === 0);
@@ -127,7 +148,6 @@ export function statsFor(entries: readonly JournalEntry[]): JournalStats {
   const decided = wins.length + losses.length;
   return {
     n: rs.length,
-    planned: entries.filter(isPlanned).length,
     wins: wins.length,
     losses: losses.length,
     scratches: scratches.length,
@@ -135,12 +155,19 @@ export function statsFor(entries: readonly JournalEntry[]): JournalStats {
     // Three is the smallest sample an interval says anything about; below it the interval is
     // the whole [0, 1] range and printing it implies more than it contains.
     winRateCi95: decided < 3 ? null : wilsonInterval(wins.length, decided),
-    expectancy: mean(rs),
+    expectancy: mean([...rs]),
     avgWinR: mean(wins),
     avgLossR: mean(losses),
     totalR: rs.reduce((t, r) => t + r, 0),
     maxDrawdownR: Math.abs(deepest),
     worstLosingStreak: worstStreak,
+  };
+}
+
+export function statsFor(entries: readonly JournalEntry[]): JournalStats {
+  return {
+    ...statsForRs(entries.map((e) => e.r as number)),
+    planned: entries.filter(isPlanned).length,
   };
 }
 

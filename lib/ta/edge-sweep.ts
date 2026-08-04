@@ -1,4 +1,5 @@
 import type { Series, SeriesId } from "@/lib/chart/types";
+import { statsForRs } from "@/lib/journal/analytics";
 import { breakoutN, runEdge } from "./edges";
 
 /**
@@ -104,24 +105,13 @@ export type SweepForAsset = {
 };
 
 /**
- * Peak-to-trough of a cumulative R curve, in R.
+ * One lookback on one window, with the drawdown the totals cannot give.
  *
- * The same definition `lib/journal/analytics.ts` uses, and for the same reason: there is no
- * account here, so a drawdown expressed as a percentage would be a percentage of nothing.
+ * The drawdown comes from `statsForRs` rather than from a local helper. It had one until M10 —
+ * a third of `analytics.ts`'s loop, written when Chapter 9 needed a drawdown and Chapter 9's
+ * journal code was in another directory. Two implementations of one number is one too many, and
+ * the sweep's drift test is what proves deleting it changed nothing.
  */
-function drawdownR(rs: readonly number[]): number {
-  let running = 0;
-  let peak = 0;
-  let deepest = 0;
-  for (const r of rs) {
-    running += r;
-    peak = Math.max(peak, running);
-    deepest = Math.min(deepest, running - peak);
-  }
-  return Math.abs(deepest);
-}
-
-/** One lookback on one window, with the drawdown the totals cannot give. */
 function measure(
   series: Series<string>,
   n: number,
@@ -132,7 +122,7 @@ function measure(
     trades: result.trades,
     totalR: result.totalR,
     perTradeR: result.perTradeR,
-    maxDrawdownR: drawdownR(result.rs),
+    maxDrawdownR: statsForRs(result.rs).maxDrawdownR,
   };
 }
 
