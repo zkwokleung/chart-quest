@@ -1,6 +1,5 @@
+import { runStrategy, type StrategySpec } from "@/lib/backtest/engine";
 import type { Series } from "@/lib/chart/types";
-import { simulate } from "@/lib/trade/simulate";
-import { atr } from "./atr";
 
 /**
  * Four trading rules, run identically on every market, so the market is the only variable.
@@ -32,8 +31,15 @@ export const TARGET_R = 2;
 /** Bars a position may stay open. */
 export const MAX_BARS = 60;
 
-/** Bars of history each rule needs before its first possible signal. */
-const WARMUP = 210;
+/**
+ * Bars of history each rule needs before its first possible signal.
+ *
+ * One figure for all four, set by the longest of them — `revert-3down`'s 200-bar average — rather
+ * than per rule, so the four are measured over the same span and the market stays the only
+ * variable. A composed Chapter 10 strategy cannot make that simplification, which is why
+ * `warmupFor` derives it from the blocks instead.
+ */
+export const WARMUP = 210;
 
 /**
  * A rule id. The four Chapter 8 rules are concrete; the swept breakout is a template.
@@ -70,9 +76,13 @@ function sma(series: Series<string>, i: number, n: number): number | null {
 /**
  * The breakout rule at any lookback, so Chapter 9.5 can sweep it.
  *
- * Chapter 8's `breakout-20` is this at n = 20, and `edges.test.ts` pins that it reproduces the
- * committed figures on all six markets — because 8.3, 8.5, 8.6 and 8.B all quote them, and a
- * refactor that moved them by a hundredth would make four levels quietly wrong.
+ * Chapter 8's `breakout-20` is this at n = 20, and what pins it is
+ * `lib/data/asset-character.test.ts`, which recomputes the whole committed artefact from the
+ * shipped code and asserts equality — so every one of `breakout-20`'s six per-market cells is
+ * covered, not merely the two the levels quote most. (An earlier version of this comment named an
+ * `edges.test.ts` that never existed. The drift test is the real guarantee and always was.)
+ * 8.3, 8.5, 8.6 and 8.B all quote these figures, and a refactor moving them by a hundredth would
+ * make four levels quietly wrong.
  *
  * The lookback is the *only* thing 9.5 varies. One knob is what makes the overfit lesson
  * legible: a player who tunes twenty parameters knows they cheated, and a player who tunes one
@@ -151,61 +161,39 @@ export type EdgeResult = {
   byYear: Record<string, number>;
 };
 
+/** Chapter 8's four rules as the engine's `StrategySpec`. Every fixed part of them is here. */
+export function specFor(edge: Edge): StrategySpec {
+  return {
+    entry: edge.triggers,
+    side: "long",
+    stop: { kind: "atr", multiple: STOP_ATR, period: 14 },
+    target: { kind: "r", multiple: TARGET_R },
+    timeStopBars: MAX_BARS,
+    warmup: WARMUP,
+  };
+}
+
 /**
  * One edge on one market, taken in sequence with no overlapping positions.
  *
- * Sequential because that is what a person could have done, and because overlapping entries
- * inflate the count with the same move counted several times — the difference that made
- * Chapter 6 and Chapter 7 report different hit rates for what looked like one rule.
+ * **An adapter over `lib/backtest/engine.ts` since M10**, which is that loop with the fixed parts
+ * made parameters. The loop lived here first because Chapter 8 needed it and nothing else did; a
+ * second copy in `lib/backtest/` would have disagreed with this one in the fifth decimal on gapped
+ * bars, and the two committed artefacts this feeds are quoted by nine levels.
+ *
+ * `EdgeResult` deliberately stays narrower than `StrategyRun`: dropping `outcomes` keeps the shape
+ * `asset-character.json` and `edge-sweep.json` are built from exactly as it was, so the refactor
+ * could be gated on those files not moving by a single byte.
  */
 export function runEdge(
   series: Series<string>,
   edge: Edge,
   window?: { from: number; to: number },
 ): EdgeResult {
-  const rs: number[] = [];
-  const byYear: Record<string, number> = {};
-
-  let cursor = Math.max(WARMUP, window?.from ?? WARMUP);
-  const end = Math.min(series.c.length - MAX_BARS - 1, window?.to ?? Infinity);
-
-  while (cursor < end) {
-    const volatility = atr(series, cursor, 14);
-    if (volatility <= 0 || !edge.triggers(series, cursor)) {
-      cursor += 1;
-      continue;
-    }
-
-    const entry = series.c[cursor]!;
-    const outcome = simulate(
-      {
-        side: "long",
-        stop: entry - volatility * STOP_ATR,
-        target: entry + volatility * STOP_ATR * TARGET_R,
-      },
-      series,
-      cursor,
-      MAX_BARS,
-    );
-    if (!outcome) {
-      cursor += 1;
-      continue;
-    }
-
-    rs.push(outcome.r);
-    const year = String(new Date(series.t[cursor]!).getUTCFullYear());
-    byYear[year] = (byYear[year] ?? 0) + outcome.r;
-    cursor = outcome.exitBar + 1;
-  }
-
-  const totalR = rs.reduce((total, r) => total + r, 0);
-  return {
-    rs,
-    trades: rs.length,
-    totalR,
-    perTradeR: rs.length === 0 ? 0 : totalR / rs.length,
-    hitRate:
-      rs.length === 0 ? 0 : rs.filter((r) => r >= TARGET_R - 0.1).length / rs.length,
-    byYear,
-  };
+  const { rs, trades, totalR, perTradeR, hitRate, byYear } = runStrategy(
+    series,
+    specFor(edge),
+    window,
+  );
+  return { rs, trades, totalR, perTradeR, hitRate, byYear };
 }
