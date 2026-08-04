@@ -63,6 +63,11 @@ const KIND_COMPONENTS: { [K in LevelKind]: ComponentType<KindProps<K>> } = {
   probe: lazy(() =>
     import("./probe/Probe").then((m) => ({ default: m.Probe })),
   ),
+  // The heaviest component in the project — the palette, the exit controls and the run readout.
+  // Lazy matters more here than anywhere: it is needed on eight routes out of seventy-three.
+  "build-rules": lazy(() =>
+    import("./build-rules/BuildRules").then((m) => ({ default: m.BuildRules })),
+  ),
   "tune-param": lazy(() =>
     import("./tune-param/TuneParam").then((m) => ({ default: m.TuneParam })),
   ),

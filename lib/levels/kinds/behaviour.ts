@@ -29,6 +29,7 @@ import {
   journalEntriesTradeSequence,
   perfectTradeSequence,
 } from "./trade-sequence/grade";
+import { gradeBuildRules, perfectBuildRules } from "./build-rules/grade";
 import { gradeProbe, perfectProbe } from "./probe/grade";
 import { gradeTuneParam, perfectTuneParam } from "./tune-param/grade";
 
@@ -144,6 +145,11 @@ export const KIND_BEHAVIOUR: { [K in LevelKind]: KindBehaviour<K> } = {
     kind: "probe",
     grade: gradeProbe,
     perfectAttempt: perfectProbe,
+  },
+  "build-rules": {
+    kind: "build-rules",
+    grade: gradeBuildRules,
+    perfectAttempt: perfectBuildRules,
   },
   "tune-param": {
     kind: "tune-param",

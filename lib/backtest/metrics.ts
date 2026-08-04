@@ -68,8 +68,16 @@ export function metricsFor(run: StrategyRun): BacktestMetrics {
   };
 }
 
-/** One asset's run, kept apart from every other's. */
-export type AssetRun = { asset: string; run: StrategyRun };
+/**
+ * One asset's run, kept apart from every other's.
+ *
+ * `baseline` is the same exit with an entry that fires on every flat bar — no reason at all. It is
+ * optional because not every caller needs it, and it is here because of what it measures: **on this
+ * spine, entering at random with a 2 ATR stop and a 2R target makes +0.265R a trade on the index,
+ * +0.395R on Apple and +0.337R on Bitcoin.** A rule that clears zero has therefore cleared nothing.
+ * See `Objective.beatBaseline`.
+ */
+export type AssetRun = { asset: string; run: StrategyRun; baseline?: StrategyRun };
 
 export type PerAsset = { asset: string; metrics: BacktestMetrics };
 

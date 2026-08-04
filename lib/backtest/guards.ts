@@ -68,8 +68,10 @@ export type Verdict = "passed" | "refuted" | "inconclusive";
 
 export type ObjectiveResult = {
   verdict: Verdict;
-  /** Assets whose expectancy cleared zero on a sample large enough to mean it. */
+  /** Assets whose expectancy cleared the bar on a sample large enough to mean it. */
   passing: string[];
+  /** Per asset, what entering on every bar would have made. Null where no baseline was given. */
+  baselines: { asset: string; perTradeR: number | null; trades: number }[];
   /** Assets whose expectancy was negative on a sample large enough to mean it. */
   failing: string[];
   /** Assets that traded too little to say either way. */
@@ -84,6 +86,20 @@ export type ObjectiveResult = {
 export type Objective = {
   /** Expectancy each asset must beat. Zero unless a level asks for more. */
   minExpectancy?: number;
+  /**
+   * Require beating the always-enter baseline on the same market, not merely zero.
+   *
+   * **The measurement that forced this option into existence.** Chapter 10's specified objective was
+   * "expectancy > 0 over ≥30 trades", and on this spine that is a bar an entry chosen at random
+   * clears: with a 2 ATR stop and a 2R target, entering on *every flat bar* returns +0.265R a trade
+   * on the index, +0.395R on Apple, +0.337R on Bitcoin and +0.232R on gold. Every two-block rule
+   * tried during development cleared zero comfortably — so a level scored against zero would have
+   * certified noise as skill, in the chapter that is supposed to be the payoff for Chapter 9.
+   *
+   * What a naive backtest mostly shows you is the exit and the market's drift. The entry has to earn
+   * its place against doing nothing, and this is the comparison that asks it to.
+   */
+  beatBaseline?: boolean;
   /** Trades an asset needs before its result counts. Defaults to the journal's threshold. */
   minTrades?: number;
   /** How many assets must clear it. */
@@ -108,12 +124,21 @@ export function scoreObjective(
   const minTrades = objective.minTrades ?? UNDERPOWERED_BELOW;
   const metrics = poolMetrics(runs);
 
+  // The bar per asset: the stated minimum, or the always-enter baseline where one was measured and
+  // the objective asks for it. Whichever is higher — a level asking for both means both.
+  const barFor = (asset: string): number => {
+    if (!objective.beatBaseline) return minExpectancy;
+    const baseline = runs.find((entry) => entry.asset === asset)?.baseline;
+    if (!baseline || baseline.trades === 0) return minExpectancy;
+    return Math.max(minExpectancy, baseline.perTradeR);
+  };
+
   const enough = metrics.perAsset.filter((entry) => entry.metrics.n >= minTrades);
   const passing = enough
-    .filter((entry) => (entry.metrics.expectancy ?? 0) > minExpectancy)
+    .filter((entry) => (entry.metrics.expectancy ?? 0) > barFor(entry.asset))
     .map((entry) => entry.asset);
   const failing = enough
-    .filter((entry) => (entry.metrics.expectancy ?? 0) <= minExpectancy)
+    .filter((entry) => (entry.metrics.expectancy ?? 0) <= barFor(entry.asset))
     .map((entry) => entry.asset);
   const inconclusive = metrics.perAsset
     .filter((entry) => entry.metrics.n < minTrades)
@@ -144,6 +169,11 @@ export function scoreObjective(
     inconclusive,
     classesPassing,
     metrics,
+    baselines: runs.map((entry) => ({
+      asset: entry.asset,
+      perTradeR: entry.baseline && entry.baseline.trades > 0 ? entry.baseline.perTradeR : null,
+      trades: entry.baseline?.trades ?? 0,
+    })),
     reason: reasonFor({
       verdict,
       passing,
@@ -153,6 +183,7 @@ export function scoreObjective(
       needClasses,
       classesPassing,
       minTrades,
+      beatBaseline: objective.beatBaseline === true,
     }),
   };
 }
@@ -166,8 +197,12 @@ function reasonFor(args: {
   needClasses: number;
   classesPassing: AssetClass[];
   minTrades: number;
+  beatBaseline: boolean;
 }): string {
   const { verdict, passing, failing, inconclusive, needAssets, needClasses } = args;
+  const bar = args.beatBaseline
+    ? "beat entering on every bar"
+    : "positive expectancy";
 
   if (verdict === "passed") {
     const classes =
@@ -176,13 +211,15 @@ function reasonFor(args: {
             args.classesPassing.length === 1 ? "class" : "classes"
           }`
         : "";
-    return `Positive expectancy on ${passing.length} of ${
+    return `Your entry ${bar} on ${passing.length} of ${
       passing.length + failing.length + inconclusive.length
     } markets${classes}.`;
   }
 
   if (verdict === "refuted") {
-    return `Negative expectancy on ${failing.join(", ")}, over enough trades to mean it. That is a real result rather than a small sample.`;
+    return args.beatBaseline
+      ? `On ${failing.join(", ")} your entry did no better than entering on every bar, over enough trades to mean it. Most of what a backtest shows you is the exit and the market's drift; the entry has to earn its place.`
+      : `Negative expectancy on ${failing.join(", ")}, over enough trades to mean it. That is a real result rather than a small sample.`;
   }
 
   const short = inconclusive.length;

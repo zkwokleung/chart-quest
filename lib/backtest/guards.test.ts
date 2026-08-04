@@ -179,6 +179,73 @@ describe("the objective, scored per asset", () => {
   });
 });
 
+describe("beating the baseline rather than beating zero", () => {
+  // **The measurement that put this option in the module.** On this spine, entering on every flat
+  // bar with a 2 ATR stop and a 2R target pays +0.265R a trade on the index, +0.395R on Apple and
+  // +0.337R on Bitcoin. "Expectancy > 0" is therefore a bar a random entry clears, and every
+  // two-block rule tried during development cleared it.
+  const rule = run(Array<number>(40).fill(0.1));
+  const generousMarket = run(Array<number>(200).fill(0.3));
+
+  it("fails a positive rule that its own market beat for nothing", () => {
+    const result = scoreObjective(
+      [{ asset: "SPY-1d", run: rule, baseline: generousMarket }],
+      { beatBaseline: true },
+    );
+    expect(result.metrics.pooled.expectancy).toBeGreaterThan(0);
+    expect(result.verdict).toBe("refuted");
+    expect(result.reason).toContain("no better than entering on every bar");
+  });
+
+  it("passes the same rule when the objective only asks for positive", () => {
+    // The two objectives disagreeing on one strategy is the whole point of having both.
+    const result = scoreObjective(
+      [{ asset: "SPY-1d", run: rule, baseline: generousMarket }],
+      {},
+    );
+    expect(result.verdict).toBe("passed");
+  });
+
+  it("passes a rule that genuinely beat doing nothing", () => {
+    const result = scoreObjective(
+      [
+        { asset: "SPY-1d", run: run(Array<number>(40).fill(0.5)), baseline: generousMarket },
+      ],
+      { beatBaseline: true },
+    );
+    expect(result.verdict).toBe("passed");
+    expect(result.reason).toContain("beat entering on every bar");
+  });
+
+  it("reports the baseline per asset, so a reader can check the comparison", () => {
+    const result = scoreObjective(
+      [{ asset: "SPY-1d", run: rule, baseline: generousMarket }],
+      { beatBaseline: true },
+    );
+    expect(result.baselines).toHaveLength(1);
+    expect(result.baselines[0]!.asset).toBe("SPY-1d");
+    expect(result.baselines[0]!.trades).toBe(200);
+    expect(result.baselines[0]!.perTradeR).toBeCloseTo(0.3, 10);
+  });
+
+  it("falls back to the stated minimum when no baseline was measured", () => {
+    // A level that asks for the comparison but hands no baseline must not silently pass everything.
+    const result = scoreObjective([{ asset: "SPY-1d", run: rule }], {
+      beatBaseline: true,
+    });
+    expect(result.verdict).toBe("passed");
+    expect(result.baselines).toEqual([{ asset: "SPY-1d", perTradeR: null, trades: 0 }]);
+  });
+
+  it("takes whichever bar is higher when a level asks for both", () => {
+    const result = scoreObjective(
+      [{ asset: "SPY-1d", run: run(Array<number>(40).fill(0.4)), baseline: generousMarket }],
+      { beatBaseline: true, minExpectancy: 0.5 },
+    );
+    expect(result.verdict).toBe("refuted");
+  });
+});
+
 describe("the variant counter", () => {
   it("says nothing until tuning starts to cost something", () => {
     expect(variantWarning(1).warn).toBe(false);

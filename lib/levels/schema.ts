@@ -1,3 +1,5 @@
+import type { Block, BlockKind } from "@/lib/backtest/blocks";
+import type { Objective } from "@/lib/backtest/guards";
 import type { Drawing, Side } from "@/lib/chart/geometry";
 import type { IndicatorSpec } from "@/lib/chart/indicator-data";
 import type { Series, SeriesId } from "@/lib/chart/types";
@@ -24,6 +26,7 @@ export type LevelKind =
   | "sizing-calc"
   | "trade-sequence"
   | "probe"
+  | "build-rules"
   | "composite";
 
 /**
@@ -34,8 +37,14 @@ export type LevelKind =
  * is testing — which is the thing the "composite steps stay on the boss's series" guard exists
  * to prevent. Excluding it also keeps the composite chunk from importing the probe component,
  * since `step-components.ts` is eager.
+ *
+ * `build-rules` is excluded for the same two reasons and a third. It runs over a *set* of series
+ * chosen by its own config — 10.7's whole point is three markets at once — so a stage of it would
+ * widen a boss's scope past anything the guard can see. And it is the heaviest component in the
+ * project, so putting it in the eager step map would give every boss the composer. Chapter 10's
+ * boss is a page rather than a composite for exactly this reason.
  */
-export type StepKind = Exclude<LevelKind, "composite" | "probe">;
+export type StepKind = Exclude<LevelKind, "composite" | "probe" | "build-rules">;
 
 /**
  * What kind of setup a trade was, for the journal to group by.
@@ -173,12 +182,55 @@ export type Attempt = {
     risks: number[];
     hintsUsed: number;
   };
+  /**
+   * **The strategy the player composed *is* the attempt.**
+   *
+   * The decision Chapter 10 turns on. `CONVENTIONS.md` holds that no level's graded answer may
+   * depend on the store — `strategies` is empty on a fresh save, after `resetProgress`, and in
+   * private mode — so a level cannot grade "the strategy you saved earlier". Carrying it on the
+   * attempt instead means the grader receives everything it needs as an argument, runs the engine
+   * over `level.data`, and stays as pure as every other grader in the project.
+   *
+   * `predict-next` is the precedent for the other half: it authors no target because the answer is
+   * whatever the data did. Here the *answer* is derived the same way, and `target.reference` exists
+   * only so `perfectAttempt` can prove the objective is reachable.
+   */
+  "build-rules": {
+    kind: "build-rules";
+    entry: Block[];
+    exit: ExitRule;
+    risk: RiskRule;
+    /** How many variants the player ran before committing. Their own count, warned on past ten. */
+    variants: number;
+    hintsUsed: number;
+  };
   composite: {
     kind: "composite";
     /** One entry per step, in order. `null` until that step is committed. */
     steps: (StepAttempt | null)[];
     hintsUsed: number;
   };
+};
+
+/**
+ * How a composed strategy gets out, and how much it risks.
+ *
+ * Separate from `StopRule` and `TargetRule` in `lib/backtest/engine.ts` on purpose: those are what
+ * the engine consumes, and these are what a player chose. The two are one field apart today and the
+ * indirection has already earned itself once — `riskPct` has no meaning to the engine, which works
+ * entirely in R, and belongs to the sizing question 10.4 asks.
+ */
+export type ExitRule = {
+  /** Stop distance in ATR. ATR-relative so a rule is portable across the spine by construction. */
+  stopAtr: number;
+  /** Target as a multiple of the risk taken, or null to run to the stop or the clock. */
+  targetR: number | null;
+  timeStopBars: number;
+};
+
+export type RiskRule = {
+  /** Share of the account risked per trade, as a fraction. Chapter 7's number. */
+  perTradePct: number;
 };
 
 /** A step's attempt, with its own kind still discriminable. */
@@ -279,6 +331,33 @@ export type KindConfig = {
      * thing asked for, so this is a gate rather than a scored component.
      */
     expectSlope?: "up" | "down" | "flat";
+  };
+  "build-rules": {
+    prompt: string;
+    /**
+     * Which blocks the palette offers.
+     *
+     * `"unlocked"` means everything the player's own progress has earned — the palette as their
+     * progress made concrete, which is issue #28's phrase for it. A level may narrow it to a list
+     * instead, which is how 10.3 can teach composing with two blocks before handing over five.
+     *
+     * Resolved by `resolvePalette` in a *component*, which may read the store. The grader never
+     * consults it: a strategy is scored on what it does, not on whether the player was allowed the
+     * blocks they used, or a saved strategy would stop grading when a save was cleared.
+     */
+    palette: "unlocked" | BlockKind[];
+    /**
+     * What the run has to achieve. Stated per asset, never over the pooled total.
+     *
+     * 10.7's reason for existing and 8.5's flawed claim inverted: a rule making +50R on one market
+     * and losing on three others is "profitable pooled", and that is the sentence 8.5 asks the
+     * player to mark as not following.
+     */
+    objective: Objective;
+    /** Bars the player may not tune on, held back until the run is committed. */
+    holdback?: { series: SeriesId; from: number; to: number }[];
+    /** Fix parts of the strategy the level is not asking about, so one question is asked at a time. */
+    fixed?: Partial<{ exit: ExitRule; risk: RiskRule; side: TradeSide }>;
   };
   composite: {
     /** Walked in order; each is graded on commit before the next appears. */
@@ -544,6 +623,19 @@ export type KindTarget = {
    */
   /** The measured control value. Ignored entirely when scoring is `exploration`. */
   probe: { value: number };
+  /**
+   * A strategy the author verified clears the objective — and nothing the player is scored against.
+   *
+   * The score is the *run*: the engine takes the player's own blocks over `level.data` and the
+   * objective says whether the result cleared it. So this is not an answer to match, in the same
+   * way `annotate`'s trendline is not. It exists so `perfectAttempt` has something to return, which
+   * is what lets the winnability guard prove three stars is reachable — the guard that has caught
+   * an unwinnable level in four of the last five milestones.
+   *
+   * **Authoring one means running it.** A reference that does not clear its own objective fails the
+   * guard rather than a player, which is exactly what happened to 4.B's replay in M7c.
+   */
+  "build-rules": { reference: { entry: Block[]; exit: ExitRule; risk: RiskRule } };
   "trade-sequence": Record<string, never>;
   /**
    * No authored target: the answer is whatever the sizing formula gives for the instrument,
@@ -601,6 +693,15 @@ export type KindTolerance = {
    * partial credit that matters comes from `f1` over the set the player marked.
    */
   "spot-the-flaw": Record<string, never>;
+  /**
+   * Nothing to tolerate either, and for a sharper reason than `spot-the-flaw`'s.
+   *
+   * The objective *is* the tolerance — `minExpectancy`, `minTrades`, `minAssetsPassing` — and it
+   * lives in the config because the player is told it. A hidden slop on top would mean a strategy
+   * that missed the stated bar could still pass, which is the one thing a level about honest
+   * backtesting cannot do.
+   */
+  "build-rules": Record<string, never>;
   "trade-sequence": {
     /** The largest per-trade risk still counted as defensible. */
     maxRiskPct: number;
@@ -768,6 +869,39 @@ export type OverlaySpec =
       steps: OverlaySpec[];
     }
   | {
+      /**
+       * A strategy's run, per asset, with the verdict and the reason.
+       *
+       * Carries no chart geometry because there is nothing to draw *onto* the attempt — the
+       * correction for a strategy is its result, not a line in a different place. The equity curve
+       * and the trade table are built from this by the component.
+       */
+      kind: "run";
+      verdict: "passed" | "refuted" | "inconclusive";
+      reason: string;
+      perAsset: {
+        asset: string;
+        trades: number;
+        expectancy: number | null;
+        totalR: number;
+        maxDrawdownR: number;
+        underpowered: boolean;
+        /**
+         * What entering on *every* bar would have paid on this market, with the same exit.
+         *
+         * Null when the level did not ask for the comparison. Never omitted when it did: on this
+         * spine a random entry makes +0.265R a trade on the index, so a figure shown without it is a
+         * figure that flatters.
+         */
+        baselineR: number | null;
+      }[];
+      /** Assets that cleared the objective, and the classes they span. */
+      passing: string[];
+      classesPassing: string[];
+      /** Cumulative R of every trade, pooled in the order the assets were given. */
+      equityR: number[];
+    }
+  | {
       kind: "trade";
       structure: Drawing;
       entryPrice: number;
@@ -818,6 +952,7 @@ export type AnyLevel =
   | Level<"sizing-calc">
   | Level<"trade-sequence">
   | Level<"probe">
+  | Level<"build-rules">
   | Level<"composite">;
 
 export function isKind<K extends LevelKind>(
