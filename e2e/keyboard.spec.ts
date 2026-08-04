@@ -241,3 +241,38 @@ test("no decorative table is announced inside a chart", async ({ page }) => {
   await expect(chart).toBeVisible();
   expect(await chart.getByRole("table").count()).toBe(0);
 });
+
+test("a chart's data is available as text, and is a sample rather than every bar", async ({
+  page,
+}) => {
+  // What a screen-reader user had before M11 was "Price chart, BTCUSDT-1d, 90 bars" and nothing else.
+  await seedEverything(page);
+  await page.goto("/level/2-3");
+
+  const fallback = page.getByText(/chart data as text/).first();
+  await expect(fallback).toBeVisible();
+  await fallback.click();
+
+  // The one-line form first — shape and scale, in the units Chapter 8 taught.
+  await expect(page.getByText(/Net (up|down) \d+\.\d%/).first()).toBeVisible();
+  await expect(page.getByText(/times an ordinary day's range/).first()).toBeVisible();
+
+  // A sample, not the window: twenty rows plus a header, never the full ninety. A screen reader reads
+  // linearly, so "all of it" would be a way to make the page unusable while technically complying.
+  const table = page.getByRole("table").last();
+  await expect(table).toBeVisible();
+  const rows = await table.getByRole("row").count();
+  expect(rows).toBeGreaterThan(2);
+  expect(rows).toBeLessThanOrEqual(21);
+  await expect(table).toContainText(/\d{4}-\d{2}-\d{2}/);
+});
+
+test("the data table is a sibling of the chart, not inside its img role", async ({ page }) => {
+  // Inside the `role="img"` wrapper it would be in a node assistive technology treats as a leaf —
+  // exactly the mistake the library's layout table made. Reachability is the whole point.
+  await seedEverything(page);
+  await page.goto("/level/2-3");
+  const chart = page.getByRole("img", { name: /price chart/i });
+  expect(await chart.getByText(/chart data as text/).count()).toBe(0);
+  await expect(page.getByText(/chart data as text/).first()).toBeVisible();
+});

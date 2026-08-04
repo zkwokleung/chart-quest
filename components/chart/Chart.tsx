@@ -36,6 +36,7 @@ import {
 import { RENDER_AS_LINE } from "@/lib/chart/types";
 import type { BarRange, Series, SeriesId } from "@/lib/chart/types";
 import { formatMode, toMode, type YAxisMode } from "@/lib/ta/normalize";
+import { ChartData } from "./ChartData";
 import { DrawingsPrimitive, type RenderableDrawing } from "./DrawingPrimitive";
 
 export type PriceScale = "linear" | "logarithmic";
@@ -435,13 +436,18 @@ export function Chart({
     //
     // The wrapper keeps `className` because that is where the sizing lives; the inner fills it, which
     // is what the library's ResizeObserver measures.
-    <div
-      className={className}
-      role="img"
-      aria-label={`Price chart, ${series.id}, ${to - from} bars`}
-    >
-      <div ref={containerRef} aria-hidden="true" className="h-full w-full" />
-    </div>
+    <>
+      <div
+        className={className}
+        role="img"
+        aria-label={`Price chart, ${series.id}, ${to - from} bars`}
+      >
+        <div ref={containerRef} aria-hidden="true" className="h-full w-full" />
+      </div>
+      {/* Outside the `role="img"` wrapper, or it would be inside a node assistive technology treats as
+          a leaf — which is the same mistake the layout table made. A sibling is reachable. */}
+      <ChartData series={series} from={from} to={to} />
+    </>
   );
 }
 
