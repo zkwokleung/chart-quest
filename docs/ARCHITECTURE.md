@@ -516,6 +516,8 @@ The corollary: anything that *should* be reachable must be a **sibling** of that
 
 Measuring it again: `npx lighthouse <url> --only-categories=accessibility --chrome-flags="--headless=new"`, **one route per invocation** — successive runs in a shell loop fail silently on Chrome profile contention.
 
+**Never test keyboard operability with anything but real key events.** Two different tools have now reported this codebase's keyboard support as broken when it was not: a synthetic `KeyboardEvent` dispatched into the page (React's listeners never saw it) and a browser-extension harness driving a window the OS had not focused (the surface reported itself as `document.activeElement` and still received nothing). Both were false negatives, and both are more expensive than they look — the failure claims a working feature is broken, so the temptation is to "fix" code that was already correct. Playwright's `keyboard.press` is the arbiter; that is why `e2e/keyboard.spec.ts` exists rather than a unit test with a mocked event.
+
 ---
 
 ## 15. Patterns, base rates, and paying for hindsight
