@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { JournalPanel } from "@/components/JournalPanel";
+import { ProgressTransfer } from "@/components/ProgressTransfer";
 import { SkillRadar } from "@/components/SkillRadar";
 
 export const metadata = { title: "Progress" };
@@ -18,6 +19,7 @@ export default function ProgressPage() {
       <h1 className="text-2xl font-semibold tracking-tight">Progress</h1>
       <SkillRadar />
       <JournalPanel />
+      <ProgressTransfer />
     </main>
   );
 }

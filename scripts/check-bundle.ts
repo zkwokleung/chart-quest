@@ -23,7 +23,10 @@ import { join } from "node:path";
 const BUDGETS: Record<string, number> = {
   "index.html": 200,
   "level/2-3.html": 275,
-  "progress.html": 200,
+  // Raised from 200 in M11, deliberately rather than by trimming to fit. This route now carries three
+  // panels — the skill radar, the journal report and progress transfer — and it is the only page that
+  // reads the whole store. 200 was set when it carried one of them. Nothing else in M11 lands here.
+  "progress.html": 215,
   // The composer, which carries the engine, the block model and the run readout. Watched from M10
   // because it is the only route whose payload can grow with the *strategy vocabulary* rather than
   // with the curriculum, and nothing else would notice.

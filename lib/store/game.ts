@@ -35,6 +35,17 @@ type Actions = {
   saveStrategy(strategy: Omit<SavedStrategy, "id" | "savedAt">): void;
   forgetStrategy(name: string): void;
   updateSettings(patch: Partial<Settings>): void;
+  /**
+   * Replaces everything with an imported save.
+   *
+   * Whole-state rather than merged, and that is the point: a player importing a backup wants *that*
+   * save, not that save blended with whatever this browser happened to hold. Merging would also make
+   * the result depend on which device you imported on, which is the opposite of what a backup is for.
+   *
+   * Only ever called with a `Persisted` that `importSave` has validated — the action cannot check,
+   * because a store action that validated would be a second validator to keep in step with the first.
+   */
+  replaceAll(state: Persisted): void;
   resetProgress(): void;
 };
 
@@ -201,6 +212,10 @@ export const useGameStore = create<GameState>()(
         set((state) => ({
           strategies: state.strategies.filter((s) => s.name !== name),
         }));
+      },
+
+      replaceAll(state) {
+        set({ ...state });
       },
 
       resetProgress() {
