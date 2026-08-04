@@ -10,6 +10,7 @@ import {
   type JournalEntry,
   type LevelProgress,
   type Persisted,
+  type SavedStrategy,
   type Settings,
 } from "./schema";
 
@@ -24,6 +25,15 @@ type Actions = {
    * `attemptNo`, because they are one attempt.
    */
   logTrades(entries: Omit<JournalEntry, "id" | "at" | "attemptNo">[]): void;
+  /**
+   * Saves a strategy under a name, replacing one already saved under it.
+   *
+   * By name rather than appending, because the composer is a workbench: a player refining one rule
+   * would otherwise accumulate forty near-identical entries and Chapter 10.B would export the wrong
+   * one. Renaming is how you keep two.
+   */
+  saveStrategy(strategy: Omit<SavedStrategy, "id" | "savedAt">): void;
+  forgetStrategy(name: string): void;
   updateSettings(patch: Partial<Settings>): void;
   resetProgress(): void;
 };
@@ -166,6 +176,30 @@ export const useGameStore = create<GameState>()(
             ...state.profile,
             settings: { ...state.profile.settings, ...patch },
           },
+        }));
+      },
+
+      saveStrategy(strategy) {
+        set((state) => {
+          const kept = state.strategies.filter((s) => s.name !== strategy.name);
+          const existing = state.strategies.find((s) => s.name === strategy.name);
+          return {
+            strategies: [
+              ...kept,
+              {
+                // Reused so a rename is a rename and a save is not a new strategy every time.
+                id: existing?.id ?? `${strategy.name}-${new Date().toISOString()}`,
+                savedAt: new Date().toISOString(),
+                ...strategy,
+              },
+            ],
+          };
+        });
+      },
+
+      forgetStrategy(name) {
+        set((state) => ({
+          strategies: state.strategies.filter((s) => s.name !== name),
         }));
       },
 

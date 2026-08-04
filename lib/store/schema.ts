@@ -70,11 +70,31 @@ export type JournalEntry = {
   setup?: string;
 };
 
+/**
+ * A strategy the player built, as they left it.
+ *
+ * `blocks` and `lastResult` were `unknown` from M1 until M10, which was the honest placeholder while
+ * neither the composer nor the engine existed. They are typed structurally rather than by importing
+ * `Block` and `OverlaySpec`, and that is deliberate: `lib/store/` is imported by every route, and a
+ * store type reaching into `lib/backtest` and `lib/levels` would drag the block model and the level
+ * schema into the graph of pages that have nothing to do with either. The composer casts at its own
+ * boundary, where the types are already present.
+ *
+ * Both stay optional-shaped so saves written before M10 stay valid and `SCHEMA_VERSION` need not
+ * move — the same call `attemptNo` made in M5 and `planned` in M9.
+ */
 export type SavedStrategy = {
   id: string;
   name: string;
+  /** The composed entry conditions. `Block[]` from `lib/backtest/blocks`. */
   blocks: unknown;
+  /** The last run's overlay, so reopening the page shows what it did rather than a blank. */
   lastResult: unknown;
+  /** Which markets it was run over, by series id. */
+  scope?: string[];
+  /** How many variants the player tried before saving. Chapter 9.5's lesson, kept. */
+  variants?: number;
+  savedAt?: string;
 };
 
 export type Persisted = {

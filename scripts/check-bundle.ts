@@ -24,6 +24,10 @@ const BUDGETS: Record<string, number> = {
   "index.html": 200,
   "level/2-3.html": 275,
   "progress.html": 200,
+  // The composer, which carries the engine, the block model and the run readout. Watched from M10
+  // because it is the only route whose payload can grow with the *strategy vocabulary* rather than
+  // with the curriculum, and nothing else would notice.
+  "strategy.html": 240,
 };
 
 const NEXT = ".next";
