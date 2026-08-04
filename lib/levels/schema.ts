@@ -304,7 +304,21 @@ export type KindConfig = {
      * record. A kind *component* may read the store; only graders must stay pure. What keeps
      * these levels gradeable is that their answers are author-known anyway — see the level files.
      */
-    artefact?: "coin-flip-distribution" | "journal-analytics";
+    /**
+     * `holdback-run` is 10.6's, and it is what keeps the out-of-sample guarantee intact.
+     *
+     * The obvious way to build 10.6 was a `build-rules` level whose `data` named the `-oos` series —
+     * and that would have meant widening `LevelSlice.series` from `SeriesId` to include
+     * `OosSeriesId`, destroying the compile-time half of the holdback guarantee for all seventy-three
+     * levels to serve one. `DATA.md` calls that one of three layers and it is the only one that
+     * cannot be forgotten.
+     *
+     * So the holdback is read by the *component*, which loads it through `load-oos.ts`, runs the
+     * player's saved strategy over it and shows what happened. The graded question is what the
+     * result supports, which is author-known for every possible player: the holdback cannot produce
+     * thirty trades on any daily series, so it can rule a strategy out and cannot rule one in.
+     */
+    artefact?: "coin-flip-distribution" | "journal-analytics" | "holdback-run";
   };
   "mark-bars": {
     prompt: string;
@@ -354,9 +368,12 @@ export type KindConfig = {
      * player to mark as not following.
      */
     objective: Objective;
-    /** Bars the player may not tune on, held back until the run is committed. */
-    holdback?: { series: SeriesId; from: number; to: number }[];
-    /** Fix parts of the strategy the level is not asking about, so one question is asked at a time. */
+    /**
+     * Fix parts of the strategy the level is not asking about, so one question is asked at a time.
+     *
+     * 10.3 fixes the exit and asks about the entry; 10.4 opens the exit and asks about that. Without
+     * this a player's earlier choices would silently change what a later level was grading.
+     */
     fixed?: Partial<{ exit: ExitRule; risk: RiskRule; side: TradeSide }>;
   };
   composite: {

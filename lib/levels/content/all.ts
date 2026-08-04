@@ -64,6 +64,10 @@ import { level as ch9_4 } from "./ch9/9-4";
 import { level as ch9_5 } from "./ch9/9-5";
 import { level as ch9_6 } from "./ch9/9-6";
 import { level as ch9_B } from "./ch9/9-B";
+import { level as ch10_1 } from "./ch10/10-1";
+import { level as ch10_2 } from "./ch10/10-2";
+import { level as ch10_3 } from "./ch10/10-3";
+import { level as ch10_4 } from "./ch10/10-4";
 
 /**
  * Every authored level, imported eagerly.
@@ -143,6 +147,10 @@ export const ALL_LEVELS: AnyLevel[] = [
   ch9_5,
   ch9_6,
   ch9_B,
+  ch10_1,
+  ch10_2,
+  ch10_3,
+  ch10_4,
 ];
 
 /** A level by id, for tests. The app uses `loadLevelContent` in ./index.ts. */

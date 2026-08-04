@@ -146,13 +146,7 @@ export function BuildRules({
         </button>
       )}
 
-      {run ? (
-        <RunReadout
-          run={run}
-          objective={objective}
-          holdback={level.config.holdback?.length ?? 0}
-        />
-      ) : null}
+      {run ? <RunReadout run={run} objective={objective} /> : null}
     </div>
   );
 }
