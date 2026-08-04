@@ -425,12 +425,23 @@ export function Chart({
   }, [priceScale]);
 
   return (
+    // Two elements rather than one, and the inner is hidden from assistive technology.
+    //
+    // `lightweight-charts` lays itself out in a `<table>`, and that table lands inside whatever
+    // element it is handed. `role="img"` is supposed to make a node a leaf, and Chrome exposes the
+    // descendants anyway — so a screen reader met the chart's label and then a table of empty cells,
+    // on every charted level in the game. `aria-hidden` on the container the library owns is what
+    // actually removes it, and the label stays on the wrapper where it still applies.
+    //
+    // The wrapper keeps `className` because that is where the sizing lives; the inner fills it, which
+    // is what the library's ResizeObserver measures.
     <div
-      ref={containerRef}
       className={className}
       role="img"
       aria-label={`Price chart, ${series.id}, ${to - from} bars`}
-    />
+    >
+      <div ref={containerRef} aria-hidden="true" className="h-full w-full" />
+    </div>
   );
 }
 
