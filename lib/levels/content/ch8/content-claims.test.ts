@@ -619,9 +619,20 @@ describe("8-B an unfamiliar market", () => {
   });
 
   it("shows a window no earlier level displayed", () => {
+    // **Earlier, which is what the name always said.** The first version scanned every level, and
+    // that was indistinguishable from this one until Chapter 10 existed: 10.5 needs a third equity
+    // with a long history and Apple is the only one, so it displays the whole series.
+    //
+    // The guarantee 8.B needs is that its window is unseen *when the player reaches it*. What a
+    // later chapter shows cannot reach backwards and spoil a boss that has already been played, and
+    // scoping this correctly is what stops a Chapter 10 level being unable to use the market
+    // Chapter 8 taught on.
+    const before = (other: (typeof ALL_LEVELS)[number]) =>
+      other.chapter < 8 || (other.chapter === 8 && other.id !== "8-B");
+
     const shown = new Array(aapl.t.length).fill(false);
     for (const other of ALL_LEVELS) {
-      if (other.id === "8-B") continue;
+      if (other.id === "8-B" || !before(other)) continue;
       for (const slice of other.data) {
         if (slice.series !== "AAPL-1d") continue;
         for (let i = slice.from; i <= Math.min(shown.length - 1, slice.to); i += 1) {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { JournalPanel } from "@/components/JournalPanel";
 import { AssetCorrelationMatrix } from "@/components/level/AssetCorrelationMatrix";
 import { CoinFlipDistribution } from "@/components/level/CoinFlipDistribution";
+import { HoldbackRun } from "@/components/strategy/HoldbackRun";
 import { yAxisFor } from "@/lib/levels/y-axis";
 import { FeedChart } from "@/components/level/FeedChart";
 import type { KindProps } from "@/lib/levels/kind-module";
@@ -60,6 +61,7 @@ export function Classify({
         </div>
       ) : null}
       {level.config.artefact === "journal-analytics" ? <JournalPanel /> : null}
+      {level.config.artefact === "holdback-run" ? <HoldbackRun /> : null}
 
       {/* Two columns only when there is something to compare. A single chart in a
           two-column grid renders at half width, which is how 8.B first drew its 999-bar

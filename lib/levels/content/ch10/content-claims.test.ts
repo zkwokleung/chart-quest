@@ -5,6 +5,7 @@ import { compileEntry, warmupFor, type Block } from "@/lib/backtest/blocks";
 import { runStrategy, type StrategySpec } from "@/lib/backtest/engine";
 import { scoreObjective } from "@/lib/backtest/guards";
 import type { Series, SeriesId } from "@/lib/chart/types";
+import { assetClassOf } from "@/lib/instruments/asset-class";
 import type { AnyLevel, ExitRule, Level } from "../../schema";
 import { ALL_LEVELS, getAuthoredLevel } from "../all";
 
@@ -302,5 +303,147 @@ describe("10-4 where it is wrong", () => {
       return { asset: slice.series, run: rule, baseline };
     });
     expect(scoreObjective(runs, level.config.objective).verdict).toBe("passed");
+  });
+});
+
+describe("10-5 everything you are allowed to see", () => {
+  const level = need("10-5", "build-rules");
+
+  it("asks for all three markets, the strictest objective in the chapter", () => {
+    expect(level.config.objective.minAssetsPassing).toBe(3);
+    expect(level.config.objective.minTrades).toBe(30);
+    expect(level.data).toHaveLength(3);
+  });
+
+  it("is stricter than the cross-asset level that follows it", () => {
+    // Deliberate: here the player can still see every bar, so a rule that cannot beat doing nothing
+    // on all three has not earned the holdback. 10.7 asks for two because its third market cannot
+    // supply a sample.
+    const crossAsset = need("10-7", "build-rules");
+    expect(level.config.objective.minAssetsPassing!).toBeGreaterThan(
+      crossAsset.config.objective.minAssetsPassing!,
+    );
+  });
+
+  it("uses Apple as the third market because Bitcoin cannot clear it", () => {
+    // **Why the market list is what it is.** The reference takes 18 trades on Bitcoin's daily series,
+    // below the threshold, so it returns inconclusive — and the strictest level in the chapter would
+    // then be unclearable on the merits.
+    const bitcoin = measure("BTCUSDT-1d", level.target.reference.entry);
+    expect(bitcoin.rule.trades).toBe(18);
+    expect(bitcoin.rule.trades).toBeLessThan(level.config.objective.minTrades!);
+    expect(level.data.map((slice) => slice.series)).not.toContain("BTCUSDT-1d");
+  });
+
+  it("clears its own objective on all three, with the trade counts it needs", () => {
+    const runs = level.data.map((slice) => {
+      const { rule, baseline } = measure(slice.series, level.target.reference.entry);
+      return { asset: slice.series, run: rule, baseline };
+    });
+    for (const entry of runs) {
+      expect(entry.run.trades, entry.asset).toBeGreaterThanOrEqual(30);
+    }
+    const result = scoreObjective(runs, level.config.objective);
+    expect(result.verdict).toBe("passed");
+    expect(result.passing).toEqual(["SPY-1d", "GC-1d", "AAPL-1d"]);
+  });
+});
+
+describe("10-6 what the held-back data can tell you", () => {
+  const level = need("10-6", "classify");
+
+  it("reads the holdback through a component, so no level names an oos series", () => {
+    // The alternative was widening `LevelSlice.series` to include `OosSeriesId`, which would have
+    // removed the compile-time half of the holdback guarantee from every level in the game.
+    expect(level.config.artefact).toBe("holdback-run");
+    expect(level.data).toEqual([]);
+  });
+
+  it("has the answer be the asymmetry rather than a verdict on the strategy", () => {
+    expect(level.target.correct).toEqual(["can-refute-not-confirm"]);
+    // The confident answer and the nihilistic one are both wrong, and both are offered.
+    expect(level.config.options.map((o) => o.id)).toContain("validated");
+    expect(level.config.options.map((o) => o.id)).toContain("worthless");
+  });
+
+  it("rests on a holdback that really cannot supply a sample", () => {
+    // **The measurement that rewrote the level.** The reference strategy over the committed
+    // holdback: single-digit trade counts on two of three markets, and negative on the index against
+    // a baseline that made money.
+    const reference = need("10-5", "build-rules").target.reference.entry;
+    const spec = specOf(reference);
+
+    const counts: Record<string, number> = {};
+    for (const id of ["SPY-1d-oos", "GC-1d-oos", "BTCUSDT-4h-oos"]) {
+      const series = JSON.parse(
+        readFileSync(join("public/data/oos", `${id}.json`), "utf8"),
+      ) as Series<string>;
+      const from = Math.min(spec.warmup, Math.floor(series.c.length * 0.15));
+      counts[id] = runStrategy(series, spec, { from, to: series.c.length }).trades;
+    }
+
+    expect(counts["SPY-1d-oos"]).toBeLessThan(20);
+    expect(counts["GC-1d-oos"]).toBeLessThan(20);
+    expect(counts["BTCUSDT-4h-oos"]).toBeLessThan(20);
+    // The level's prose quotes these three, so they are pinned rather than merely bounded.
+    const text = [level.brief, ...level.misconceptions.map((m) => m.message)].join(" ");
+    expect(text).toContain("nine trades on the index");
+    expect(counts["SPY-1d-oos"]).toBe(9);
+    expect(counts["GC-1d-oos"]).toBe(3);
+    expect(counts["BTCUSDT-4h-oos"]).toBe(9);
+  });
+
+  it("says nothing that claims the holdback confirms anything", () => {
+    const text = [
+      level.brief,
+      level.config.prompt,
+      ...level.config.options.map((o) => `${o.label} ${o.note ?? ""}`),
+      ...level.misconceptions.map((m) => m.message),
+    ]
+      .join(" ")
+      .toLowerCase();
+    // "validated" appears only as the wrong answer's own label, never as the level's voice.
+    expect(text).toContain("cannot tell me the strategy works");
+    expect(level.config.options.find((o) => o.id === "validated")!.note).toContain(
+      "Nine trades",
+    );
+  });
+});
+
+describe("10-7 does it travel", () => {
+  const level = need("10-7", "build-rules");
+
+  it("counts asset classes rather than markets", () => {
+    expect(level.config.objective.minClassesPassing).toBe(2);
+    const classes = level.data.map((slice) => assetClassOf(slice.series));
+    expect(new Set(classes).size).toBe(3);
+  });
+
+  it("clears on two classes with the third reported as too few to say", () => {
+    // The honest outcome, and the reason `inconclusive` is a verdict: Bitcoin's daily series holds
+    // 2,778 bars against the equities' 4,612 because Bitcoin did not exist in 2005.
+    const runs = level.data.map((slice) => {
+      const { rule, baseline } = measure(slice.series, level.target.reference.entry);
+      return { asset: slice.series, run: rule, baseline };
+    });
+    const result = scoreObjective(runs, level.config.objective);
+
+    expect(result.verdict).toBe("passed");
+    expect(result.passing).toEqual(["SPY-1d", "GC-1d"]);
+    expect([...result.classesPassing].sort()).toEqual(["equity", "futures"]);
+    expect(result.inconclusive).toEqual(["BTCUSDT-1d"]);
+    expect(result.failing).toEqual([]);
+  });
+
+  it("would refuse three equities, which is the mistake it exists to prevent", () => {
+    // Constructed rather than authored: the level cannot show this, so the test does.
+    const threeEquities = ["SPY-1d", "AAPL-1d", "LAKE-1d"] as SeriesId[];
+    const runs = threeEquities.map((id) => {
+      const { rule, baseline } = measure(id, level.target.reference.entry);
+      return { asset: id, run: rule, baseline };
+    });
+    const result = scoreObjective(runs, level.config.objective);
+    expect(result.classesPassing).toEqual(["equity"]);
+    expect(result.verdict).not.toBe("passed");
   });
 });
