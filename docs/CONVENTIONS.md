@@ -2,7 +2,7 @@
 
 Orientation for anyone working in this repo. An interactive game teaching technical analysis — client-side only, no backend, no auth, progress in `localStorage`.
 
-**Read first:** [`ARCHITECTURE.md`](ARCHITECTURE.md) before touching `lib/`, [`AUTHORING.md`](AUTHORING.md) before adding a level, [`DATA.md`](DATA.md) before touching `public/data/`. [`PLAN.md`](PLAN.md) is the scope source of truth.
+**Read first:** [`ARCHITECTURE.md`](ARCHITECTURE.md) before touching `lib/`, [`AUTHORING.md`](AUTHORING.md) before adding a level, [`DATA.md`](DATA.md) before touching `public/data/`. [`PLAN.md`](PLAN.md) is the original design plan and carries the reasoning behind each decision, but it was written before any of this was built — where it disagrees with the three above, they are newer and win.
 
 ## The two rules most easily eroded
 
@@ -36,9 +36,13 @@ npm run typecheck     # tsc --noEmit
 npm run lint          # eslint . --quiet
 npm test              # vitest run
 npm run build         # production build
+npm run check:bundle  # per-route client JS budget (needs the build above)
+npm run test:e2e      # playwright test (runs against a production build)
 ```
 
 A successful file write is not a working change. If one of these isn't configured yet for the area you touched, say so rather than implying it passed.
+
+`check:bundle` belongs in the gate rather than beside it. Several routes sit near their budget, and a dependency landing in the shared chunk is invisible to every other command here.
 
 ## Code conventions
 
@@ -54,4 +58,4 @@ This is a teaching tool in a domain full of dishonest content. Never write copy 
 
 ## Work order
 
-Follow the milestones in order; each ends at a verification gate. Later milestones assume the earlier engines exist and work.
+The curriculum shipped at 1.0 and the eleven build milestones are closed, so there is no phase to be in: work starts from an open issue. The closed milestones are kept for their history — several invariants above exist because a milestone measured something and got a different answer than the plan expected, and that reasoning is not reconstructable from the code.

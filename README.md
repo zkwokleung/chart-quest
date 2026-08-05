@@ -8,7 +8,7 @@ An interactive game that teaches technical analysis, from "what is a candle" to 
 
 **Status:** 1.0. **All ten chapters are playable end to end** — 73 levels across thirteen interaction kinds, ending with a strategy composer you build from the blocks the earlier chapters unlocked, a backtester with no look-ahead and no invented fills, and a playbook you export at the end. Along the way: draw tools, a replay engine, indicators with a price/percent/ATR y-axis, pattern base rates measured per asset with sample sizes and confidence intervals, multi-timeframe levels running two live panes from one clock, position sizing across crypto, shares, futures contracts and FX lots from real contract specifications, a chapter that has you measure each market's character yourself, and a chapter that reads your own trade journal back and tells you what it will not support.
 
-The last chapter is the one that decides whether any of it worked. Your rule has to beat **entering on every single bar** with the same stop and target — because on this data doing exactly nothing pays a quarter of an R a trade, so a profitable backtest is not on its own an edge. Then it runs on data held back since the day it was committed, which yields nine trades, and asks you what nine trades can prove. See [milestones](https://github.com/zkwokleung/chart-quest/milestones) for what remains.
+The last chapter is the one that decides whether any of it worked. Your rule has to beat **entering on every single bar** with the same stop and target — because on this data doing exactly nothing pays a quarter of an R a trade, so a profitable backtest is not on its own an edge. Then it runs on data held back since the day it was committed, which yields nine trades, and asks you what nine trades can prove.
 
 ---
 
@@ -118,10 +118,10 @@ Both are worth revisiting once the plugin ecosystem catches up — tracked in [#
 
 | Doc                                            | What's in it                                                         |
 | ---------------------------------------------- | -------------------------------------------------------------------- |
-| [`docs/PLAN.md`](docs/PLAN.md)                 | The full design plan — the source of truth for scope                 |
+| [`docs/PLAN.md`](docs/PLAN.md)                 | The original design plan and the reasoning behind each decision       |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | The level-kind engine, schemas, grader contract, storage             |
 | [`docs/CURRICULUM.md`](docs/CURRICULUM.md)     | All 10 chapters and 73 levels, plus the cross-asset boss rule        |
-| [`docs/DATA.md`](docs/DATA.md)                 | The six-series data spine, sources, format, out-of-sample rules      |
+| [`docs/DATA.md`](docs/DATA.md)                 | The twelve committed series, sources, format, out-of-sample rules     |
 | [`docs/AUTHORING.md`](docs/AUTHORING.md)       | How to add a level — the most-repeated task in the project           |
 | [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)   | Orientation: the invariants, code conventions, verification commands |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md)           | Branches, commits, and the verification gates                        |

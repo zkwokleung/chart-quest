@@ -4,26 +4,34 @@ All price data is **bundled and committed** as static JSON. The app never calls 
 
 ---
 
-## The six-series spine
+## The six-market spine
 
-Chosen so the series **disagree with each other**. Contrast is the pedagogical point — a spine of six crypto pairs would teach nothing that a single pair doesn't.
+**Six markets, twelve series.** Chosen so the markets **disagree with each other**. Contrast is the pedagogical point — a spine of six crypto pairs would teach nothing that a single pair doesn't.
 
-Sizes are actual gzip measurements. The in-sample column is what chapters 1–9 teach on; the rest is held back for Chapter 10 (see below).
+Nine series are fetched. Two are **resampled from the series above them** — a multi-timeframe level needs two views of one period, and outside Bitcoin the fetched pairs do not overlap. They are marked _derived_ below and rebuilt by `npm run data:resample`. The twelfth, `AAPL-1d-raw`, is neither fetched nor resampled but **reconstructed**; see _Reconstruction_ below.
 
-| Series        | Range (in-sample) | Bars  | gz     | Character it exists to teach                        |
-| ------------- | ----------------- | ----- | ------ | --------------------------------------------------- |
-| `BTCUSDT-1d`  | 2017-08 → 2025-03 | 2,778 | 57 KB  | Crypto · 24/7 · high vol · trend-persistent         |
-| `BTCUSDT-4h`  | 2021-01 → 2023-07 | 5,586 | 112 KB | Crypto intraday                                     |
-| `SPY-1d`      | 2005-01 → 2023-04 | 4,612 | 78 KB  | Index · sessions · gaps · short-term mean-reverting |
-| `SPY-15m`     | rolling 60 days   | 1,041 | 16 KB  | Intraday sessions and the opening range             |
-| `AAPL-1d`     | 2005-01 → 2023-04 | 4,612 | 69 KB  | Single stock · earnings gaps · split-adjusted       |
-| `AAPL-1d-raw` | 2020-06 → 2020-09 | 86    | 2 KB   | Level 1.7 only — see _Reconstruction_               |
-| `EURUSD-1d`   | 2005-01 → 2023-05 | 4,755 | 64 KB  | FX · 24/5 · low vol · ranging · Sunday gap          |
-| `EURUSD-1h`   | rolling 500 days  | 7,163 | 64 KB  | FX intraday                                         |
-| `GC-1d`       | 2005-01 → 2023-05 | 4,607 | 63 KB  | Commodity · different volatility regime             |
-| `LAKE-1d`     | 2005-01 → 2023-04 | 4,612 | 54 KB  | Illiquid small-cap · spread and slippage            |
+`manifest.json` carries a `reconstructed` flag for all three, and `integrity.test.ts` pins the list, so a new derived series that goes undocumented fails the suite.
 
-**579 KB gzipped in-sample, plus 102 KB held back.** Ceiling is **150 KB gzipped per file**; the fetch script refuses to write anything larger. Files are lazy-loaded only by the levels that reference them, so page-load cost is per-level, not total.
+Sizes are actual gzip measurements, rounded — `gzip -c <file> | wc -c` at the default level, which is what a CDN serves. Re-measure with the same command before correcting one; a different `-N` shifts every figure by a kilobyte or two and the bar counts are the load-bearing column. The in-sample column is what chapters 1–9 teach on; the rest is held back for Chapter 10 (see below).
+
+| Series        | Range (in-sample)        | Bars  | gz     | Character it exists to teach                        |
+| ------------- | ------------------------ | ----- | ------ | --------------------------------------------------- |
+| `BTCUSDT-1d`  | 2017-08 → 2025-03        | 2,778 | 58 KB  | Crypto · 24/7 · high vol · trend-persistent         |
+| `BTCUSDT-4h`  | 2021-01 → 2023-07        | 5,586 | 113 KB | Crypto intraday                                     |
+| `SPY-1d`      | 2005-01 → 2023-04        | 4,612 | 80 KB  | Index · sessions · gaps · short-term mean-reverting  |
+| `SPY-15m`     | rolling 60 days          | 1,041 | 16 KB  | Intraday sessions and the opening range             |
+| `SPY-1h`      | _derived_ from `SPY-15m` | 240   | 4 KB   | Chapter 6's higher-timeframe pane over the 15m chart |
+| `AAPL-1d`     | 2005-01 → 2023-04        | 4,612 | 70 KB  | Single stock · earnings gaps · split-adjusted        |
+| `AAPL-1d-raw` | 2020-06 → 2020-09        | 86    | 2 KB   | Level 1.7 only — see _Reconstruction_               |
+| `EURUSD-1d`   | 2005-01 → 2023-05        | 4,755 | 65 KB  | FX · 24/5 · low vol · ranging · Sunday gap          |
+| `EURUSD-1h`   | rolling 500 days         | 7,163 | 65 KB  | FX intraday                                         |
+| `EURUSD-4h`   | _derived_ from `EURUSD-1h` | 1,742 | 19 KB | Chapter 6's higher-timeframe pane, and its boss     |
+| `GC-1d`       | 2005-01 → 2023-05        | 4,607 | 65 KB  | Commodity · different volatility regime             |
+| `LAKE-1d`     | 2005-01 → 2023-04        | 4,612 | 56 KB  | Illiquid small-cap · spread and slippage            |
+
+**613 KB gzipped in-sample, plus 108 KB held back.** Ceiling is **150 KB gzipped per file** — largest is `BTCUSDT-4h` at 113 KB — and the fetch script refuses to write anything larger. Files are lazy-loaded only by the levels that reference them, so page-load cost is per-level, not total.
+
+The two resampled series inherit their parent's window exactly, which is what makes a linked replay possible: `lib/replay/linked.ts` drives both panes from one clock, and `linked.test.ts` pins the pairing. `EURUSD-4h` gets an out-of-sample holdback like a fetched series, because 1,742 bars is enough to build a strategy on; `SPY-1h` is exempt alongside `SPY-15m`, being a 60-day snapshot used for session levels rather than for strategy building.
 
 `LAKE` (Lakeland Industries) is the illiquid series: median volume around 18,500 shares, plus a real 2014 news spike that puts thin-book, gap and slippage risk on one chart.
 
@@ -220,6 +228,8 @@ Per (asset, lookback) it stores `trades`, `totalR`, `perTradeR` and `maxDrawdown
 - _Illiquid small-cap_ → `LAKE`. Full 2005–2026 history, median volume ~18,500 shares, plus a real 2014 news spike.
 - _Date ranges_ → daily from 2005, giving four distinct regimes. Intraday is whatever upstream allows (see the caps table).
 
+- _Futures data_ → neither option in the original question. Rather than chase ES or layer a synthetic spec over SPY, 7.3's futures case uses **`GC-1d`, real COMEX Gold**, against the published CME contract specification (100 troy ounces, $0.10 tick, $10 per tick — cited in `lib/instruments/specs.ts`). A real contract with real numbers beats a documented fiction, and gold was already in the spine for its volatility regime, so it cost no bundle.
+
 **Still open:**
 
-- Whether free ES futures data is obtainable at acceptable quality for level 7.3, or whether the futures case uses a documented synthetic contract spec layered over the SPY series instead. Nothing in the data pipeline depends on this — `InstrumentSpec` arrives with the risk milestone.
+- Star thresholds were authored loose and still need calibration against real play data, tracked in [#32](https://github.com/zkwokleung/chart-quest/issues/32). `score-distribution.test.ts` measures grader shape rather than player behaviour and says so in its own docstring, so it cannot settle this. A playtester's exported save carries `stars`, `bestScore` and `attempts` per level, which is the dataset this needs.

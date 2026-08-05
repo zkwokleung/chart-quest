@@ -2,9 +2,9 @@
 
 ## Working order
 
-Development follows the milestones in order — each one ends at a verification gate. See [milestones](https://github.com/zkwokleung/chart-quest/milestones).
+The ten-chapter curriculum shipped at 1.0, so work is now discrete rather than phased. Start from an [open issue](https://github.com/zkwokleung/chart-quest/issues), or open one describing the change before writing it.
 
-Pick an issue from the current milestone. If the current milestone's gate hasn't passed, don't start the next one; the later phases assume the earlier engines exist and work.
+The eleven build milestones are closed and kept for their history: each one records what it found, and several of those findings are the reason an invariant exists. Worth reading before proposing a change to `lib/backtest/`, `lib/store/` or anything under `public/data/`.
 
 ## Branches
 
@@ -35,14 +35,18 @@ Scopes match the module layout: `level-engine`, `chart`, `ta`, `backtest`, `inst
 
 ## Verification gates
 
-**Every PR must pass all four locally before review:**
+**Every PR must pass all six locally before review:**
 
 ```bash
 npm run typecheck     # tsc --noEmit
 npm run lint          # eslint . --quiet
 npm test              # vitest run
-npm run test:e2e      # playwright test  (only if UI changed)
+npm run build         # production build
+npm run check:bundle  # per-route client JS budget (needs the build above)
+npm run test:e2e      # playwright test (runs against a production build)
 ```
+
+`check:bundle` is not optional and not cosmetic: several routes sit near their budget, and it is the gate that catches a dependency quietly landing in the shared chunk.
 
 A file write that "succeeded" is not a working change. If a type-checker or linter isn't configured yet for the area you touched, say so in the PR rather than implying it passed.
 
@@ -57,7 +61,7 @@ These are enforced by tests because they are easy to erode across ~73 levels and
 | No Ch 1–9 level references `public/data/oos/` | Keeps Ch 10's out-of-sample validation genuine |
 | Graders are **pure and deterministic** | No `Date.now()`, no `Math.random()`, no DOM, no store access |
 | Backtester never reads a bar index **> current** | No look-ahead. Asserted by spying the series accessor. |
-| Backtester never fills **inside a market-closed gap** | Uses `spec.hours`. A stop the market gapped through fills at the open. |
+| Backtester never fills **inside a market-closed gap** | A stop the market gapped through fills at the **open**, which satisfies the rule without a trading calendar — `spec.hours` was specified and turned out not to be needed. |
 | Every level's own `target` scores **3 stars** through its own grader | Catches broken authoring across all levels cheaply |
 | Every pattern in `base-rates.json` has **≥3 assets** and a reported `n` | The honesty commitment |
 | The y-axis mode toggle **never changes grading** | Normalization is presentation, not scoring |
@@ -88,16 +92,19 @@ See [`docs/AUTHORING.md`](docs/AUTHORING.md). Short version: pick a kind, find t
 
 ## Adding a level *kind*
 
-This is an architecture change, not a content change. Open an issue first. Ten kinds were chosen to cover the whole curriculum; an eleventh usually means a level is mis-scoped.
+This is an architecture change, not a content change. Open an issue first. Thirteen kinds cover the whole curriculum; a fourteenth usually means a level is mis-scoped.
 
 ## Accessibility
 
-Not a polish pass. Every PR touching UI keeps:
+Not a polish pass, and measured rather than asserted — Lighthouse accessibility is 100 with no failing audits on every route. Every PR touching UI keeps:
 
-- Draw tools operable by keyboard (arrow keys + enter for anchors)
-- Direction encoded by more than red/green — fill and shape too
-- `prefers-reduced-motion` honored by anything animated
-- Every `classify` level completable without a pointer
+- **Every kind** completable without a pointer, not just `classify`. `e2e/keyboard.spec.ts` is where that stops being a claim; add a case there rather than trusting a review.
+- Draw tools operable by keyboard (arrows to move, shift for coarse steps, enter to place, escape to clear) and announcing where the cursor is.
+- Direction encoded by more than red/green — fill and shape too.
+- `prefers-reduced-motion` honoured by anything animated, via `useReducedMotion` rather than the media query directly, because an explicit choice in `/settings` beats the OS.
+- Any container a third-party library renders into stays `aria-hidden`, with the label on a wrapper. See the note in `docs/ARCHITECTURE.md` §14 — this cost a real defect on every charted level.
+
+**Never verify keyboard support with a synthetic `KeyboardEvent` or a browser-extension harness.** Both have reported this codebase's keyboard handling as broken when it was working. Playwright's `keyboard.press` is the arbiter.
 
 ## Data changes
 

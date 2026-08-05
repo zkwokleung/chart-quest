@@ -376,7 +376,7 @@ The wide CIs are not a flaw to hide — at n=34 they _are_ the lesson, and Ch 9.
 - **Charting: `lightweight-charts` (Apache-2.0) + an overlay canvas.** Free crosshair, log scale, pan/zoom, autoscale, volume pane; `timeScale().coordinateToTime()` and `series.coordinateToPrice()` give the price↔pixel conversion draw tools need. Replay is incremental `series.update()`. _Escape hatch:_ if one level kind fights the library, drop to a focused Canvas 2D renderer for that kind only — don't rewrite everything.
 - **State: Zustand + `persist`** to `localStorage`, one versioned root key with an explicit migration function.
 - **TA + backtest: own pure TS in `lib/ta/`** — SMA, EMA, RSI, MACD, ATR, Bollinger, volume MA, swing detection, autocorrelation (for 8.2), correlation matrix. No dependency, small, testable against fixtures. Backtester is a bar-by-bar loop with **no look-ahead**, asserted in test.
-- **Tailwind v4 + shadcn/ui**; **`motion`** for reveal animations.
+- **Tailwind v4 + shadcn/ui**; **`motion`** for reveal animations. _Neither was adopted._ shadcn was never needed — every control is a native element or a labelled button group, which is how keyboard support stayed free across thirteen kinds ([#30](https://github.com/zkwokleung/chart-quest/issues/30), closed with the accessibility audit as the argument). `motion` was declared, never imported, and removed in M11: the replay is one `requestAnimationFrame` loop and there are no CSS transitions anywhere, which is why `prefers-reduced-motion` could be honoured completely rather than approximately.
 - **Vitest** for graders/TA/backtester; **Playwright** smoke per level kind.
 
 ### Normalization module
@@ -511,6 +511,8 @@ public/data/    series/*.json, oos/*.json, base-rates.json, manifest.json
 
 ## 7. Phasing
 
+**All eleven phases are complete, gated and deployed.** The table is kept as written, before any of it existed, because the gaps between an intended gate and what the work actually found are the useful part — `CURRICULUM.md` records the divergences per chapter, and several invariants in `CONVENTIONS.md` exist because a phase measured something and got a different answer than this table expected.
+
 Each phase ends at a verification gate and waits for approval. Flagging honestly: **Phases 1–2 exceed the 5-file limit** — greenfield scaffolding and the data pipeline can't split below a working vertical slice without leaving the repo unbuildable. Later phases respect it.
 
 | Phase | Scope                                                                                                                             | Gate                                                                                              |
@@ -548,7 +550,9 @@ Content authoring (Phases 7–9) is the one place worth parallelizing across con
 
 ## 9. Open items for Phase 1–2
 
-- Which illiquid small-cap for the spread/slippage lesson, and whether free adjusted data for it is reliable enough to commit.
-- Exact date ranges per series (drives bundle size and how many regimes Ch 8.5 can show).
-- Whether ES futures data is obtainable free at acceptable quality, or whether 7.3's futures case uses a documented synthetic contract spec over the SPY series instead.
-- Star thresholds need playtest calibration — author loose, tighten after Phase 5.
+All eleven phases are complete and deployed. Three of these four questions were answered by building; `DATA.md` carries the detail.
+
+- ~~Which illiquid small-cap for the spread/slippage lesson~~ → **`LAKE`** (Lakeland Industries). Full 2005–2026 history, median volume around 18,500 shares, plus a real 2014 news spike that puts thin-book, gap and slippage risk on one chart.
+- ~~Exact date ranges per series~~ → **daily from 2005**, reaching four distinct regimes (2007–09, 2015–16, COVID, the 2022 rate-hike grind). Intraday is whatever upstream will serve.
+- ~~Whether ES futures data is obtainable, or a synthetic spec over SPY~~ → **neither: `GC-1d`, real COMEX Gold**, against the published CME specification. Gold was already in the spine for its volatility regime, so the futures case cost no bundle.
+- **Star thresholds still need playtest calibration.** Authored loose and never tightened, because the calibration wants real play data and this project collects none by design. Tracked in [#32](https://github.com/zkwokleung/chart-quest/issues/32); the export feature added in M11 is the way to gather it, since a save file carries `stars`, `bestScore` and `attempts` per level.
