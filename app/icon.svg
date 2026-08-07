@@ -1,15 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Chart Quest">
   <!--
-    A single candle, up, with both wicks. The game's first level is what a candle is made of, and the
-    body-plus-wicks shape is the one thing the whole curriculum rests on — so it is the mark.
+    Two candles: a hollow down on the left, a filled up higher on the right. The pair is the game's
+    own convention — direction is carried by fill, not only by colour, an invariant since M3 — so the
+    icon shows the one mark no other chart site has, and rises to the right while doing it.
 
     Drawn rather than fetched: an icon is the one asset that must never depend on a network, and at
-    32px an SVG stays crisp where a raster would not. Colours are the app's own tokens, hard-coded
-    because a favicon renders outside the document and cannot read CSS variables.
+    32px an SVG stays crisp where a raster would not. Colours are CANDLE_UP and CANDLE_DOWN from
+    Chart.tsx, hard-coded because a favicon renders outside the document and cannot read CSS
+    variables. `apple-icon.tsx` and `icon1.tsx` redraw this same composition for the places SVG
+    cannot go; a change here changes there too.
   -->
   <rect width="32" height="32" rx="7" fill="#0b0e14" />
-  <!-- Wicks: the range the market actually reached. -->
-  <rect x="15" y="5" width="2" height="22" rx="1" fill="#3fbf9f" />
-  <!-- Body: open to close, hollow-free because this one closed up. -->
-  <rect x="10" y="11" width="12" height="11" rx="1.5" fill="#3fbf9f" />
+  <!-- Down: hollow body, lower on the tile. -->
+  <rect x="9.25" y="6" width="1.5" height="21" rx="0.75" fill="#e2603f" />
+  <rect x="6" y="13" width="8" height="10" rx="1" fill="#0b0e14" stroke="#e2603f" stroke-width="2" />
+  <!-- Up: filled body, higher — the pair reads left to right as a market turning. -->
+  <rect x="21.25" y="3" width="1.5" height="21" rx="0.75" fill="#3fb98e" />
+  <rect x="18" y="8" width="8" height="12" rx="1" fill="#3fb98e" />
 </svg>
